@@ -1,4 +1,11 @@
-import { ExplorationSite, PathfindingRequest, PathfindingResponse, RoverPhotosResponse } from '../types/mars';
+import {
+  ExplorationSite,
+  PathfindingRequest,
+  PathfindingResponse,
+  RoverPhotosResponse,
+  PSAAtmosphericResponse,
+  ZoneAtmosphericAnalysis
+} from '../types/mars';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
@@ -121,5 +128,23 @@ export async function simulateRoute(req: PathfindingRequest): Promise<Pathfindin
   if (!res.ok) {
     throw new Error(`Failed to simulate route: ${res.statusText}`);
   }
+  return await res.json();
+}
+
+export async function fetchAtmosphericZones(): Promise<PSAAtmosphericResponse> {
+  const res = await fetch(`${API_BASE_URL}/atmosphere/zones`);
+  if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+  return await res.json();
+}
+
+export async function fetchAtmosphereZone(zoneId: string): Promise<ZoneAtmosphericAnalysis> {
+  const res = await fetch(`${API_BASE_URL}/atmosphere/zones/${zoneId}`);
+  if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+  return await res.json();
+}
+
+export async function queryAtmosphereByCoords(latitude: number, longitude: number) {
+  const res = await fetch(`${API_BASE_URL}/atmosphere/query?latitude=${latitude}&longitude=${longitude}`);
+  if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
   return await res.json();
 }

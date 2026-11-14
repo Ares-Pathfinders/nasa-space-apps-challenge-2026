@@ -108,4 +108,61 @@ export interface PathfindingResponse {
   waypoints: PathWaypoint[];
 }
 
-export type LayerMode = 'optical' | 'elevation' | 'thermal' | 'radiation';
+export type LayerMode = 'optical' | 'elevation' | 'thermal' | 'radiation' | 'atmosphere';
+
+export interface GasMeasurement {
+  name: string;
+  formula: string;
+  concentration: string;
+  concentration_value: number;
+  concentration_unit: string;
+  percentage?: number;
+  instrument: string;
+  mission: string;
+  observation_technique: string;
+  variability: string;
+  status: string;
+  scientific_significance: string;
+}
+
+export interface IsotopicRatio {
+  ratio: string;
+  value: string;
+  significance: string;
+  instrument: string;
+}
+
+export interface EVAAtmosphericAssessment {
+  breathability: string;
+  asphyxiation_hazard: string;
+  suit_pressure_delta_kpa: number;
+  isru_potential: string;
+  toxicity_warnings: string[];
+}
+
+export interface ZoneAtmosphericAnalysis {
+  zone_id: string;
+  zone_name: string;
+  region: string;
+  coordinates: Coordinates;
+  surface_pressure_pa: number;
+  mean_surface_temp_c: number;
+  dominant_gas: string;
+  total_detected_gases: number;
+  gases: GasMeasurement[];
+  isotopic_ratios: IsotopicRatio[];
+  eva_assessment: EVAAtmosphericAssessment;
+  data_source: string;
+  psa_search_url: string;
+  last_observation_orbit?: string;
+}
+
+export interface PSAAtmosphericResponse {
+  archive: string;
+  archive_portal: string;
+  tap_endpoint: string;
+  total_zones: number;
+  monitored_missions: string[];
+  monitored_instruments: string[];
+  zones: ZoneAtmosphericAnalysis[];
+}
