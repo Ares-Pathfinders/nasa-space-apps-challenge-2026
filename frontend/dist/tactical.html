@@ -21,7 +21,8 @@
     * { box-sizing: border-box; }
     html, body, #map { width: 100%; height: 100%; margin: 0; }
     body { overflow: hidden; background: var(--bg); color: #e2e8f0; font: 11px 'JetBrains Mono', monospace; }
-    #map { position: absolute; inset: 0; background: #030406; }
+    #map { position: absolute; inset: 0; background: #70463d; }
+    .ctx-tint { filter: sepia(.72) saturate(1.55) hue-rotate(326deg) brightness(.92); }
     .panel {
       position: absolute;
       z-index: 1000;
@@ -200,6 +201,7 @@
     <select id="basemap">
       <option value="mola" selected>MOLA · relieve sombreado (predeterminado)</option>
       <option value="minerals">Mapa mineral colorimétrico (incluye Mars Odyssey)</option>
+      <option value="gale-imagery">Gale NASA · CTX / HiRISE y topónimos</option>
     </select>
 
     <label for="zone">Zona Marciana</label>
@@ -314,18 +316,57 @@
       return tile;
     };
 
-    document.getElementById('basemap').addEventListener('change', (event) => {
-      const showMinerals = event.target.value === 'minerals';
-      if (showMinerals) {
-        map.addLayer(mineralMapLayer);
-      } else {
-        map.removeLayer(mineralMapLayer);
-      }
+    function createGaleTileLayer(urlTemplate, opacity = 1, className = '') {
+      const layer = L.gridLayer({ tileSize: 256, minZoom: 5, maxZoom: 12, noWrap: true, updateWhenIdle: true, className });
+      layer.createTile = (coords, done) => {
+        const tileSize = L.point(256, 256);
+        const northWest = map.unproject(coords.scaleBy(tileSize), coords.z);
+        const sourceZoom = coords.z + 1;
+        const matrixSize = 2 ** sourceZoom;
+        const latitude = Math.max(-85.05112878, Math.min(85.05112878, northWest.lat));
+        const latitudeRadians = latitude * Math.PI / 180;
+        const x = Math.floor((northWest.lng + 180) / 360 * matrixSize);
+        const yTop = Math.floor((1 - Math.asinh(Math.tan(latitudeRadians)) / Math.PI) / 2 * matrixSize);
+        const y = matrixSize - 1 - Math.max(0, Math.min(matrixSize - 1, yTop));
+        const tile = L.DomUtil.create('img', 'leaflet-tile');
+        tile.style.opacity = String(opacity);
+        tile.onload = () => done(null, tile);
+        tile.onerror = error => done(error, tile);
+        tile.src = urlTemplate
+          .replace('{z}', String(sourceZoom))
+          .replace('{x}', String(x))
+          .replace('{y}', String(y));
+        return tile;
+      };
+      return layer;
+    }
+
+    const galeImageryLayer = L.layerGroup([
+      createGaleTileLayer('https://mars.nasa.gov/mmgis-maps/MSL/Layers/MSL_CTX_ortho_mosaic_6m/{z}/{x}/{y}.png', 0.72, 'ctx-tint'),
+      createGaleTileLayer('https://mars.nasa.gov/mmgis-maps/MSL/Layers/MSL_Gale_HiRISE-LRGB_78quads/{z}/{x}/{y}.png'),
+      createGaleTileLayer('https://mars.nasa.gov/mmgis-maps/MSL/Layers/MSL_WebGIS_PlaceText/{z}/{x}/{y}.png', 0.96)
+    ]);
+
+    function setBaseMapMode(mode) {
+      const showMinerals = mode === 'minerals';
+      const showGaleImagery = mode === 'gale-imagery';
+      if (showMinerals) map.addLayer(mineralMapLayer);
+      else map.removeLayer(mineralMapLayer);
+      if (showGaleImagery) map.addLayer(galeImageryLayer);
+      else map.removeLayer(galeImageryLayer);
       document.getElementById('rightDataTitle').textContent = showMinerals
         ? 'IDENTIFICACIÓN MINERAL // COLORIMETRÍA'
         : '🪐 GASES POR ZONA // ESA PSA';
       document.getElementById('gasesPanel').style.display = showMinerals ? 'none' : 'block';
       document.getElementById('mineralPanel').style.display = showMinerals ? 'block' : 'none';
+    }
+
+    document.getElementById('basemap').addEventListener('change', (event) => {
+      if (event.target.value === 'gale-imagery' && document.getElementById('zone').value !== 'gale') {
+        document.getElementById('zone').value = 'gale';
+        load();
+      }
+      setBaseMapMode(event.target.value);
     });
 
     const layers = {
@@ -552,7 +593,14 @@
     };
 
     // Listeners interactivos
-    ['zone', 'resolution'].forEach(id => document.getElementById(id).onchange = load);
+    document.getElementById('zone').onchange = event => {
+      if (event.target.value === 'jezero' && document.getElementById('basemap').value === 'gale-imagery') {
+        document.getElementById('basemap').value = 'mola';
+        setBaseMapMode('mola');
+      }
+      load();
+    };
+    document.getElementById('resolution').onchange = load;
     document.getElementById('slope').oninput = e => document.getElementById('slopeValue').textContent = Number(e.target.value).toFixed(1) + '°';
     document.getElementById('slope').onchange = load;
 

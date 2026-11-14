@@ -299,6 +299,18 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
     }
   }, [camera]);
 
+  React.useEffect(() => {
+    if (focusCuriosity || !controlsRef.current) return;
+
+    const marsCenter = new THREE.Vector3(...MARS_POSITION);
+    camera.position.set(marsCenter.x, marsCenter.y + 0.4, marsCenter.z + 6.4);
+    camera.lookAt(marsCenter);
+    controlsRef.current.enabled = true;
+    controlsRef.current.minDistance = 3.2;
+    controlsRef.current.target.copy(marsCenter);
+    controlsRef.current.update();
+  }, [focusCuriosity, camera]);
+
   // Slow ambient rotation of Mars
   useFrame((_, delta) => {
     if (globeRef.current && !focusCuriosity) {
