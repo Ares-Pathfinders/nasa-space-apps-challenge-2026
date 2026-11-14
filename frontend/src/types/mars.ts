@@ -109,6 +109,7 @@ export interface PathfindingResponse {
 }
 
 export type LayerMode = 'optical' | 'elevation' | 'thermal' | 'radiation' | 'atmosphere';
+export type RoverId = 'curiosity' | 'perseverance';
 
 export interface GasMeasurement {
   name: string;

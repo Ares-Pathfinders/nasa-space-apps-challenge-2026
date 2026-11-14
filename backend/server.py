@@ -20,8 +20,9 @@ sys.path.insert(0, REPO_ROOT)
 sys.path.insert(0, os.path.dirname(__file__))
 
 from app.services.psa_service import PSAService
-from backend.data.gale_crater_topography import generate_gale_crater_elevation_grid, GALE_MIN_LAT, GALE_MAX_LAT, GALE_MIN_LON, GALE_MAX_LON
-from backend.data.jezero_crater_topography import generate_jezero_crater_elevation_grid, JEZERO_MIN_LAT, JEZERO_MAX_LAT, JEZERO_MIN_LON, JEZERO_MAX_LON
+from backend.data.gale_crater_topography import generate_gale_crater_elevation_grid, GALE_MIN_LAT, GALE_MAX_LAT, GALE_MIN_LON, GALE_MAX_LON, GALE_TERRAIN_SOURCE
+from backend.data.jezero_crater_topography import generate_jezero_crater_elevation_grid, JEZERO_MIN_LAT, JEZERO_MAX_LAT, JEZERO_MIN_LON, JEZERO_MAX_LON, JEZERO_TERRAIN_SOURCE
+from backend.data.terrain_errors import TerrainDataError
 from backend.terrain.slope import SlopeAnalyzer
 from backend.terrain.cell_graph import CellGraphBuilder
 
@@ -199,9 +200,14 @@ class AresNavHandler(SimpleHTTPRequestHandler):
             max_slope = float(query.get("max_slope", [15.0])[0])
 
             if zone == "jezero":
-                grid = generate_jezero_crater_elevation_grid(resolution_rows=res, resolution_cols=res)
+                try:
+                    grid = generate_jezero_crater_elevation_grid(resolution_rows=res, resolution_cols=res)
+                except TerrainDataError as error:
+                    self._send_json({"error": str(error)}, status=503)
+                    return
                 zone_title = "Jezero Crater Delta (Perseverance / Mars 2020)"
                 zone_center = [18.38, 77.55]
+                terrain_source = JEZERO_TERRAIN_SOURCE
                 historical_wps = [
                     {"name": "Octavia E. Butler Landing", "lat": 18.4447, "lon": 77.4508, "type": "LANDING"},
                     {"name": "Kodiak Butte (Delta Remnant)", "lat": 18.412, "lon": 77.485, "type": "SCIENCE"},
@@ -211,9 +217,14 @@ class AresNavHandler(SimpleHTTPRequestHandler):
                 start_c = (int(res * 0.2), int(res * 0.2))
                 goal_c = (int(res * 0.75), int(res * 0.75))
             else:
-                grid = generate_gale_crater_elevation_grid(resolution_rows=res, resolution_cols=res)
+                try:
+                    grid = generate_gale_crater_elevation_grid(resolution_rows=res, resolution_cols=res)
+                except TerrainDataError as error:
+                    self._send_json({"error": str(error)}, status=503)
+                    return
                 zone_title = "Gale Crater - Mount Sharp (Curiosity / MSL)"
                 zone_center = [-4.65, 137.43]
+                terrain_source = GALE_TERRAIN_SOURCE
                 historical_wps = [
                     {"name": "Bradbury Landing (Sol 0)", "lat": -4.5895, "lon": 137.4417, "type": "LANDING"},
                     {"name": "Yellowknife Bay (Mudstone)", "lat": -4.591, "lon": 137.452, "type": "SCIENCE"},
@@ -257,6 +268,7 @@ class AresNavHandler(SimpleHTTPRequestHandler):
             self._send_json({
                 "zone": zone,
                 "zone_title": zone_title,
+                "terrain_source": terrain_source,
                 "zone_center": zone_center,
                 "bounds": {
                     "min_lat": grid.min_lat,
@@ -321,12 +333,20 @@ class AresNavHandler(SimpleHTTPRequestHandler):
         if zone == "gale" and resolution == 80 and max_slope == 15.0:
             grid, analyzer, builder = elevation_grid, slope_analyzer, cell_graph_builder
         else:
-            if zone == "jezero":
-                grid = generate_jezero_crater_elevation_grid(resolution_rows=resolution, resolution_cols=resolution)
-            else:
-                grid = generate_gale_crater_elevation_grid(resolution_rows=resolution, resolution_cols=resolution)
+            try:
+                if zone == "jezero":
+                    grid = generate_jezero_crater_elevation_grid(resolution_rows=resolution, resolution_cols=resolution)
+                    terrain_source = JEZERO_TERRAIN_SOURCE
+                else:
+                    grid = generate_gale_crater_elevation_grid(resolution_rows=resolution, resolution_cols=resolution)
+                    terrain_source = GALE_TERRAIN_SOURCE
+            except TerrainDataError as error:
+                self._send_json({"error": str(error)}, status=503)
+                return
             analyzer = SlopeAnalyzer(grid, max_slope_deg=max_slope)
             builder = CellGraphBuilder(grid, analyzer, slope_penalty_weight=3.5)
+        if zone == "gale" and resolution == 80 and max_slope == 15.0:
+            terrain_source = GALE_TERRAIN_SOURCE
 
         for name, coords in (("start", start), ("target", target)):
             latitude, longitude = coords
@@ -362,14 +382,17 @@ class AresNavHandler(SimpleHTTPRequestHandler):
 
         waypoints = []
         cumulative_distance = 0.0
+        cumulative_energy = 0.0
         for idx, (lon, lat, elev) in enumerate(route["coordinates_lon_lat_elev"]):
+            slope = 0.0
             if idx > 0:
                 previous = route["cell_path"][idx - 1]
                 current = route["cell_path"][idx]
-                cumulative_distance += grid.get_distance_meters(previous[0], previous[1], current[0], current[1])
+                edge = builder.graph.edges[previous, current]
+                cumulative_distance += edge["distance_m"]
+                slope = edge["edge_slope_deg"]
+                cumulative_energy += edge["distance_m"] * (0.24 + slope * 0.012)
 
-            cell = route["cell_path"][idx]
-            slope = analyzer.get_cell_slope(cell[0], cell[1])
             waypoints.append({
                 "index": idx,
                 "latitude": round(lat, 5),
@@ -379,23 +402,24 @@ class AresNavHandler(SimpleHTTPRequestHandler):
                 "cumulative_distance_m": round(cumulative_distance, 1),
                 "hazard_warning": "High slope scarp nearby" if slope > 12.0 else None,
                 "radiation_rate_ugy_h": 9.8,
-                "estimated_energy_kcal": round(cumulative_distance * 0.12, 1),
+                "estimated_energy_kcal": round(cumulative_energy, 1),
             })
 
         distance_m = route["total_distance_meters"]
-        duration_min = round(distance_m / (0.8 * 60.0), 1)
+        duration_min = route["estimated_duration_min"]
         oxygen_liters = round(duration_min * 0.95, 1)
         snapped_start_coords = grid.cell_to_geo(*start_cell)
         snapped_target_coords = grid.cell_to_geo(*goal_cell)
         self._send_json({
             "site_id": req.get("site_id", "jezero-crater-delta" if zone == "jezero" else "mount-sharp-boxwork"),
             "zone": zone,
+            "terrain_source": terrain_source,
             "total_distance_m": round(distance_m, 1),
             "estimated_duration_min": duration_min,
             "max_slope_deg": route["max_path_slope_deg"],
             "average_slope_deg": route["mean_path_slope_deg"],
-            "total_elevation_gain_m": max(0.0, route["elevation_gain_m"]),
-            "total_elevation_loss_m": abs(min(0.0, route["elevation_gain_m"])),
+            "total_elevation_gain_m": route["elevation_gain_m"],
+            "total_elevation_loss_m": route["elevation_loss_m"],
             "estimated_o2_consumed_liters": oxygen_liters,
             "total_radiation_dose_usv": round((duration_min / 60.0) * 10.5, 2),
             "risk_level": "LOW" if route["max_path_slope_deg"] < 12.0 else "MODERATE",

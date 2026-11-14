@@ -53,7 +53,7 @@ To maximize data density and scientific impact, **ARES-Nav** models high-priorit
 **ARES-Nav** synthesizes at least **five distinct scientific layers** into a single contextual 3D coordinate system:
 
 1. **📐 Topography & High-Resolution Elevation (DTM)**
-   - Sub-meter digital elevation models from MRO HiRISE and HRSC (Mars Express).
+   - Approximately 1 m/pixel elevation products: Gale from NASA Mars Trek and Jezero from MRO HiRISE stereo DTMs in PDS.
    - Slope gradient maps that identify impassable cliffs and suit tipping hazards.
 2. **🔬 Spectral & Mineralogical Stratigraphy**
    - Compact Reconnaissance Imaging Spectrometer for Mars (CRISM) and rover instruments (SuperCam, Mastcam-Z).
@@ -74,11 +74,14 @@ To maximize data density and scientific impact, **ARES-Nav** models high-priorit
 
 ## 🛡️ Safety & Autonomous Pathfinding
 
-Astronaut safety is the primary operational constraint. **ARES-Nav** implements a multi-objective cost-surface pathfinding algorithm (weighted $A^*$ / Dijkstra with safety penalty functions):
+Astronaut safety is the primary operational constraint. **ARES-Nav** builds a directed graph from the selected terrain grid and uses A* to minimize estimated traversal time. Steep cells and transitions above the configured slope limit are excluded; uphill transitions cost more time than downhill transitions:
 
-$$\text{Cost}(u \to v) = d(u, v) \cdot \Big[ 1 + w_{\text{slope}} \cdot \mathcal{S}(v) + w_{\text{roughness}} \cdot \mathcal{R}(v) + w_{\text{radiation}} \cdot \Phi(v) \Big]$$
+$$t(u \to v) = \frac{d(u,v)}{0.8\,e^{-2|g|- \max(g,0)}} \quad \text{where } g=\frac{\Delta h}{d(u,v)}$$
 
 - **Slope Thresholds:** Flagging surfaces $> 15^\circ$ as hazardous for spacesuits and $> 25^\circ$ as impassable.
+- **Interactive route planning:** Select an origin and destination on the Gale or Jezero tactical map. A* returns the fastest estimated safe route, while the interface reports its ground distance, slope, and estimated EVA time. “Start navigation” zooms to the route and identifies the next waypoint; live position tracking is not available without astronaut/rover telemetry.
+- **Diagonal safety:** The cell graph disallows diagonal transitions between two blocked orthogonal cells, preventing routes from cutting through the corner of a mapped hazard.
+- **Slope data and limitations:** Gale elevations come from the [NASA Mars Trek Gale_DEM_SMG_1m ImageServer](https://trek.nasa.gov/mars/trekarcgis/rest/services/Gale_DEM_SMG_1m/ImageServer); Jezero elevations are sampled from the [NASA PDS HiRISE DTM archive](https://hirise-pds.lpl.arizona.edu/PDS/DTM/ESP/), at about 1.01 m/pixel. Horn's 3×3 slope calculation uses those measured elevations resampled to route-grid nodes (about 150–500 m apart at the default 80×80 resolution across the expanded expedition areas), not the source pixels. The orbital products are suitable for regional planning, but this coarse grid can miss small rocks, local roughness, and hazards; it is not a mission-certified safety assessment.
 - **Life Support & Consumables Budgeting:** Real-time calculation of $O_2$ consumption, battery levels, cooling water, and a strict 50% "point-of-no-return" safe abort buffer.
 - **Science Maximization Factor:** Route optimization that balances hazard minimization with high-value scientific sampling points.
 
@@ -102,6 +105,7 @@ $$\text{Cost}(u \to v) = d(u, v) \cdot \Big[ 1 + w_{\text{slope}} \cdot \mathcal
 - **Mars 2020 (Perseverance):** MEDA (Mars Environmental Dynamics Analyzer), Mastcam-Z, SuperCam.
 - **Mars Global Surveyor (MGS):** MOLA (Mars Orbiter Laser Altimeter).
 - **NASA Planetary Data System (PDS) & JPL Mars Trek:** Open-access science cartography and orbital products.
+- **Tactical map backgrounds:** [NASA MSL location-map tiles](https://mars.nasa.gov/maps/location/api/configure/get?mission=MSL) and [NASA Mars 2020 location-map tiles](https://mars.nasa.gov/maps/location/api/configure/get?mission=M20); HiRISE imagery is overlaid on regional basemaps where available.
 
 ---
 

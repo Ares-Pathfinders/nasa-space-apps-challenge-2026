@@ -21,9 +21,16 @@ class PathfindingRequest(BaseModel):
     site_id: str
     start: LatLonPoint
     target: LatLonPoint
-    max_slope_limit_deg: float = Field(default=20.0, description="Maximum allowable slope before aborting")
+    max_slope_limit_deg: float = Field(
+        default=15.0,
+        ge=8.0,
+        le=25.0,
+        description="Maximum slope allowed in the route graph",
+    )
     suit_payload_kg: float = Field(default=120.0, description="Astronaut + suit total mass in kg")
-    eva_time_limit_minutes: float = Field(default=360.0, description="Max EVA duration limit (6 hours)")
+    eva_time_limit_minutes: float = Field(
+        default=360.0, gt=0.0, description="Max EVA duration limit (6 hours)"
+    )
     science_priority_weight: float = Field(default=0.4, description="Weight (0-1) prioritizing science POIs")
 
 class PathfindingResponse(BaseModel):

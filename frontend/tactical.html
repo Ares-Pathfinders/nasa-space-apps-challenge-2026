@@ -68,6 +68,7 @@
     }
     .left { left: 16px; }
     .right { right: 16px; width: 370px; }
+    body.side-panels-hidden .side { display: none; }
     h2 {
       margin: 0 0 10px;
       padding-bottom: 5px;
@@ -182,13 +183,14 @@
       <div class="mark">2D TACTICAL</div>
       <div>
         <h1>ARES-NAV // CUADRÍCULA & GASES ATMOSFÉRICOS</h1>
-        <div class="sub">Telemetría MOLA & Espectrometría ESA Planetary Science Archive (PSA)</div>
+        <div class="sub">DEM orbital de alta resolución & Espectrometría ESA Planetary Science Archive (PSA)</div>
       </div>
     </div>
     <div style="display:flex;gap:10px;align-items:center;">
       <a href="https://psa.esa.int/psa/#/pages/search" target="_blank" class="nav-btn" style="border-color:#a855f7;background:rgba(168,85,247,.15);color:#d8b4fe">
         🪐 ARCHIVO ESA PSA
       </a>
+      <button id="toggleSidebars" class="nav-btn" type="button" aria-expanded="true">▤ OCULTAR PANELES</button>
       <button id="return" class="nav-btn">🌐 VISTA GLOBO 3D</button>
     </div>
   </header>
@@ -217,17 +219,19 @@
       <option value="20">20 x 20 (Rápida)</option>
       <option value="40">40 x 40 (Media)</option>
       <option value="60" selected>60 x 60 (Alta resolución)</option>
-      <option value="80">80 x 80 (Submétrica)</option>
+      <option value="80">80 x 80 (Máxima)</option>
     </select>
 
     <h2 style="margin-top:16px">PLANIFICADOR DE RUTA</h2>
     <button id="planRoute" class="nav-btn" style="width:100%;justify-content:center;">🧭 ELEGIR ORIGEN Y DESTINO</button>
+    <button id="startNavigation" class="nav-btn" disabled style="width:100%;justify-content:center;margin-top:6px;border-color:#45f3ff;color:#45f3ff;opacity:.45;">▶ INICIAR NAVEGACIÓN</button>
+    <button id="finishNavigation" class="nav-btn" type="button" disabled style="width:100%;justify-content:center;margin-top:6px;border-color:#ffb703;color:#ffb703;opacity:.45;">■ FINALIZAR NAVEGACIÓN</button>
     <button id="clearCustomRoute" class="nav-btn" style="width:100%;justify-content:center;margin-top:6px;border-color:#94a3b8;color:#cbd5e1;background:rgba(148,163,184,.08);">BORRAR RUTA PERSONALIZADA</button>
-    <div id="routeStatus" class="info" style="margin-top:7px;font-size:9px;">Elige dos puntos del mapa. La ruta evitará las pendientes que superen el límite configurado.</div>
+    <div id="routeStatus" class="info" style="margin-top:7px;font-size:9px;">Elige dos puntos del mapa para encontrar la ruta segura más rápida. La navegación se guía por waypoints; no hay posicionamiento en tiempo real.</div>
 
     <h2 style="margin-top:16px">CAPAS VISIBLES</h2>
     <div class="checks">
-      <label><input id="cells" type="checkbox" checked> ▦ Cuadrícula topográfica</label>
+      <label><input id="cells" type="checkbox"> ▦ Cuadrícula topográfica</label>
       <label><input id="hazards" type="checkbox" checked> ⛔ Celdas intransitables (Escarpadas)</label>
       <label><input id="route" type="checkbox" checked> ⚡ Ruta segura A* optimizada</label>
       <label><input id="wps" type="checkbox" checked> 📍 Hitos de expedición rover</label>
@@ -251,8 +255,9 @@
   <aside class="panel side right">
     <h2 id="rightDataTitle">VISTA NORMAL // IMAGEN ORBITAL</h2>
     <div id="normalPanel" class="info" style="font-size:10px;">
-      <div style="color:#94a3b8;line-height:1.5;">Gale: mosaico HiRISE de NASA Mars Trek (~0,25 m/píxel nativo). Jezero: relieve MOLA/HRSC (~200 m/píxel); no se ha verificado aquí un mosaico local HiRISE equivalente.</div>
-      <a href="https://trek.nasa.gov/mars/trekarcgis/rest/services/curiosity_hirise_mosaic/ImageServer" target="_blank" class="psa-link">Fuente orbital / topográfica NASA Mars Trek</a>
+      <div style="color:#94a3b8;line-height:1.5;">Mosaicos HiRISE y regionales de las capas MMGIS usadas por los mapas oficiales de ubicación de NASA. Fuera del contorno del DEM se mantiene la imagen de contexto; allí no se calcula la ruta.</div>
+      <a href="https://science.nasa.gov/mission/msl-curiosity/location-map/" target="_blank" rel="noopener" class="psa-link">Mapa oficial de ubicación de Curiosity</a>
+      <a href="https://science.nasa.gov/mission/mars-2020-perseverance/location-map/" target="_blank" rel="noopener" class="psa-link">Mapa oficial de ubicación de Perseverance</a>
     </div>
     <div id="gasesPanel" class="info" style="font-size:10px;">
       <div style="color:#94a3b8;line-height:1.5;">El registro muestra un resumen atmosférico regional. La marca señala el centro representativo de la zona; no es una capa continua ni una concentración medida en superficie.</div>
@@ -261,6 +266,12 @@
       <div style="color:#94a3b8;margin-bottom:8px;">Puntos de detección mineral del servicio NASA Mars Trek. La simbología y las clases las determina el servicio.</div>
       <p style="margin:8px 0 0;color:#94a3b8;line-height:1.5;">La consulta del corredor táctico inmediato no devuelve detecciones para Gale ni Jezero; el mapa no interpola ni inventa cobertura. Hay observaciones en las regiones circundantes.</p>
       <a href="https://trek.nasa.gov/mars/trekarcgis/rest/services/Aquieous_Mineral_Distribution_Options_clon0/MapServer" target="_blank" class="psa-link">Abrir datos y leyenda oficiales de NASA Mars Trek</a>
+    </div>
+    <div id="terrainSourcePanel" class="info" style="font-size:10px;">
+      <b>DATOS DE PENDIENTE</b>
+      <div id="terrainSourceDescription" style="color:#94a3b8;line-height:1.5;margin-top:5px;">Cargando modelo digital de elevación orbital...</div>
+      <a id="terrainSourceLink" class="psa-link" target="_blank" rel="noopener">Abrir fuente de elevación</a>
+      <div id="gridResolutionNote" style="color:#94a3b8;line-height:1.5;margin-top:6px;">La pendiente Horn 3×3 se calcula sobre la cuadrícula de ruta; no representa los píxeles nativos del DEM ni detecta todos los obstáculos pequeños. Es una ayuda regional, no una certificación de seguridad.</div>
     </div>
 
     <h2 style="margin-top:16px">🔍 INSPECTOR DE CELDA</h2>
@@ -290,26 +301,61 @@
     const API_BASE = window.location.port === '5173' ? 'http://localhost:8000/api' : '/api';
     
     // Inicializar mapa Leaflet centrado en Marte
-    const map = L.map('map', { crs: L.CRS.EPSG4326, center: [-4.65, 137.43], zoom: 11, zoomControl: false });
+    const map = L.map('map', { crs: L.CRS.EPSG3857, center: [-4.65, 137.43], zoom: 11, maxZoom: 19, maxBoundsViscosity: 1.0, zoomControl: false });
     L.control.zoom({ position: 'bottomright' }).addTo(map);
-
     const trekService = 'https://trek.nasa.gov/mars/trekarcgis/rest/services';
+    const initialZone = new URLSearchParams(window.location.search).get('zone');
+    if (initialZone === 'gale' || initialZone === 'jezero') {
+      document.getElementById('zone').value = initialZone;
+    }
     const regionContextBounds = {
-      gale: [[-7.0, 135.0], [-3.0, 140.0]],
-      jezero: [[16.0, 75.0], [20.0, 80.0]]
+      gale: [[-7.844091, 135.978762], [-3.397065, 139.485904]],
+      jezero: [[14.999999, 67.499270], [30.000566, 78.749155]]
     };
-    const galeNormalLayer = createTrekExportLayer(
-      `${trekService}/curiosity_hirise_mosaic/ImageServer`,
-      'exportImage',
-      'jpg',
-      false
+    const galeRegionalLayer = L.tileLayer(
+      'https://mars.nasa.gov/mmgis-maps/MSL/Layers/MSL_CTX_ortho_mosaic_6m/{z}/{x}/{y}.png',
+      {
+        tms: true, minZoom: 6, maxNativeZoom: 13, maxZoom: 19, noWrap: true,
+        bounds: [[-7.844091, 135.978762], [-3.397065, 139.485904]],
+        attribution: 'NASA/JPL-Caltech MSL'
+      }
     );
-    const jezeroNormalLayer = createTrekExportLayer(
-      `${trekService}/Mars_MOLA_blend200ppx_HRSC_ClrShade_clon0dd_200mpp/ImageServer`,
-      'exportImage',
-      'jpg',
-      false
+    const galeHiResLayer = L.tileLayer(
+      'https://mars.nasa.gov/mmgis-maps/MSL/Layers/MSL_Gale_HiRISE-LRGB_78quads/{z}/{x}/{y}.png',
+      {
+        tms: true, minZoom: 10, maxNativeZoom: 18, maxZoom: 19, noWrap: true,
+        bounds: [[-4.875604, 137.326724], [-4.555063, 137.478558]],
+        attribution: 'NASA/JPL-Caltech MSL'
+      }
     );
+    const jezeroRegionalLayer = L.tileLayer(
+      'https://mars.nasa.gov/mmgis-maps/M20/Layers/HMC_13E10_co5_colorcorrect_rect/{z}/{x}/{y}.png',
+      {
+        tms: true, minZoom: 0, maxNativeZoom: 12, maxZoom: 19, noWrap: true,
+        bounds: [[14.999999, 67.499270], [30.000566, 78.749155]],
+        attribution: 'NASA/JPL-Caltech Mars 2020'
+      }
+    );
+    const jezeroHiResLayer = L.tileLayer(
+      'https://mars.nasa.gov/mmgis-maps/M20/Layers/JEZ_hirise_soc_007_orthoMosaic_25cm_Ortho_blend120/{z}/{x}/{y}.png',
+      {
+        tms: true, minZoom: 0, maxNativeZoom: 18, maxZoom: 19, noWrap: true,
+        bounds: [[18.306796, 77.223018], [18.669355, 77.583908]],
+        attribution: 'NASA/JPL-Caltech Mars 2020 / HiRISE'
+      }
+    );
+    const jezeroColorLayer = L.tileLayer(
+      'https://mars.nasa.gov/mmgis-maps/M20/Layers/M20_HiRISE_RGB_CTX_mosaic_25cm_v7_Merge_LERC_clip/{z}/{x}/{y}.png',
+      {
+        tms: true, minZoom: 10, maxNativeZoom: 19, maxZoom: 19, noWrap: true,
+        bounds: [[18.237124, 77.157515], [18.520550, 77.511466]],
+        attribution: 'NASA/JPL-Caltech Mars 2020 / HiRISE'
+      }
+    );
+    const backgroundLayers = {
+      gale: [galeRegionalLayer, galeHiResLayer],
+      jezero: [jezeroRegionalLayer, jezeroHiResLayer, jezeroColorLayer]
+    };
     const mineralMapLayer = createTrekExportLayer(
       `${trekService}/Aquieous_Mineral_Distribution_Options_clon0/MapServer`,
       'export',
@@ -342,15 +388,14 @@
       return layer;
     }
 
-    galeNormalLayer.addTo(map);
-
     function setBaseMapMode(mode) {
       const zone = document.getElementById('zone').value;
-      const baseLayer = zone === 'jezero' ? jezeroNormalLayer : galeNormalLayer;
       const showMinerals = mode === 'minerals';
       const showGases = mode === 'gases' && document.getElementById('gasesLayer').checked;
-      [galeNormalLayer, jezeroNormalLayer, mineralMapLayer, layers.gases].forEach(layer => map.removeLayer(layer));
-      map.addLayer(baseLayer);
+      [...backgroundLayers.gale, ...backgroundLayers.jezero, mineralMapLayer, layers.gases]
+        .forEach(layer => map.removeLayer(layer));
+      backgroundLayers[zone].forEach(layer => map.addLayer(layer));
+      map.setMaxBounds(regionContextBounds[zone]);
       if (showMinerals) map.addLayer(mineralMapLayer);
       if (showGases) map.addLayer(layers.gases);
       document.getElementById('rightDataTitle').textContent = showMinerals
@@ -359,10 +404,10 @@
       document.getElementById('normalPanel').style.display = mode === 'normal' ? 'block' : 'none';
       document.getElementById('gasesPanel').style.display = showMinerals || mode !== 'gases' ? 'none' : 'block';
       document.getElementById('mineralPanel').style.display = showMinerals ? 'block' : 'none';
-      if (showMinerals) {
+      if (currentTerrainBounds) {
+        map.fitBounds(L.latLngBounds(currentTerrainBounds).pad(0.15), { padding: [40, 40] });
+      } else {
         map.fitBounds(regionContextBounds[zone], { padding: [40, 40] });
-      } else if (currentTerrainBounds) {
-        map.fitBounds(currentTerrainBounds, { padding: [40, 40] });
       }
     }
 
@@ -371,7 +416,7 @@
     });
 
     const layers = {
-      cells: L.layerGroup().addTo(map),
+      cells: L.layerGroup(),
       hazards: L.layerGroup().addTo(map),
       route: L.layerGroup().addTo(map),
       wps: L.layerGroup().addTo(map),
@@ -384,8 +429,17 @@
     let defaultRouteMetrics = null;
     let isPickingRoute = false;
     let selectedRouteStart = null;
+    let customRouteWaypoints = [];
     let customRouteRequestId = 0;
+    let isNavigating = false;
     setBaseMapMode(document.getElementById('basemap').value);
+
+    function setNavigationActive(active) {
+      isNavigating = active;
+      const finishButton = document.getElementById('finishNavigation');
+      finishButton.disabled = !active;
+      finishButton.style.opacity = active ? '1' : '.45';
+    }
 
     // Calcular presión barométrica local según cota altimétrica de la celda
     function calcPressure(elevM, basePressurePa) {
@@ -505,9 +559,13 @@
       customRouteRequestId += 1;
       isPickingRoute = false;
       selectedRouteStart = null;
+      customRouteWaypoints = [];
+      document.getElementById('startNavigation').disabled = true;
+      document.getElementById('startNavigation').style.opacity = '.45';
+      setNavigationActive(false);
       layers.customRoute.clearLayers();
       map.getContainer().style.cursor = '';
-      document.getElementById('routeStatus').textContent = 'Elige dos puntos del mapa para calcular una ruta segura.';
+      document.getElementById('routeStatus').textContent = 'Elige dos puntos del mapa para calcular la ruta segura más rápida.';
       loading.style.display = 'grid';
 
       const zone = document.getElementById('zone').value;
@@ -520,8 +578,8 @@
 
         // Consultar API de terreno para la cuadrícula
         const response = await fetch(`${API_BASE}/terrain?zone=${zone}&resolution=${resolution}&max_slope=${slope}`);
-        if (!response.ok) throw new Error(`API terrain HTTP error ${response.status}`);
         const data = await response.json();
+        if (!response.ok) throw new Error(data.error || `API terrain HTTP error ${response.status}`);
 
         // Limpiar capas anteriores
         layers.cells.clearLayers();
@@ -533,12 +591,23 @@
           [data.bounds.min_lat, data.bounds.min_lon],
           [data.bounds.max_lat, data.bounds.max_lon]
         ];
-        map.fitBounds(
-          document.getElementById('basemap').value === 'minerals'
-            ? regionContextBounds[zone]
-            : currentTerrainBounds,
-          { padding: [40, 40] }
-        );
+        map.setMaxBounds(regionContextBounds[zone]);
+        const source = data.terrain_source;
+        if (source) {
+          const nativeResolution = source.native_resolution_m
+            ? ` Resolución nativa ≈${source.native_resolution_m} m/píxel.`
+            : '';
+          const method = source.method ? ` ${source.method}.` : '';
+          const products = Array.isArray(source.products) && source.products.length
+            ? ` Productos: ${source.products.join(', ')}.`
+            : '';
+          document.getElementById('terrainSourceDescription').textContent =
+            `${source.name}.${nativeResolution}${method}${products}`;
+          const sourceLink = document.getElementById('terrainSourceLink');
+          sourceLink.href = source.url;
+          sourceLink.textContent = `Abrir ${source.name}`;
+        }
+        setBaseMapMode(document.getElementById('basemap').value);
 
         const dlat = (data.bounds.max_lat - data.bounds.min_lat) / (data.resolution[0] - 1);
         const dlon = (data.bounds.max_lon - data.bounds.min_lon) / (data.resolution[1] - 1);
@@ -579,10 +648,13 @@
             distance: data.safe_route.total_distance_meters,
             waypoints: data.safe_route.num_waypoints,
             average: data.safe_route.mean_path_slope_deg,
-            maximum: data.safe_route.max_path_slope_deg
+            maximum: data.safe_route.max_path_slope_deg,
+            duration: data.safe_route.estimated_duration_min
           };
           renderRouteMetrics(defaultRouteMetrics);
         }
+        document.getElementById('gridResolutionNote').textContent =
+          `Celda de ruta ≈${data.cell_size_m.dx} m Este-Oeste × ${data.cell_size_m.dy} m Norte-Sur (${data.resolution[0]}×${data.resolution[1]}). La pendiente Horn 3×3 no detecta todos los obstáculos pequeños; esta cuadrícula regional no es una certificación de seguridad.`;
 
         // Hitos históricos de rovers
         if (data.historical_waypoints) {
@@ -618,7 +690,7 @@
       document.getElementById('waypoints').textContent = metrics.waypoints;
       document.getElementById('average').textContent = metrics.average + '°';
       document.getElementById('maximum').textContent = metrics.maximum + '°';
-      const minutes = (metrics.distance / 48).toFixed(0);
+      const minutes = (metrics.duration ?? metrics.distance / 48).toFixed(0);
       document.getElementById('time').textContent = minutes + ' min';
       document.getElementById('oxygen').textContent = (minutes * 0.95).toFixed(1) + ' L';
     }
@@ -635,6 +707,9 @@
       const point = { latitude: latlng.lat, longitude: latlng.lng };
       if (!selectedRouteStart) {
         selectedRouteStart = point;
+        customRouteWaypoints = [];
+        document.getElementById('startNavigation').disabled = true;
+        document.getElementById('startNavigation').style.opacity = '.45';
         layers.customRoute.clearLayers();
         layers.customRoute.addLayer(L.circleMarker([point.latitude, point.longitude], {
           radius: 8, color: '#fff', weight: 2, fillColor: '#22c55e', fillOpacity: 1
@@ -654,7 +729,8 @@
     async function calculateCustomRoute(start, target) {
       const status = document.getElementById('routeStatus');
       const requestId = ++customRouteRequestId;
-      status.textContent = 'Calculando una ruta segura sobre la cuadrícula topográfica...';
+      setNavigationActive(false);
+      status.textContent = 'Calculando la ruta segura más rápida sobre la cuadrícula topográfica...';
       try {
         const response = await fetch(`${API_BASE}/pathfinding/simulate`, {
           method: 'POST',
@@ -672,6 +748,9 @@
         if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
 
         const points = result.waypoints.map(waypoint => [waypoint.latitude, waypoint.longitude]);
+        customRouteWaypoints = result.waypoints;
+        document.getElementById('startNavigation').disabled = false;
+        document.getElementById('startNavigation').style.opacity = '1';
         layers.customRoute.addLayer(L.polyline(points, {
           color: '#ffb703',
           weight: 7,
@@ -686,10 +765,11 @@
           distance: result.total_distance_m,
           waypoints: result.waypoints.length,
           average: result.average_slope_deg,
-          maximum: result.max_slope_deg
+          maximum: result.max_slope_deg,
+          duration: result.estimated_duration_min
         });
         const snapped = result.snapped_start || result.snapped_target;
-        status.textContent = `Ruta segura calculada${snapped ? ' (extremos ajustados a celdas transitables)' : ''}. Distancia: ${(result.total_distance_m / 1000).toFixed(2)} km.`;
+        status.textContent = `Ruta más rápida calculada${snapped ? ' (extremos ajustados a celdas transitables)' : ''}. Distancia: ${(result.total_distance_m / 1000).toFixed(2)} km.`;
       } catch (error) {
         if (requestId !== customRouteRequestId) return;
         status.textContent = `No se pudo calcular la ruta: ${error.message}`;
@@ -702,16 +782,38 @@
 
     document.getElementById('planRoute').onclick = () => {
       selectedRouteStart = null;
+      customRouteWaypoints = [];
+      document.getElementById('startNavigation').disabled = true;
+      document.getElementById('startNavigation').style.opacity = '.45';
+      setNavigationActive(false);
       isPickingRoute = true;
       layers.customRoute.clearLayers();
       if (currentTerrainBounds) map.fitBounds(currentTerrainBounds, { padding: [40, 40] });
       map.getContainer().style.cursor = 'crosshair';
       document.getElementById('routeStatus').textContent = 'Haz clic en el origen del recorrido.';
     };
+    document.getElementById('startNavigation').onclick = () => {
+      if (customRouteWaypoints.length < 2) return;
+      const points = customRouteWaypoints.map(point => [point.latitude, point.longitude]);
+      map.fitBounds(points, { padding: [70, 70] });
+      const next = customRouteWaypoints[1];
+      setNavigationActive(true);
+      document.getElementById('routeStatus').textContent =
+        `Navegación iniciada · siguiente waypoint ${next.index}, ${Math.round(next.cumulative_distance_m)} m desde el origen. Guiado por waypoints; sin telemetría de posición en tiempo real.`;
+    };
+    document.getElementById('finishNavigation').onclick = () => {
+      if (!isNavigating) return;
+      setNavigationActive(false);
+      document.getElementById('routeStatus').textContent = 'Navegación finalizada. La ruta permanece visible en el mapa.';
+    };
     document.getElementById('clearCustomRoute').onclick = () => {
       customRouteRequestId += 1;
       isPickingRoute = false;
       selectedRouteStart = null;
+      customRouteWaypoints = [];
+      document.getElementById('startNavigation').disabled = true;
+      document.getElementById('startNavigation').style.opacity = '.45';
+      setNavigationActive(false);
       map.getContainer().style.cursor = '';
       layers.customRoute.clearLayers();
       document.getElementById('routeStatus').textContent = 'Ruta personalizada borrada.';
@@ -728,9 +830,17 @@
     };
 
     // Listeners interactivos
-    document.getElementById('zone').onchange = () => {
+    document.getElementById('zone').onchange = event => {
+      currentTerrainBounds = null;
+      map.setMaxBounds(regionContextBounds[event.target.value]);
       setBaseMapMode(document.getElementById('basemap').value);
       load();
+    };
+    document.getElementById('toggleSidebars').onclick = event => {
+      const hidden = document.body.classList.toggle('side-panels-hidden');
+      event.currentTarget.textContent = hidden ? '▤ MOSTRAR PANELES' : '▤ OCULTAR PANELES';
+      event.currentTarget.setAttribute('aria-expanded', String(!hidden));
+      requestAnimationFrame(() => map.invalidateSize({ pan: false }));
     };
     document.getElementById('resolution').onchange = load;
     document.getElementById('slope').oninput = e => document.getElementById('slopeValue').textContent = Number(e.target.value).toFixed(1) + '°';

@@ -2,7 +2,7 @@ import React, { useRef, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Stars, Html } from '@react-three/drei';
 import * as THREE from 'three';
-import { ExplorationSite, LayerMode } from '../types/mars';
+import { ExplorationSite, LayerMode, RoverId } from '../types/mars';
 import { createProceduralMarsTextures } from './MarsTextures';
 import marsSurfaceTextureUrl from '../../images/8k_mars.jpg';
 import mercuryTextureUrl from '../../images/2k_mercury.jpg';
@@ -20,8 +20,8 @@ interface MarsGlobeProps {
   sites: ExplorationSite[];
   selectedSite: ExplorationSite | null;
   onSelectSite: (site: ExplorationSite) => void;
-  onOpenCuriosityMap: () => void;
-  focusCuriosity: boolean;
+  onOpenRoverMap: (rover: RoverId) => void;
+  focusRover: RoverId | null;
   layerMode: LayerMode;
 }
 
@@ -30,9 +30,24 @@ const SUN_POSITION: [number, number, number] = [0, 0, 0];
 const ORBIT_SCALE = 25;
 const MARS_ORBIT_RADIUS = 1.52 * ORBIT_SCALE;
 const MARS_POSITION: [number, number, number] = [MARS_ORBIT_RADIUS, 0, 0];
-const CURIOSITY_LOCATION = {
-  latitude: -4.78530567,
-  longitude: 137.41715099,
+const ROVER_LOCATIONS: Record<RoverId, {
+  latitude: number;
+  longitude: number;
+  color: string;
+  label: string;
+}> = {
+  curiosity: {
+    latitude: -4.78530567,
+    longitude: 137.41715099,
+    color: '#62f6a5',
+    label: 'CURIOSITY // MAPA TÁCTICO',
+  },
+  perseverance: {
+    latitude: 18.43559434,
+    longitude: 77.23322287,
+    color: '#ffb703',
+    label: 'PERSEVERANCE // MAPA TÁCTICO',
+  },
 };
 
 function scaledOrbit(astronomicalUnits: number): number {
@@ -114,13 +129,14 @@ const SiteMarker: React.FC<{
   );
 };
 
-const CuriosityMarker: React.FC<{ onOpen: () => void }> = ({ onOpen }) => {
+const RoverMarker: React.FC<{ rover: RoverId; onOpen: () => void }> = ({ rover, onOpen }) => {
   const markerRef = useRef<THREE.Group>(null);
   const visualRef = useRef<THREE.Group>(null);
   const { camera } = useThree();
+  const { latitude, longitude, color, label } = ROVER_LOCATIONS[rover];
   const position = useMemo(
-    () => latLonToVector3(CURIOSITY_LOCATION.latitude, CURIOSITY_LOCATION.longitude, GLOBE_RADIUS * 1.018),
-    [],
+    () => latLonToVector3(latitude, longitude, GLOBE_RADIUS * 1.018),
+    [latitude, longitude],
   );
 
   useFrame(() => {
@@ -137,17 +153,21 @@ const CuriosityMarker: React.FC<{ onOpen: () => void }> = ({ onOpen }) => {
       <group ref={visualRef}>
         <mesh onClick={(event) => { event.stopPropagation(); onOpen(); }}>
           <sphereGeometry args={[0.035, 20, 20]} />
-          <meshStandardMaterial color="#62f6a5" emissive="#62f6a5" emissiveIntensity={2.2} />
+          <meshStandardMaterial color={color} emissive={color} emissiveIntensity={2.2} />
         </mesh>
         <mesh onClick={(event) => { event.stopPropagation(); onOpen(); }} rotation={[Math.PI / 2, 0, 0]}>
           <ringGeometry args={[0.052, 0.075, 32]} />
-          <meshBasicMaterial color="#62f6a5" transparent opacity={0.95} side={THREE.DoubleSide} />
+          <meshBasicMaterial color={color} transparent opacity={0.95} side={THREE.DoubleSide} />
         </mesh>
       </group>
       <Html position={[0, 0.16, 0]} center className="pointer-events-auto">
-        <button onClick={onOpen} className="curiosity-label flex items-center gap-1.5 whitespace-nowrap border border-hud-green bg-black/85 px-2 py-1 font-mono text-[10px] text-hud-green shadow-[0_0_14px_rgba(98,246,165,0.5)] transition-transform hover:scale-105">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-hud-green" />
-          CURIOSITY // OPEN LOCAL MAP
+        <button
+          onClick={onOpen}
+          style={{ color, borderColor: color, boxShadow: `0 0 14px ${color}80` }}
+          className="flex items-center gap-1.5 whitespace-nowrap border bg-black/85 px-2 py-1 font-mono text-[10px] transition-transform hover:scale-105"
+        >
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full" style={{ backgroundColor: color }} />
+          {label}
         </button>
       </Html>
     </group>
@@ -254,8 +274,8 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
   sites,
   selectedSite,
   onSelectSite,
-  onOpenCuriosityMap,
-  focusCuriosity,
+  onOpenRoverMap,
+  focusRover,
   layerMode,
 }) => {
   const meshRef = useRef<THREE.Mesh>(null);
@@ -300,7 +320,7 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
   }, [camera]);
 
   React.useEffect(() => {
-    if (focusCuriosity || !controlsRef.current) return;
+    if (focusRover || !controlsRef.current) return;
 
     const marsCenter = new THREE.Vector3(...MARS_POSITION);
     camera.position.set(marsCenter.x, marsCenter.y + 0.4, marsCenter.z + 6.4);
@@ -309,11 +329,11 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
     controlsRef.current.minDistance = 3.2;
     controlsRef.current.target.copy(marsCenter);
     controlsRef.current.update();
-  }, [focusCuriosity, camera]);
+  }, [focusRover, camera]);
 
   // Slow ambient rotation of Mars
   useFrame((_, delta) => {
-    if (globeRef.current && !focusCuriosity) {
+    if (globeRef.current && !focusRover) {
       globeRef.current.rotation.y += delta * 0.02;
     }
   });
@@ -356,7 +376,7 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
   }, [selectedSite, camera]);
 
   React.useEffect(() => {
-    if (!focusCuriosity || !controlsRef.current) return;
+    if (!focusRover || !controlsRef.current) return;
 
     const controls = controlsRef.current;
     const transitionMinDistance = 0.01;
@@ -364,9 +384,10 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
     controls.minDistance = transitionMinDistance;
 
     const roverPosition = new THREE.Vector3(...MARS_POSITION);
+    const roverLocation = ROVER_LOCATIONS[focusRover];
     const roverLocalSurface = latLonToVector3(
-      CURIOSITY_LOCATION.latitude,
-      CURIOSITY_LOCATION.longitude,
+      roverLocation.latitude,
+      roverLocation.longitude,
       GLOBE_RADIUS,
     );
     // The marker is a child of the rotating Mars group, so its world position
@@ -413,7 +434,7 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
     };
 
     requestAnimationFrame(animateLocalFocus);
-  }, [focusCuriosity, camera]);
+  }, [focusRover, camera]);
 
   return (
     <>
@@ -455,7 +476,8 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
             onSelect={() => onSelectSite(site)}
           />
         ))}
-        <CuriosityMarker onOpen={onOpenCuriosityMap} />
+        <RoverMarker rover="curiosity" onOpen={() => onOpenRoverMap('curiosity')} />
+        <RoverMarker rover="perseverance" onOpen={() => onOpenRoverMap('perseverance')} />
       </group>
 
       {/* Interactive Orbit Controls with smooth damping */}
