@@ -5,6 +5,16 @@ import * as THREE from 'three';
 import { ExplorationSite, LayerMode } from '../types/mars';
 import { createProceduralMarsTextures } from './MarsTextures';
 import marsSurfaceTextureUrl from '../../images/8k_mars.jpg';
+import mercuryTextureUrl from '../../images/2k_mercury.jpg';
+import venusTextureUrl from '../../images/2k_venus_surface.jpg';
+import earthTextureUrl from '../../images/2k_earth_daymap.jpg';
+import moonTextureUrl from '../../images/2k_moon.jpg';
+import jupiterTextureUrl from '../../images/2k_jupiter.jpg';
+import saturnTextureUrl from '../../images/2k_saturn.jpg';
+import saturnRingTextureUrl from '../../images/2k_saturn_ring_alpha.png';
+import uranusTextureUrl from '../../images/2k_uranus.jpg';
+import neptuneTextureUrl from '../../images/2k_neptune.jpg';
+import sunTextureUrl from '../../images/2k_sun.jpg';
 
 interface MarsGlobeProps {
   sites: ExplorationSite[];
@@ -13,7 +23,23 @@ interface MarsGlobeProps {
   layerMode: LayerMode;
 }
 
-const GLOBE_RADIUS = 2.5;
+const GLOBE_RADIUS = 0.9;
+const SUN_POSITION: [number, number, number] = [0, 0, 0];
+const ORBIT_SCALE = 25;
+const MARS_ORBIT_RADIUS = 1.52 * ORBIT_SCALE;
+const MARS_POSITION: [number, number, number] = [MARS_ORBIT_RADIUS, 0, 0];
+
+function scaledOrbit(astronomicalUnits: number): number {
+  return astronomicalUnits * ORBIT_SCALE;
+}
+
+function orbitPosition(radius: number, angle: number): [number, number, number] {
+  return [
+    SUN_POSITION[0] + Math.cos(angle) * radius,
+    SUN_POSITION[1],
+    SUN_POSITION[2] + Math.sin(angle) * radius,
+  ];
+}
 
 function latLonToVector3(lat: number, lon: number, radius = GLOBE_RADIUS): THREE.Vector3 {
   const phi = (90 - lat) * (Math.PI / 180);
@@ -83,79 +109,100 @@ const SiteMarker: React.FC<{
 };
 
 // Subtle atmospheric glow shell
-const AtmosphereGlow: React.FC<{ layerMode: LayerMode }> = ({ layerMode }) => {
-  const atmosphereColor = useMemo(() => {
-    if (layerMode === 'thermal') return '#9d4edd';
-    if (layerMode === 'elevation') return '#0099cc';
-    return '#c86d3b';
-  }, [layerMode]);
+const SolarSystemBackdrop: React.FC = () => {
+  const textures = useMemo(() => {
+    const loader = new THREE.TextureLoader();
+    const loadColorTexture = (url: string) => {
+      const texture = loader.load(url);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.anisotropy = 4;
+      return texture;
+    };
+
+    return {
+      sun: loadColorTexture(sunTextureUrl),
+      mercury: loadColorTexture(mercuryTextureUrl),
+      venus: loadColorTexture(venusTextureUrl),
+      earth: loadColorTexture(earthTextureUrl),
+      moon: loadColorTexture(moonTextureUrl),
+      jupiter: loadColorTexture(jupiterTextureUrl),
+      saturn: loadColorTexture(saturnTextureUrl),
+      uranus: loadColorTexture(uranusTextureUrl),
+      neptune: loadColorTexture(neptuneTextureUrl),
+      saturnRing: loader.load(saturnRingTextureUrl),
+    };
+  }, []);
 
   return (
-    <mesh scale={[1.045, 1.045, 1.045]}>
-      <sphereGeometry args={[GLOBE_RADIUS, 64, 64]} />
-      <meshBasicMaterial
-        color={atmosphereColor}
-        transparent
-        opacity={0.12}
-        side={THREE.BackSide}
-      />
-    </mesh>
-  );
-};
-
-const SolarSystemBackdrop: React.FC = () => (
   <group renderOrder={-1}>
     {/* A distant sun provides a visible reference point and warm directional light. */}
-    <group position={[11, 7, -22]}>
+    <group position={SUN_POSITION}>
       <mesh>
         <sphereGeometry args={[2.1, 32, 32]} />
-        <meshBasicMaterial color="#ffd166" />
-      </mesh>
-      <mesh scale={[1.35, 1.35, 1.35]}>
-        <sphereGeometry args={[2.1, 32, 32]} />
-        <meshBasicMaterial color="#ff9f1c" transparent opacity={0.14} side={THREE.BackSide} />
+        <meshBasicMaterial map={textures.sun} />
       </mesh>
     </group>
 
-    {/* Thin orbital traces add depth without competing with the Mars globe. */}
-    <mesh rotation={[Math.PI / 2.15, 0.08, 0]} position={[0, -0.5, -4]}>
-      <torusGeometry args={[7.2, 0.008, 8, 128]} />
-      <meshBasicMaterial color="#718096" transparent opacity={0.18} />
-    </mesh>
-    <mesh rotation={[Math.PI / 2.15, -0.12, 0]} position={[0, 0.8, -5]}>
-      <torusGeometry args={[10.2, 0.006, 8, 128]} />
-      <meshBasicMaterial color="#4a5568" transparent opacity={0.14} />
-    </mesh>
+    {/* Every orbit is centered on the visible Sun, with one path per planet. */}
+    {[0.39, 0.72, 1, 1.52, 5.2, 9.58, 19.2, 30.1].map((astronomicalUnits) => {
+      const radius = scaledOrbit(astronomicalUnits);
+      return (
+      <mesh key={astronomicalUnits} rotation={[Math.PI / 2, 0, 0]} position={SUN_POSITION}>
+        <torusGeometry args={[radius, 0.012, 8, 160]} />
+        <meshBasicMaterial color="#c69b62" transparent opacity={0.2} depthWrite={false} />
+      </mesh>
+      );
+    })}
 
     {/* Stylized distant planets. Their scale is intentionally exaggerated for the HUD view. */}
-    <mesh position={[-8, 4.2, -15]}>
-      <sphereGeometry args={[0.38, 24, 24]} />
-      <meshStandardMaterial color="#b7b7b7" roughness={0.9} />
+    <mesh position={orbitPosition(scaledOrbit(0.39), 0.5)}>
+      <sphereGeometry args={[0.65, 24, 24]} />
+      <meshStandardMaterial map={textures.mercury} roughness={0.9} />
     </mesh>
-    <mesh position={[7.5, -3.2, -16]}>
-      <sphereGeometry args={[0.52, 24, 24]} />
-      <meshStandardMaterial color="#4b8fc9" roughness={0.75} metalness={0.05} />
+    <mesh position={orbitPosition(scaledOrbit(1), 1.7)}>
+      <sphereGeometry args={[1.45, 24, 24]} />
+      <meshStandardMaterial map={textures.earth} roughness={0.75} metalness={0.05} />
     </mesh>
-    <mesh position={[-10, -3.5, -19]}>
-      <sphereGeometry args={[0.44, 24, 24]} />
-      <meshStandardMaterial color="#d87845" roughness={0.92} />
+    <mesh position={orbitPosition(scaledOrbit(0.72), 1.1)}>
+      <sphereGeometry args={[1.35, 24, 24]} />
+      <meshStandardMaterial map={textures.venus} roughness={0.92} />
     </mesh>
-    <group position={[5, 5, -20]}>
+    <mesh position={[orbitPosition(scaledOrbit(1), 1.7)[0] + 0.14, 0.1, orbitPosition(scaledOrbit(1), 1.7)[2] - 0.1]}>
+      <sphereGeometry args={[0.35, 20, 20]} />
+      <meshStandardMaterial map={textures.moon} roughness={0.95} />
+    </mesh>
+    <group position={orbitPosition(scaledOrbit(9.58), 3)}>
       <mesh>
-        <sphereGeometry args={[0.8, 24, 24]} />
-        <meshStandardMaterial color="#d8a15d" roughness={0.8} />
+        <sphereGeometry args={[3.9, 24, 24]} />
+        <meshStandardMaterial map={textures.saturn} roughness={0.8} />
       </mesh>
-      <mesh rotation={[Math.PI / 2.5, 0.2, 0]}>
-        <torusGeometry args={[1.05, 0.12, 12, 64]} />
-        <meshBasicMaterial color="#d6b27a" transparent opacity={0.75} />
+      <mesh rotation={[Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[4.45, 6.35, 128]} />
+        <meshBasicMaterial
+          map={textures.saturnRing}
+          alphaMap={textures.saturnRing}
+          transparent
+          opacity={0.88}
+          depthWrite={false}
+          side={THREE.DoubleSide}
+        />
       </mesh>
     </group>
-    <mesh position={[14, -2, -25]}>
-      <sphereGeometry args={[0.32, 24, 24]} />
-      <meshStandardMaterial color="#80c9d5" roughness={0.7} />
+    <mesh position={orbitPosition(scaledOrbit(19.2), 3.7)}>
+      <sphereGeometry args={[1.9, 24, 24]} />
+      <meshStandardMaterial map={textures.uranus} roughness={0.7} />
+    </mesh>
+    <mesh position={orbitPosition(scaledOrbit(5.2), 2.4)}>
+      <sphereGeometry args={[5.0, 24, 24]} />
+      <meshStandardMaterial map={textures.jupiter} roughness={0.8} />
+    </mesh>
+    <mesh position={orbitPosition(scaledOrbit(30.1), 4.4)}>
+      <sphereGeometry args={[1.85, 24, 24]} />
+      <meshStandardMaterial map={textures.neptune} roughness={0.7} />
     </mesh>
   </group>
-);
+  );
+};
 
 export const MarsGlobe: React.FC<MarsGlobeProps> = ({
   sites,
@@ -211,8 +258,9 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
       );
 
       // Desired camera position pulled outward from target
-      const camTarget = targetPos.clone().multiplyScalar(1.9);
-      const globeCenter = new THREE.Vector3(0, 0, 0);
+      const marsWorldPosition = new THREE.Vector3(...MARS_POSITION);
+      const camTarget = targetPos.multiplyScalar(1.9).add(marsWorldPosition);
+      const globeCenter = marsWorldPosition.clone();
       
       const startCam = camera.position.clone();
       const startTime = performance.now();
@@ -242,16 +290,17 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
       {/* Space Environment: Deep space stars & cosmic lighting */}
       <color attach="background" args={['#030508']} />
       <Stars radius={200} depth={80} count={3500} factor={4} saturation={0.5} fade speed={1.2} />
+      <Stars radius={420} depth={220} count={2600} factor={1.1} saturation={0.25} fade speed={0.2} />
       <SolarSystemBackdrop />
 
       {/* Directional Sun Light illuminating the red planet */}
       <ambientLight intensity={0.35} />
       <directionalLight position={[10, 6, 8]} intensity={1.8} castShadow />
-      <pointLight position={[11, 7, -22]} intensity={2.2} distance={70} decay={1.5} color="#ffd166" />
+      <pointLight position={SUN_POSITION} intensity={2.2} distance={70} decay={1.5} color="#ffd166" />
       <pointLight position={[-10, -6, -8]} intensity={0.15} color="#45f3ff" />
 
       {/* 3D Mars Planet Sphere */}
-      <group ref={globeRef}>
+      <group ref={globeRef} position={MARS_POSITION}>
         <mesh ref={meshRef} receiveShadow castShadow>
           <sphereGeometry args={[GLOBE_RADIUS, 128, 128]} />
           <meshStandardMaterial
@@ -262,9 +311,6 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
             metalness={0.05}
           />
         </mesh>
-
-        {/* Mars Atmospheric Glow */}
-        <AtmosphereGlow layerMode={layerMode} />
 
         {/* 3D Site Exploration Pins */}
         {sites.map((site) => (
@@ -284,7 +330,7 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
         enableDamping
         dampingFactor={0.06}
         minDistance={3.2}
-        maxDistance={9.0}
+        maxDistance={1500}
         rotateSpeed={0.65}
         zoomSpeed={0.8}
         minPolarAngle={0.12}
