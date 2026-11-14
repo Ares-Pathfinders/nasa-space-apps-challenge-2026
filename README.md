@@ -141,7 +141,7 @@ We are a multidisciplinary team combining mathematics, computer science, and tel
 
 ### Prerequisites
 - Node.js (v18+)
-- Python 3.10+
+- Python 3.11+
 - Git
 
 ### Setup & Run
@@ -150,17 +150,22 @@ We are a multidisciplinary team combining mathematics, computer science, and tel
 git clone https://github.com/Guillermo-GJ/nasa-space-apps-challenge-2026.git
 cd nasa-space-apps-challenge-2026
 
-# Backend installation
+# Backend installation and API
 cd backend
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
 
-# Frontend installation
+# Frontend (run in a second terminal)
 cd ../frontend
 npm install
 npm run dev
 ```
+
+The API is available at `http://localhost:8000` and its interactive documentation at
+`http://localhost:8000/docs`. The Vite application is available at
+`http://localhost:5173`.
 
 ---
 

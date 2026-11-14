@@ -69,3 +69,65 @@
 .animate-pulse-glow {
   animation: pulseGlow 2.5s infinite ease-in-out;
 }
+
+.local-map-transition {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  overflow: hidden;
+  background: transparent;
+  animation: localMapReveal 4.5s cubic-bezier(0.22, 0.8, 0.24, 1) forwards;
+}
+
+.local-map-surface {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: #070b0a;
+}
+
+.local-map-surface img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(0.86) contrast(1.05);
+  transform: scale(1.14);
+  animation: localMapImageFocus 4.5s cubic-bezier(0.22, 0.8, 0.24, 1) both;
+}
+
+.local-map-chrome {
+  position: absolute;
+  left: 1.5rem;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  margin: 0 auto;
+  max-width: 48rem;
+  padding: 1.25rem;
+}
+
+.local-map-transition:not(.local-map-transition--ready) .local-map-chrome {
+  opacity: 0;
+}
+
+.local-map-transition--ready .local-map-chrome {
+  animation: localMapChromeIn 0.45s ease-out 0.1s both;
+}
+
+@keyframes localMapReveal {
+  0% { opacity: 0; transform: scale(3.2); border-radius: 50%; }
+  62% { opacity: 1; transform: scale(1.08); border-radius: 12%; }
+  100% { opacity: 1; transform: scale(1); border-radius: 0; }
+}
+
+@keyframes localMapChromeIn {
+  from { opacity: 0; transform: translateY(1rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes localMapImageFocus {
+  0% { opacity: 0; filter: blur(24px) saturate(0.45) contrast(0.8); transform: scale(1.55); }
+  38% { opacity: 0.12; filter: blur(16px) saturate(0.55) contrast(0.9); transform: scale(1.34); }
+  72% { opacity: 0.78; filter: blur(4px) saturate(0.76) contrast(1); transform: scale(1.16); }
+  100% { opacity: 1; filter: saturate(0.86) contrast(1.05); transform: scale(1.14); }
+}
