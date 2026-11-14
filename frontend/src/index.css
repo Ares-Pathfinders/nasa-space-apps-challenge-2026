@@ -92,12 +92,13 @@
   background: #070b0a;
 }
 
-.local-map-surface img {
+.local-map-surface img,
+.local-map-surface iframe {
   width: 100%;
   height: 100%;
   object-fit: cover;
   filter: saturate(0.86) contrast(1.05);
-  transform: scale(1.14);
+  transform: scale(1);
   animation: localMapImageFocus 4.5s cubic-bezier(0.22, 0.8, 0.24, 1) both;
 }
 
@@ -134,5 +135,5 @@
   0% { opacity: 0; filter: blur(24px) saturate(0.45) contrast(0.8); transform: scale(1.55); }
   38% { opacity: 0.12; filter: blur(16px) saturate(0.55) contrast(0.9); transform: scale(1.34); }
   72% { opacity: 0.78; filter: blur(4px) saturate(0.76) contrast(1); transform: scale(1.16); }
-  100% { opacity: 1; filter: saturate(0.86) contrast(1.05); transform: scale(1.14); }
+  100% { opacity: 1; filter: saturate(0.86) contrast(1.05); transform: scale(1); }
 }
