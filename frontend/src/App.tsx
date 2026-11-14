@@ -57,10 +57,10 @@ function App() {
         </div>
       </header>
 
-      {localMapPhase !== 'global' && (
-        <div className={`local-map-transition ${localMapPhase === 'ready' ? 'local-map-transition--ready' : ''}`}>
+      {localMapPhase === 'ready' && (
+        <div className="local-map-transition local-map-transition--ready">
           <div className="local-map-surface">
-            <iframe src="/tactical" className="w-full h-full border-0" allow="fullscreen" />
+            <iframe src="/tactical.html" className="w-full h-full border-0" allow="fullscreen" />
           </div>
           <div className="local-map-chrome" style={{ zIndex: 50 }}>
             <button
