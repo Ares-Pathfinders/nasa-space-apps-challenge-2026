@@ -2,7 +2,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.api.routes import health, sites, rover_photos, pathfinding
+from app.api.routes import health, sites, rover_photos, pathfinding, atmosphere
 
 logging.basicConfig(
     level=logging.INFO,
@@ -33,6 +33,7 @@ app.include_router(health.router, prefix=settings.API_PREFIX)
 app.include_router(sites.router, prefix=settings.API_PREFIX)
 app.include_router(rover_photos.router, prefix=settings.API_PREFIX)
 app.include_router(pathfinding.router, prefix=settings.API_PREFIX)
+app.include_router(atmosphere.router, prefix=settings.API_PREFIX)
 
 @app.get("/")
 async def root():
