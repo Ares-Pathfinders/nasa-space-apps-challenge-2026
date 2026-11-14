@@ -20,6 +20,8 @@ interface MarsGlobeProps {
   sites: ExplorationSite[];
   selectedSite: ExplorationSite | null;
   onSelectSite: (site: ExplorationSite) => void;
+  onOpenCuriosityMap: () => void;
+  focusCuriosity: boolean;
   layerMode: LayerMode;
 }
 
@@ -28,6 +30,10 @@ const SUN_POSITION: [number, number, number] = [0, 0, 0];
 const ORBIT_SCALE = 25;
 const MARS_ORBIT_RADIUS = 1.52 * ORBIT_SCALE;
 const MARS_POSITION: [number, number, number] = [MARS_ORBIT_RADIUS, 0, 0];
+const CURIOSITY_LOCATION = {
+  latitude: -4.78530567,
+  longitude: 137.41715099,
+};
 
 function scaledOrbit(astronomicalUnits: number): number {
   return astronomicalUnits * ORBIT_SCALE;
@@ -102,6 +108,32 @@ const SiteMarker: React.FC<{
         >
           <span className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-hud-cyan animate-ping' : 'bg-amber-400'}`} />
           {site.name.split(' - ')[0]}
+        </button>
+      </Html>
+    </group>
+  );
+};
+
+const CuriosityMarker: React.FC<{ onOpen: () => void }> = ({ onOpen }) => {
+  const position = useMemo(
+    () => latLonToVector3(CURIOSITY_LOCATION.latitude, CURIOSITY_LOCATION.longitude, GLOBE_RADIUS * 1.018),
+    [],
+  );
+
+  return (
+    <group position={position}>
+      <mesh onClick={(event) => { event.stopPropagation(); onOpen(); }}>
+        <sphereGeometry args={[0.035, 20, 20]} />
+        <meshStandardMaterial color="#62f6a5" emissive="#62f6a5" emissiveIntensity={2.2} />
+      </mesh>
+      <mesh onClick={(event) => { event.stopPropagation(); onOpen(); }} rotation={[Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.052, 0.075, 32]} />
+        <meshBasicMaterial color="#62f6a5" transparent opacity={0.95} side={THREE.DoubleSide} />
+      </mesh>
+      <Html distanceFactor={6} position={[0, 0.16, 0]} center className="pointer-events-auto">
+        <button onClick={onOpen} className="flex items-center gap-1.5 whitespace-nowrap border border-hud-green bg-black/85 px-2 py-1 font-mono text-[10px] text-hud-green shadow-[0_0_14px_rgba(98,246,165,0.5)] transition-transform hover:scale-105">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-hud-green" />
+          CURIOSITY // OPEN LOCAL MAP
         </button>
       </Html>
     </group>
@@ -208,6 +240,8 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
   sites,
   selectedSite,
   onSelectSite,
+  onOpenCuriosityMap,
+  focusCuriosity,
   layerMode,
 }) => {
   const meshRef = useRef<THREE.Mesh>(null);
@@ -241,9 +275,19 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
     }
   }, [layerMode, marsSurfaceTexture, optTexture, topoTexture, thermTexture]);
 
+  React.useEffect(() => {
+    const marsCenter = new THREE.Vector3(...MARS_POSITION);
+    camera.position.set(marsCenter.x, marsCenter.y + 0.4, marsCenter.z + 6.4);
+    camera.lookAt(marsCenter);
+    if (controlsRef.current) {
+      controlsRef.current.target.copy(marsCenter);
+      controlsRef.current.update();
+    }
+  }, [camera]);
+
   // Slow ambient rotation of Mars
   useFrame((_, delta) => {
-    if (globeRef.current) {
+    if (globeRef.current && !focusCuriosity) {
       globeRef.current.rotation.y += delta * 0.02;
     }
   });
@@ -285,6 +329,35 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
     }
   }, [selectedSite, camera]);
 
+  React.useEffect(() => {
+    if (!focusCuriosity || !controlsRef.current) return;
+
+    const roverPosition = new THREE.Vector3(...MARS_POSITION);
+    const roverSurface = latLonToVector3(
+      CURIOSITY_LOCATION.latitude,
+      CURIOSITY_LOCATION.longitude,
+      GLOBE_RADIUS,
+    ).add(roverPosition);
+    const startCam = camera.position.clone();
+    const zoomDirection = startCam.clone().sub(roverSurface).normalize();
+    const endCam = roverSurface.clone().add(zoomDirection.multiplyScalar(1.8));
+    const startTarget = controlsRef.current.target.clone();
+    const endTarget = roverSurface.clone();
+    const startTime = performance.now();
+    const duration = 4500;
+
+    const animateLocalFocus = (now: number) => {
+      const progress = Math.min((now - startTime) / duration, 1);
+      const ease = 0.5 - Math.cos(progress * Math.PI) / 2;
+      camera.position.lerpVectors(startCam, endCam, ease);
+      controlsRef.current.target.lerpVectors(startTarget, endTarget, ease);
+      controlsRef.current.update();
+      if (progress < 1) requestAnimationFrame(animateLocalFocus);
+    };
+
+    requestAnimationFrame(animateLocalFocus);
+  }, [focusCuriosity, camera]);
+
   return (
     <>
       {/* Space Environment: Deep space stars & cosmic lighting */}
@@ -294,10 +367,14 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
       <SolarSystemBackdrop />
 
       {/* Directional Sun Light illuminating the red planet */}
-      <ambientLight intensity={0.35} />
-      <directionalLight position={[10, 6, 8]} intensity={1.8} castShadow />
-      <pointLight position={SUN_POSITION} intensity={2.2} distance={70} decay={1.5} color="#ffd166" />
-      <pointLight position={[-10, -6, -8]} intensity={0.15} color="#45f3ff" />
+      <ambientLight intensity={0.16} />
+      <directionalLight
+        position={SUN_POSITION}
+        rotation={[0, Math.PI / 2, 0]}
+        intensity={3.2}
+        castShadow
+      />
+      <pointLight position={SUN_POSITION} intensity={900} distance={0} decay={2} color="#fff1cf" />
 
       {/* 3D Mars Planet Sphere */}
       <group ref={globeRef} position={MARS_POSITION}>
@@ -321,6 +398,7 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
             onSelect={() => onSelectSite(site)}
           />
         ))}
+        <CuriosityMarker onOpen={onOpenCuriosityMap} />
       </group>
 
       {/* Interactive Orbit Controls with smooth damping */}

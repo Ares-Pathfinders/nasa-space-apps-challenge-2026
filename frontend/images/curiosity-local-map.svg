@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" role="img" aria-labelledby="title desc">
+  <title id="title">Curiosity local expedition map</title>
+  <desc id="desc">Illustrated test map of Curiosity's traverse on the lower slopes of Mount Sharp in Gale Crater.</desc>
+  <defs>
+    <linearGradient id="ground" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5b2b1f"/><stop offset="0.45" stop-color="#9b4d2e"/><stop offset="1" stop-color="#d17a42"/>
+    </linearGradient>
+    <pattern id="grid" width="80" height="80" patternUnits="userSpaceOnUse"><path d="M80 0H0V80" fill="none" stroke="#9ef6bd" stroke-opacity=".12"/></pattern>
+    <filter id="glow"><feGaussianBlur stdDeviation="8" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#ground)"/>
+  <path d="M-50 180C220 50 350 280 590 160S980 40 1220 190s330 30 460-60V0H0Z" fill="#d88a51" opacity=".55"/>
+  <path d="M-80 700c210-220 380-170 580-40s300 130 490-10 390-190 690 20v330H-80Z" fill="#47251f" opacity=".42"/>
+  <g fill="none" stroke="#f3bb76" stroke-opacity=".38" stroke-width="6">
+    <path d="M-30 260C240 110 390 370 620 240s390-140 590 20 300 80 450-40"/>
+    <path d="M-30 310C240 160 390 420 620 290s390-140 590 20 300 80 450-40"/>
+    <path d="M-30 360C240 210 390 470 620 340s390-140 590 20 300 80 450-40"/>
+    <path d="M-30 580c220-130 360 70 590-40s370-160 570-20 290 150 500 10"/>
+    <path d="M-30 640c220-130 360 70 590-40s370-160 570-20 290 150 500 10"/>
+    <path d="M-30 700c220-130 360 70 590-40s370-160 570-20 290 150 500 10"/>
+  </g>
+  <g fill="#3d2824" opacity=".42">
+    <ellipse cx="250" cy="470" rx="115" ry="45"/><ellipse cx="920" cy="360" rx="180" ry="60"/><ellipse cx="1320" cy="690" rx="150" ry="55"/><ellipse cx="500" cy="820" rx="170" ry="65"/>
+  </g>
+  <rect width="1600" height="1000" fill="url(#grid)"/>
+  <g fill="none" stroke="#63f3a5" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)">
+    <path d="M310 760C370 690 420 720 465 650s80-15 115-95 110-35 145-120 115-32 160-115 70-35 112-110"/>
+  </g>
+  <g fill="#62f6a5"><circle cx="310" cy="760" r="11"/><circle cx="790" cy="435" r="11"/><circle cx="1057" cy="210" r="16"/></g>
+  <circle cx="1057" cy="210" r="35" fill="none" stroke="#62f6a5" stroke-width="3" opacity=".8"/>
+  <g font-family="monospace" fill="#d7ffe5"><text x="80" y="90" font-size="28" letter-spacing="5">GALE CRATER / MOUNT SHARP</text><text x="80" y="130" font-size="18" fill="#9ef6bd">CURIOSITY LOCAL EXPEDITION // TEST TERRAIN MODEL</text><text x="1080" y="165" font-size="22">CURIOSITY // SOL 5073</text><text x="1080" y="195" font-size="16" fill="#9ef6bd">137.41715099 E / 4.78530567 S</text></g>
+  <g transform="translate(80 850)" font-family="monospace" fill="#d7ffe5"><path d="M0 50h180" stroke="#d7ffe5" stroke-width="4"/><path d="M0 42v16M180 42v16" stroke="#d7ffe5" stroke-width="4"/><text x="0" y="85" font-size="18">500 m</text></g>
+  <g transform="translate(1450 115)" font-family="monospace" fill="#d7ffe5"><text x="-8" y="0" font-size="22">N</text><path d="M0 15v75" stroke="#d7ffe5" stroke-width="4"/><path d="m0 15-10 18h20Z" fill="#d7ffe5"/></g>
+</svg>
