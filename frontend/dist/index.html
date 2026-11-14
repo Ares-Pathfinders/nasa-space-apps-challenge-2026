@@ -11,22 +11,64 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Orbitron:wght@400;600;800;900&display=swap" rel="stylesheet">
     <script type="module" crossorigin src="/assets/index-2upCvTbU.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-7JvnEKxg.css">
+    <style>
+      .local-map-iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+        animation: localMapImageFocus 4.5s cubic-bezier(0.22, 0.8, 0.24, 1) both;
+      }
+    </style>
   </head>
   <body class="bg-[#050608] text-slate-100 overflow-hidden select-none">
     <div id="root"></div>
 
     <!-- Direct Switcher to 2D Tactical Cell Map -->
-    <a id="btnTactical2D" href="/tactical" style="position: fixed; bottom: 24px; right: 24px; z-index: 9999; background: rgba(9, 13, 20, 0.92); border: 1.5px solid #45f3ff; color: #45f3ff; font-family: 'Orbitron', sans-serif; font-size: 11px; letter-spacing: 0.16em; padding: 11px 20px; text-decoration: none; border-radius: 2px; box-shadow: 0 0 24px rgba(69, 243, 255, 0.45); display: flex; align-items: center; gap: 10px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#45f3ff'; this.style.color='#050608'; this.style.boxShadow='0 0 32px rgba(69, 243, 255, 0.8)';" onmouseout="this.style.background='rgba(9, 13, 20, 0.92)'; this.style.color='#45f3ff'; this.style.boxShadow='0 0 24px rgba(69, 243, 255, 0.45)';">
+    <button id="btnTactical2D" style="position: fixed; bottom: 24px; right: 24px; z-index: 25; background: rgba(9, 13, 20, 0.92); border: 1.5px solid #45f3ff; color: #45f3ff; font-family: 'Orbitron', sans-serif; font-size: 11px; letter-spacing: 0.16em; padding: 11px 20px; text-decoration: none; border-radius: 2px; box-shadow: 0 0 24px rgba(69, 243, 255, 0.45); display: flex; align-items: center; gap: 10px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#45f3ff'; this.style.color='#050608'; this.style.boxShadow='0 0 32px rgba(69, 243, 255, 0.8)';" onmouseout="this.style.background='rgba(9, 13, 20, 0.92)'; this.style.color='#45f3ff'; this.style.boxShadow='0 0 24px rgba(69, 243, 255, 0.45)';">
       <span style="font-size: 14px;">🗺️</span>
       <span>AMPLIAR A MAPA 2D POR CELDAS (USGS)</span>
-    </a>
+    </button>
+
+    <!-- Container for the cinematic transition to 2D local map -->
+    <div id="localMapContainer" style="display: none;"></div>
 
     <script>
-      // Allow clicking any Hyperlocal button in the React UI to jump to the 2D tactical map
+      function triggerCinematic2DTransition() {
+        const container = document.getElementById('localMapContainer');
+        if (!container) return;
+
+        container.style.display = 'block';
+        container.innerHTML = `
+          <div class="local-map-transition" id="transitionWrapper">
+            <div class="local-map-surface">
+              <iframe src="/tactical" class="local-map-iframe" allow="fullscreen"></iframe>
+            </div>
+            <div class="local-map-chrome" style="z-index: 50;">
+              <button id="btnReturnToOrbit" class="hud-panel" style="background: rgba(9, 13, 20, 0.95); border: 1.5px solid #45f3ff; color: #45f3ff; font-family: 'Orbitron', sans-serif; font-size: 11px; letter-spacing: 0.16em; padding: 10px 22px; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 0 20px rgba(69, 243, 255, 0.5); border-radius: 2px; margin: 0 auto;">
+                <span>🌐</span> <span>VOLVER A VISTA GLOBAL 3D</span>
+              </button>
+            </div>
+          </div>
+        `;
+
+        const wrapper = document.getElementById('transitionWrapper');
+        setTimeout(() => {
+          if (wrapper) wrapper.classList.add('local-map-transition--ready');
+        }, 4500);
+
+        document.getElementById('btnReturnToOrbit').addEventListener('click', () => {
+          container.style.display = 'none';
+          container.innerHTML = '';
+        });
+      }
+
+      // Listen for click on Curiosity marker button or direct button
       document.addEventListener('click', (e) => {
         const target = e.target.closest('button');
-        if (target && target.innerText && target.innerText.toLowerCase().includes('hyperlocal')) {
-          window.location.href = '/tactical';
+        if (!target) return;
+        const text = target.innerText ? target.innerText.toLowerCase() : '';
+        if (text.includes('open local map') || text.includes('mapa 2d') || text.includes('hyperlocal')) {
+          triggerCinematic2DTransition();
         }
       });
     </script>
