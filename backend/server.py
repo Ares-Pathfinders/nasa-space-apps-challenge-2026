@@ -1,0 +1,376 @@
+"""
+ARES-Nav Unified Server.
+Provides:
+1. REST API endpoints on /api/... (health, sites, rover-photos, pathfinding/simulate, terrain).
+2. Static file serving for the React + Three.js frontend (from frontend/dist).
+Zero third-party dependencies required; runs directly with standard library Python 3.13.
+"""
+
+import os
+import sys
+import json
+import mimetypes
+from urllib.parse import urlparse, parse_qs
+from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
+
+# Add repo root to sys.path
+REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, REPO_ROOT)
+
+from backend.data.gale_crater_topography import generate_gale_crater_elevation_grid, GALE_MIN_LAT, GALE_MAX_LAT, GALE_MIN_LON, GALE_MAX_LON
+from backend.data.jezero_crater_topography import generate_jezero_crater_elevation_grid, JEZERO_MIN_LAT, JEZERO_MAX_LAT, JEZERO_MIN_LON, JEZERO_MAX_LON
+from backend.terrain.slope import SlopeAnalyzer
+from backend.terrain.cell_graph import CellGraphBuilder
+
+FRONTEND_DIST_DIR = os.path.join(REPO_ROOT, "frontend", "dist")
+TERRAIN_CACHE_FILE = os.path.join(os.path.dirname(__file__), "terrain_analysis_output.json")
+
+# Preload or initialize Gale Crater terrain graph once on server startup
+print("[ARES-Nav Server] Initializing Gale Crater cell graph...")
+elevation_grid = generate_gale_crater_elevation_grid(resolution_rows=80, resolution_cols=80)
+slope_analyzer = SlopeAnalyzer(elevation_grid, max_slope_deg=15.0)
+cell_graph_builder = CellGraphBuilder(elevation_grid, slope_analyzer, slope_penalty_weight=3.5)
+print(f"[ARES-Nav Server] Cell graph ready with {cell_graph_builder.graph.number_of_nodes()} navigable nodes.")
+
+
+EXPLORATION_SITES = [
+    {
+        "id": "mount-sharp-boxwork",
+        "name": "Mount Sharp - Boxwork Formations",
+        "region": "Aeolis Mons, Gale Crater",
+        "coordinates": {"latitude": -4.589, "longitude": 137.441, "elevation_m": -4500.97},
+        "rover_mission": "Curiosity (MSL)",
+        "landing_year": 2012,
+        "summary": "Prominent central mound in Gale Crater with steep hematite ridges (Vera Rubin Ridge) and ancient freshwater lacustrine mudstone beds.",
+        "objectives": [
+            {"id": "1", "title": "Vera Rubin Ridge Escarpment Bypass", "category": "Navigation", "priority": "PRIMARY", "description": "Detect and safely circumvent slopes > 15° along hematite scarp."},
+            {"id": "2", "title": "Clay-to-Sulfate Transition Layer Profiling", "category": "Paleoclimate", "priority": "PRIMARY", "description": "Inspect contact beds."}
+        ],
+        "hazards": [
+            {"hazard_type": "Steep Escarpment Scarps", "severity": "HIGH", "description": "Terraced cliff edges with slopes > 16.8° at Vera Rubin Ridge and Greenheugh Pediment.", "mitigation": "Follow ARES-Nav cell graph safe corridor standoff."}
+        ],
+        "environment": {
+            "avg_temp_c": -48.0,
+            "min_temp_c": -88.0,
+            "max_temp_c": -12.0,
+            "radiation_mgy_day": 0.23,
+            "atmospheric_pressure_pa": 780.0,
+            "dust_opacity_tau": 0.65
+        },
+        "default_sol": 1000,
+        "recommended_cameras": ["MAST", "NAV_LEFT_B", "CHEMCAM"],
+        "available_layers": ["optical", "elevation", "thermal", "radiation"]
+    },
+    {
+        "id": "jezero-crater-delta",
+        "name": "Jezero Crater Delta",
+        "region": "Syrtis Major Quadrangle",
+        "coordinates": {"latitude": 18.38, "longitude": 77.58, "elevation_m": -2500.0},
+        "rover_mission": "Perseverance (Mars 2020)",
+        "landing_year": 2021,
+        "summary": "Ancient river-lake delta system rich in carbonates, clays, and mudstones with high biosignature preservation potential.",
+        "objectives": [
+            {"id": "3", "title": "Delta Front Siltstone Sampling", "category": "Astrobiology", "priority": "PRIMARY", "description": "Bottomset siltstone beds for microbial fossils."}
+        ],
+        "hazards": [
+            {"hazard_type": "Fine-Grained Sand Dune Traps", "severity": "HIGH", "description": "Transverse Aeolian Ridges (TARs) with loose silty sand.", "mitigation": "Bypass ripples wider than 2 meters."}
+        ],
+        "environment": {
+            "avg_temp_c": -54.0,
+            "min_temp_c": -92.0,
+            "max_temp_c": -15.0,
+            "radiation_mgy_day": 0.25,
+            "atmospheric_pressure_pa": 720.0,
+            "dust_opacity_tau": 0.55
+        },
+        "default_sol": 100,
+        "recommended_cameras": ["NAVCAM_LEFT", "MCZ_RIGHT", "SUPERCAM"],
+        "available_layers": ["optical", "elevation", "thermal", "radiation"]
+    }
+]
+
+
+class AresNavHandler(SimpleHTTPRequestHandler):
+    """Handles both REST API calls on /api/... and static UI assets."""
+
+    def end_headers(self):
+        # Enable CORS for local dev / client integration
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        super().end_headers()
+
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.end_headers()
+
+    def do_GET(self):
+        parsed = urlparse(self.path)
+        path = parsed.path
+
+        if path.startswith("/api/"):
+            self._handle_api_get(path, parse_qs(parsed.query))
+        else:
+            self._handle_static_get(path)
+
+    def do_POST(self):
+        parsed = urlparse(self.path)
+        if parsed.path == "/api/pathfinding/simulate":
+            self._handle_pathfinding_simulate()
+        else:
+            self.send_error(404, "Endpoint not found")
+
+    def _send_json(self, data, status=200):
+        body = json.dumps(data).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _handle_api_get(self, path: str, query: dict):
+        if path == "/api/health":
+            self._send_json({
+                "status": "operational",
+                "system": "ARES-Nav Mars Engine",
+                "version": "1.0.0",
+                "cell_graph_nodes": cell_graph_builder.graph.number_of_nodes(),
+            })
+        elif path == "/api/sites":
+            self._send_json(EXPLORATION_SITES)
+        elif path == "/api/rover-photos":
+            rover = query.get("rover", ["curiosity"])[0]
+            sol = int(query.get("sol", [1000])[0])
+            self._send_json({
+                "rover": rover,
+                "sol": sol,
+                "total_photos": 4,
+                "source": "curated_fallback",
+                "photos": [
+                    {
+                        "id": 1026858,
+                        "sol": sol,
+                        "camera": {"name": "MAST", "full_name": "Mast Camera"},
+                        "img_src": "https://mars.nasa.gov/msl-raw-images/msss/01000/mcam/1000MR0044631300503690E01_DXXX.jpg",
+                        "earth_date": "2015-05-31"
+                    },
+                    {
+                        "id": 1026859,
+                        "sol": sol,
+                        "camera": {"name": "CHEMCAM", "full_name": "Chemistry & Camera Complex"},
+                        "img_src": "https://mars.nasa.gov/msl-raw-images/msss/01000/mcam/1000ML0044631290405230E01_DXXX.jpg",
+                        "earth_date": "2015-05-31"
+                    }
+                ]
+            })
+        elif path == "/api/terrain":
+            zone = query.get("zone", ["gale"])[0].lower()
+            res = min(100, max(20, int(query.get("resolution", [60])[0])))
+            max_slope = float(query.get("max_slope", [15.0])[0])
+
+            if zone == "jezero":
+                grid = generate_jezero_crater_elevation_grid(resolution_rows=res, resolution_cols=res)
+                zone_title = "Jezero Crater Delta (Perseverance / Mars 2020)"
+                zone_center = [18.38, 77.55]
+                historical_wps = [
+                    {"name": "Octavia E. Butler Landing", "lat": 18.4447, "lon": 77.4508, "type": "LANDING"},
+                    {"name": "Kodiak Butte (Delta Remnant)", "lat": 18.412, "lon": 77.485, "type": "SCIENCE"},
+                    {"name": "Delta Front Escarpment Base", "lat": 18.428, "lon": 77.512, "type": "HAZARD"},
+                    {"name": "Neretva Vallis Canyon Inlet", "lat": 18.380, "lon": 77.470, "type": "VALLEY"}
+                ]
+                start_c = (int(res * 0.2), int(res * 0.2))
+                goal_c = (int(res * 0.75), int(res * 0.75))
+            else:
+                grid = generate_gale_crater_elevation_grid(resolution_rows=res, resolution_cols=res)
+                zone_title = "Gale Crater - Mount Sharp (Curiosity / MSL)"
+                zone_center = [-4.65, 137.43]
+                historical_wps = [
+                    {"name": "Bradbury Landing (Sol 0)", "lat": -4.5895, "lon": 137.4417, "type": "LANDING"},
+                    {"name": "Yellowknife Bay (Mudstone)", "lat": -4.591, "lon": 137.452, "type": "SCIENCE"},
+                    {"name": "Dingo Gap (Sand Ripple Pass)", "lat": -4.633, "lon": 137.408, "type": "HAZARD"},
+                    {"name": "Vera Rubin Ridge (Hematite Escarpment)", "lat": -4.685, "lon": 137.400, "type": "SCARP"},
+                    {"name": "Greenheugh Pediment (Sandstone Cap)", "lat": -4.715, "lon": 137.375, "type": "CLIFF"}
+                ]
+                start_c = (int(res * 0.2), int(res * 0.8))
+                goal_c = (int(res * 0.8), int(res * 0.3))
+
+            analyzer = SlopeAnalyzer(grid, max_slope_deg=max_slope)
+            builder = CellGraphBuilder(grid, analyzer, slope_penalty_weight=3.5)
+            stats = analyzer.get_statistics()
+            hazard_clusters = builder.get_impassable_hazard_zones(min_cluster_size=3)
+
+            if not analyzer.is_cell_passable(*start_c):
+                start_c = (max(0, start_c[0] - 1), start_c[1])
+            if not analyzer.is_cell_passable(*goal_c):
+                goal_c = (max(0, goal_c[0] - 1), goal_c[1])
+
+            route = builder.find_path_astar(start_c, goal_c)
+
+            # Compile compact cell list for 2D map rendering
+            cells_data = []
+            for r in range(grid.rows):
+                for c in range(grid.cols):
+                    lat, lon = grid.cell_to_geo(r, c)
+                    elev = grid.get_elevation(r, c)
+                    slope = analyzer.get_cell_slope(r, c)
+                    passable = analyzer.is_cell_passable(r, c)
+                    cells_data.append({
+                        "r": r,
+                        "c": c,
+                        "lat": round(lat, 5),
+                        "lon": round(lon, 5),
+                        "elev": round(elev, 1),
+                        "slope": round(slope, 1),
+                        "passable": passable
+                    })
+
+            self._send_json({
+                "zone": zone,
+                "zone_title": zone_title,
+                "zone_center": zone_center,
+                "bounds": {
+                    "min_lat": grid.min_lat,
+                    "max_lat": grid.max_lat,
+                    "min_lon": grid.min_lon,
+                    "max_lon": grid.max_lon
+                },
+                "resolution": [grid.rows, grid.cols],
+                "cell_size_m": {
+                    "dx": round(grid.cell_size_x, 1),
+                    "dy": round(grid.cell_size_y, 1)
+                },
+                "statistics": stats,
+                "hazard_zones": hazard_clusters,
+                "historical_waypoints": historical_wps,
+                "safe_route": route,
+                "cells": cells_data
+            })
+        else:
+            self.send_error(404, f"API endpoint not found: {path}")
+
+    def _handle_pathfinding_simulate(self):
+        try:
+            content_len = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_len)
+            req = json.loads(body.decode("utf-8")) if body else {}
+
+            start_coords = req.get("start", {"latitude": -4.596, "longitude": 137.488})
+            target_coords = req.get("target", {"latitude": -4.716, "longitude": 137.397})
+
+            start_cell = elevation_grid.geo_to_cell(start_coords["latitude"], start_coords["longitude"])
+            goal_cell = elevation_grid.geo_to_cell(target_coords["latitude"], target_coords["longitude"])
+
+            # Ensure start/goal cells are navigable
+            if not slope_analyzer.is_cell_passable(*start_cell):
+                start_cell = (max(0, start_cell[0] - 1), start_cell[1])
+            if not slope_analyzer.is_cell_passable(*goal_cell):
+                goal_cell = (max(0, goal_cell[0] - 1), goal_cell[1])
+
+            route = cell_graph_builder.find_path_astar(start_cell, goal_cell)
+            if not route:
+                self._send_json({"error": "No navigable route found avoiding impassable slopes"}, status=422)
+                return
+
+            # Format to PathfindingResponse specification in types/mars.ts
+            waypoints = []
+            cum_dist = 0.0
+            for idx, (lon, lat, elev) in enumerate(route["coordinates_lon_lat_elev"]):
+                if idx > 0:
+                    prev_c = route["cell_path"][idx - 1]
+                    curr_c = route["cell_path"][idx]
+                    cum_dist += elevation_grid.get_distance_meters(prev_c[0], prev_c[1], curr_c[0], curr_c[1])
+
+                cell = route["cell_path"][idx]
+                slope = slope_analyzer.get_cell_slope(cell[0], cell[1])
+                waypoints.append({
+                    "index": idx,
+                    "latitude": round(lat, 5),
+                    "longitude": round(lon, 5),
+                    "elevation_m": round(elev, 2),
+                    "slope_deg": round(slope, 2),
+                    "cumulative_distance_m": round(cum_dist, 1),
+                    "hazard_warning": "High slope scarp nearby" if slope > 12.0 else None,
+                    "radiation_rate_ugy_h": 9.8,
+                    "estimated_energy_kcal": round(cum_dist * 0.12, 1),
+                })
+
+            dist_m = route["total_distance_meters"]
+            est_time_min = round(dist_m / (0.8 * 60.0), 1)  # 0.8 m/s astronaut walk speed
+            o2_liters = round(est_time_min * 0.95, 1)        # ~0.95 L/min O2 consumption under EVA
+
+            response = {
+                "site_id": req.get("site_id", "mount-sharp-boxwork"),
+                "total_distance_m": round(dist_m, 1),
+                "estimated_duration_min": est_time_min,
+                "max_slope_deg": route["max_path_slope_deg"],
+                "average_slope_deg": route["mean_path_slope_deg"],
+                "total_elevation_gain_m": max(0.0, route["elevation_gain_m"]),
+                "total_elevation_loss_m": abs(min(0.0, route["elevation_gain_m"])),
+                "estimated_o2_consumed_liters": o2_liters,
+                "total_radiation_dose_usv": round((est_time_min / 60.0) * 10.5, 2),
+                "risk_level": "LOW" if route["max_path_slope_deg"] < 12.0 else "MODERATE",
+                "safety_margins": {
+                    "o2_reserve_remaining_percent": round(max(0.0, 100.0 - (o2_liters / 400.0) * 100.0), 1),
+                    "safe_return_time_buffer_min": round(est_time_min * 0.6, 1),
+                    "point_of_no_return_distance_m": round(dist_m * 0.5, 1),
+                },
+                "waypoints": waypoints,
+            }
+            self._send_json(response)
+        except Exception as e:
+            self._send_json({"error": str(e)}, status=500)
+
+    def _handle_static_get(self, path: str):
+        """Serves compiled frontend files from frontend/dist."""
+        clean_path = path.lstrip("/")
+        if not clean_path:
+            clean_path = "index.html"
+        elif clean_path in ("tactical", "tactical/"):
+            clean_path = "tactical.html"
+
+        file_path = os.path.join(FRONTEND_DIST_DIR, clean_path)
+
+        # Fallback to index.html for SPA routes
+        if not os.path.exists(file_path) or os.path.isdir(file_path):
+            file_path = os.path.join(FRONTEND_DIST_DIR, "index.html")
+
+        if not os.path.exists(file_path):
+            self.send_error(404, "File not found")
+            return
+
+        mime_type, _ = mimetypes.guess_type(file_path)
+        if not mime_type:
+            mime_type = "application/octet-stream"
+
+        try:
+            with open(file_path, "rb") as f:
+                content = f.read()
+            self.send_response(200)
+            self.send_header("Content-Type", mime_type)
+            self.send_header("Content-Length", str(len(content)))
+            self.end_headers()
+            self.wfile.write(content)
+        except Exception as e:
+            self.send_error(500, f"Error reading file: {e}")
+
+
+def run_server(port=8000):
+    server_address = ("", port)
+    httpd = ThreadingHTTPServer(server_address, AresNavHandler)
+    print("\n" + "=" * 56)
+    print("[ARES-Nav] Martian Tactical Server is RUNNING!")
+    print(f"[ARES-Nav] Local Web UI: http://localhost:{port}")
+    print(f"[ARES-Nav] API Health:   http://localhost:{port}/api/health")
+    print(f"[ARES-Nav] Sites API:    http://localhost:{port}/api/sites")
+    print(f"[ARES-Nav] Terrain API:  http://localhost:{port}/api/terrain")
+    print("=" * 56 + "\n")
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        print("\n[ARES-Nav Server] Stopped by user.")
+        httpd.server_close()
+
+
+if __name__ == "__main__":
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
+    run_server(port)

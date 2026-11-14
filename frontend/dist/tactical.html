@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ARES-Nav // 2D Tactical Cell Map (USGS Astrogeology)</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Orbitron:wght@400;600;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    :root {
+      --bg: #050608;
+      --panel-bg: rgba(9, 13, 20, 0.88);
+      --border: rgba(56, 189, 248, 0.25);
+      --cyan: #45f3ff;
+      --amber: #ffb703;
+      --red: #ff3366;
+      --green: #10b981;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: #e2e8f0;
+      font-family: 'JetBrains Mono', monospace;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    #map {
+      position: absolute;
+      inset: 0;
+      background: #030406;
+      z-index: 1;
+    }
+
+    /* HUD Panels */
+    .hud-panel {
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+      z-index: 10;
+    }
+
+    header.hud-header {
+      position: absolute;
+      top: 16px;
+      left: 20px;
+      right: 20px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 14px;
+      letter-spacing: 0.2em;
+      color: #f8fafc;
+    }
+    .brand-sub {
+      font-size: 9px;
+      color: #64748b;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    .btn-nav {
+      background: rgba(69, 243, 255, 0.12);
+      border: 1px solid var(--cyan);
+      color: var(--cyan);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      padding: 8px 16px;
+      cursor: pointer;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .btn-nav:hover {
+      background: var(--cyan);
+      color: #000;
+      box-shadow: 0 0 16px rgba(69, 243, 255, 0.6);
+    }
+
+    aside.control-sidebar {
+      position: absolute;
+      top: 92px;
+      left: 20px;
+      bottom: 24px;
+      width: 320px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+    }
+
+    aside.inspector-sidebar {
+      position: absolute;
+      top: 92px;
+      right: 20px;
+      width: 310px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      max-height: calc(100vh - 120px);
+      overflow-y: auto;
+    }
+
+    .section-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      color: var(--cyan);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #94a3b8;
+    }
+
+    select, input[type="range"] {
+      width: 100%;
+      background: #0b0f19;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #f1f5f9;
+      padding: 8px 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+    }
+    select:focus { outline: none; border-color: var(--cyan); }
+
+    .slider-val {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--amber);
+    }
+
+    .legend-box {
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(0, 0, 0, 0.35);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 10px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .legend-color {
+      width: 14px;
+      height: 14px;
+      border-radius: 2px;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .metric-card {
+      border-left: 2px solid var(--border);
+      padding-left: 8px;
+    }
+    .metric-label {
+      font-size: 8px;
+      color: #64748b;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+    .metric-val {
+      font-size: 14px;
+      font-weight: 700;
+      color: #f8fafc;
+      margin-top: 2px;
+    }
+
+    .cell-info-box {
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 12px;
+      font-size: 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 3px 6px;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      border-radius: 2px;
+    }
+    .status-passable { background: rgba(16, 185, 129, 0.2); color: var(--green); border: 1px solid var(--green); }
+    .status-impassable { background: rgba(255, 51, 102, 0.25); color: var(--red); border: 1px solid var(--red); }
+
+    .leaflet-popup-content-wrapper {
+      background: rgba(9, 13, 20, 0.95) !important;
+      color: #e2e8f0 !important;
+      border: 1px solid var(--cyan) !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      border-radius: 2px !important;
+    }
+    .leaflet-popup-tip { background: rgba(9, 13, 20, 0.95) !important; }
+
+    /* Scanlines */
+    .scanline {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+      background-size: 100% 4px;
+      z-index: 5;
+      opacity: 0.35;
+    }
+
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(5, 6, 8, 0.85);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      transition: opacity 0.3s;
+    }
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid rgba(69, 243, 255, 0.2);
+      border-top-color: var(--cyan);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <!-- Loading State -->
+  <div id="loading" class="loading-overlay">
+    <div class="spinner"></div>
+    <p style="font-family: 'Orbitron'; font-size: 12px; letter-spacing: 0.2em; color: var(--cyan);">
+      CALCULANDO GRAFO DE CELDAS TOPOGRÁFICAS...
+    </p>
+  </div>
+
+  <div class="scanline"></div>
+
+  <!-- Header -->
+  <header class="hud-header hud-panel">
+    <div class="brand">
+      <div style="width: 28px; height: 28px; border: 1px solid var(--cyan); display: flex; align-items: center; justify-content: center; color: var(--cyan); font-weight: bold;">
+        2D
+      </div>
+      <div>
+        <p class="brand-title">ARES-Nav <span style="color: var(--cyan);">//</span> VISOR TÁCTICO DE CELDAS</p>
+        <p class="brand-sub">USGS Astrogeology Planetary Topography Engine</p>
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <span id="telemetryStatus" style="font-size: 10px; color: var(--green); letter-spacing: 0.1em;">
+        ● ALGORITMO DE CELDAS EN LÍNEA
+      </span>
+      <a href="/" class="btn-nav">
+        🌐 VISTA GLOBO 3D
+      </a>
+    </div>
+  </header>
+
+  <!-- Map Canvas -->
+  <div id="map"></div>
+
+  <!-- Left Control Panel -->
+  <aside class="control-sidebar hud-panel">
+    <p class="section-title">SELECCIÓN DE EXPEDICIÓN</p>
+    
+    <div class="form-group">
+      <label>Zona Marciana</label>
+      <select id="zoneSelect">
+        <option value="gale" selected>Cráter Gale - Monte Sharp (Curiosity / MSL)</option>
+        <option value="jezero">Cráter Jezero - Delta Lakebed (Perseverance)</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <div style="display: flex; justify-content: space-between;">
+        <label>Pendiente Máx. Segura (EVA)</label>
+        <span id="slopeLabel" class="slider-val">15.0°</span>
+      </div>
+      <input type="range" id="slopeRange" min="8" max="25" step="0.5" value="15.0" />
+      <p style="font-size: 8px; color: #64748b;">
+        * Slopes &gt; 15° bloquean el paso para astronautas y activan celda roja.
+      </p>
+    </div>
+
+    <div class="form-group">
+      <label>Resolución de Cuadrícula</label>
+      <select id="resSelect">
+        <option value="40">40 x 40 celdas (~270m por celda)</option>
+        <option value="60" selected>60 x 60 celdas (~180m por celda)</option>
+        <option value="80">80 x 80 celdas (~135m por celda)</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Mapa Base (USGS / NASA GIS)</label>
+      <select id="basemapSelect">
+        <option value="mola" selected>NASA MOLA Color Relief (Topografía)</option>
+        <option value="viking">NASA Viking MDIM 2.1 (Color Natural)</option>
+        <option value="openplanetary">OpenPlanetary Mars Basemap</option>
+      </select>
+    </div>
+
+    <p class="section-title">CAPAS VISIBLES</p>
+    <div style="display: flex; flex-direction: column; gap: 8px; font-size: 10px;">
+      <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+        <input type="checkbox" id="chkCells" checked /> Cuadrícula de Celdas (Topografía)
+      </label>
+      <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+        <input type="checkbox" id="chkHazards" checked /> Celdas Intransitables (&gt; umbral)
+      </label>
+      <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+        <input type="checkbox" id="chkClusters" checked /> Polígonos de Riesgo / Escarpes
+      </label>
+      <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+        <input type="checkbox" id="chkRoute" checked /> Ruta Segura A* (Supervivencia)
+      </label>
+      <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+        <input type="checkbox" id="chkWps" checked /> Hitos de Expedición NASA
+      </label>
+    </div>
+
+    <p class="section-title">LEYENDA DE CELDAS</p>
+    <div class="legend-box">
+      <div class="legend-item">
+        <div class="legend-color" style="background: rgba(34, 197, 94, 0.4); border: 1px solid #22c55e;"></div>
+        <span>Llano / Transitable (&lt; 8°)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: rgba(234, 179, 8, 0.5); border: 1px solid #eab308;"></div>
+        <span>Moderado / Precaución (8° - 15°)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: rgba(255, 51, 102, 0.85); border: 1px solid #ff3366;"></div>
+        <span style="color: var(--red); font-weight: bold;">INTRANSITABLE (&gt; 15° Acantilado)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: var(--cyan); height: 3px;"></div>
+        <span>Ruta Segura A* Calculada</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Right Inspector & Metrics Panel -->
+  <aside class="inspector-sidebar hud-panel">
+    <p class="section-title">INSPECTOR DE CELDA SELECCIONADA</p>
+    <div id="cellInfo" class="cell-info-box">
+      <p style="color: #64748b; font-size: 10px;">Pasa el cursor o haz clic en cualquier celda de la cuadrícula para inspeccionarla.</p>
+    </div>
+
+    <p class="section-title">MÉTRICAS DE LA RUTA SEGURA A*</p>
+    <div class="metric-grid">
+      <div class="metric-card">
+        <p class="metric-label">Distancia Suelo</p>
+        <p id="mDist" class="metric-val">-- km</p>
+      </div>
+      <div class="metric-card">
+        <p class="metric-label">Waypoints Celdas</p>
+        <p id="mWp" class="metric-val">--</p>
+      </div>
+      <div class="metric-card">
+        <p class="metric-label">Pendiente Media</p>
+        <p id="mSlopeAvg" class="metric-val">--°</p>
+      </div>
+      <div class="metric-card">
+        <p class="metric-label">Pendiente Máx.</p>
+        <p id="mSlopeMax" class="metric-val" style="color: var(--green);">--°</p>
+      </div>
+      <div class="metric-card">
+        <p class="metric-label">Tiempo Est. EVA</p>
+        <p id="mTime" class="metric-val">-- min</p>
+      </div>
+      <div class="metric-card">
+        <p class="metric-label">Consumo O2</p>
+        <p id="mO2" class="metric-val">-- L</p>
+      </div>
+    </div>
+
+    <p class="section-title">ESTADÍSTICAS DEL MAPA</p>
+    <div style="font-size: 10px; display: flex; flex-direction: column; gap: 4px; color: #94a3b8;">
+      <div>Total celdas: <span id="sTotal" style="color: #fff;">--</span></div>
+      <div>Celdas seguras: <span id="sPassable" style="color: var(--green);">--</span></div>
+      <div>Celdas bloqueadas: <span id="sBlocked" style="color: var(--red); font-weight: bold;">--</span></div>
+      <div>Escarpes detectados: <span id="sClusters" style="color: var(--amber);">--</span></div>
+      <div>Resolución celda: <span id="sRes" style="color: #fff;">--</span></div>
+    </div>
+  </aside>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    // Tile layers from USGS & NASA Mars Trek
+    const TILE_SERVICES = {
+      mola: L.tileLayer('https://trek.nasa.gov/tiles/Mars/EQ/Mars_MGS_MOLA_ClrShade_merge_global_463m/1.0.0/default/default028mm/{z}/{y}/{x}.jpg', {
+        maxZoom: 12, minZoom: 2, attribution: 'NASA / USGS MOLA Shaded Relief'
+      }),
+      viking: L.tileLayer('https://trek.nasa.gov/tiles/Mars/EQ/Mars_Viking_MDIM21_ClrMosaic_global_232m/1.0.0/default/default028mm/{z}/{y}/{x}.jpg', {
+        maxZoom: 12, minZoom: 2, attribution: 'NASA / USGS Viking MDIM 2.1'
+      }),
+      openplanetary: L.tileLayer('https://cartocdn-gusc.global.ssl.fastly.net/opmbuilder/api/v1/map/named/opm-mars-basemap-v0-2/all/{z}/{x}/{y}.png', {
+        maxZoom: 10, minZoom: 1, attribution: 'OpenPlanetary Basemap'
+      })
+    };
+
+    let map;
+    let currentBasemap = TILE_SERVICES.mola;
+    let cellsLayerGroup = L.layerGroup();
+    let hazardsLayerGroup = L.layerGroup();
+    let routeLayerGroup = L.layerGroup();
+    let clustersLayerGroup = L.layerGroup();
+    let wpsLayerGroup = L.layerGroup();
+
+    let currentData = null;
+
+    // Initialize Map
+    function initMap() {
+      map = L.map('map', {
+        center: [-4.65, 137.43],
+        zoom: 11,
+        zoomControl: false
+      });
+
+      L.control.zoom({ position: 'bottomright' }).addTo(map);
+      currentBasemap.addTo(map);
+
+      cellsLayerGroup.addTo(map);
+      hazardsLayerGroup.addTo(map);
+      clustersLayerGroup.addTo(map);
+      routeLayerGroup.addTo(map);
+      wpsLayerGroup.addTo(map);
+    }
+
+    // Fetch and render terrain data from backend
+    async function loadTerrainData() {
+      const loading = document.getElementById('loading');
+      loading.style.display = 'flex';
+      loading.style.opacity = '1';
+
+      const zone = document.getElementById('zoneSelect').value;
+      const slope = document.getElementById('slopeRange').value;
+      const res = document.getElementById('resSelect').value;
+
+      try {
+        const url = `/api/terrain?zone=${zone}&resolution=${res}&max_slope=${slope}`;
+        const resObj = await fetch(url);
+        if (!resObj.ok) throw new Error("Error fetching terrain data");
+        currentData = await resObj.json();
+
+        renderTerrain(currentData);
+      } catch (err) {
+        console.error("Terrain load error:", err);
+        alert("Error cargando datos de celdas desde el backend: " + err.message);
+      } finally {
+        loading.style.opacity = '0';
+        setTimeout(() => loading.style.display = 'none', 300);
+      }
+    }
+
+    // Render cells and route on Leaflet
+    function renderTerrain(data) {
+      cellsLayerGroup.clearLayers();
+      hazardsLayerGroup.clearLayers();
+      clustersLayerGroup.clearLayers();
+      routeLayerGroup.clearLayers();
+      wpsLayerGroup.clearLayers();
+
+      // Pan/Zoom map to fit bounds
+      const bounds = [
+        [data.bounds.min_lat, data.bounds.min_lon],
+        [data.bounds.max_lat, data.bounds.max_lon]
+      ];
+      map.fitBounds(bounds, { padding: [50, 50] });
+
+      const dlat = (data.bounds.max_lat - data.bounds.min_lat) / (data.resolution[0] - 1);
+      const dlon = (data.bounds.max_lon - data.bounds.min_lon) / (data.resolution[1] - 1);
+
+      // Render cells
+      data.cells.forEach(cell => {
+        const sw = [cell.lat - dlat/2, cell.lon - dlon/2];
+        const ne = [cell.lat + dlat/2, cell.lon + dlon/2];
+        const rectBounds = [sw, ne];
+
+        let fillColor, borderColor, fillOpacity;
+        if (!cell.passable) {
+          // Impassable cell (> max_slope)
+          fillColor = '#ff2244';
+          borderColor = '#ff3366';
+          fillOpacity = 0.72;
+        } else if (cell.slope > 10.0) {
+          fillColor = '#eab308';
+          borderColor = '#ca8a04';
+          fillOpacity = 0.35;
+        } else {
+          fillColor = '#22c55e';
+          borderColor = 'rgba(34, 197, 94, 0.3)';
+          fillOpacity = 0.12;
+        }
+
+        const rect = L.rectangle(rectBounds, {
+          color: borderColor,
+          weight: 0.8,
+          fillColor: fillColor,
+          fillOpacity: fillOpacity
+        });
+
+        rect.on('mouseover', () => showCellInfo(cell));
+        rect.on('click', () => showCellInfo(cell, true));
+
+        if (!cell.passable) {
+          hazardsLayerGroup.addLayer(rect);
+        } else {
+          cellsLayerGroup.addLayer(rect);
+        }
+      });
+
+      // Render Hazard Clusters (Escarpes agrupados)
+      data.hazard_zones.forEach((cl, i) => {
+        const clBounds = [
+          [cl.bounding_box.min_lat, cl.bounding_box.min_lon],
+          [cl.bounding_box.max_lat, cl.bounding_box.max_lon]
+        ];
+        const clRect = L.rectangle(clBounds, {
+          color: '#ff3366',
+          dashArray: '4, 4',
+          weight: 2,
+          fill: false
+        }).bindTooltip(`Zona Peligro #${cl.cluster_id}: ${cl.cell_count} celdas | Pendiente máx: ${cl.max_slope_deg}°`, {
+          className: 'leaflet-tooltip-dark'
+        });
+        clustersLayerGroup.addLayer(clRect);
+      });
+
+      // Render Safe A* Route
+      if (data.safe_route && data.safe_route.coordinates_lon_lat_elev) {
+        const routeCoords = data.safe_route.coordinates_lon_lat_elev.map(c => [c[1], c[0]]);
+        
+        // Polyline glow background
+        const polyGlow = L.polyline(routeCoords, {
+          color: '#45f3ff',
+          weight: 6,
+          opacity: 0.3
+        });
+        // Polyline solid line
+        const poly = L.polyline(routeCoords, {
+          color: '#45f3ff',
+          weight: 2.5,
+          opacity: 0.95
+        });
+        routeLayerGroup.addLayer(polyGlow);
+        routeLayerGroup.addLayer(poly);
+
+        // Start & Goal Markers
+        const startPt = routeCoords[0];
+        const goalPt = routeCoords[routeCoords.length - 1];
+
+        const startMarker = L.circleMarker(startPt, {
+          radius: 7, fillColor: '#22c55e', color: '#fff', weight: 2, fillOpacity: 1
+        }).bindPopup("<b>ORIGEN DE LA MISIÓN</b><br>Punto de inicio de caminata EVA");
+
+        const goalMarker = L.circleMarker(goalPt, {
+          radius: 7, fillColor: '#ffb703', color: '#fff', weight: 2, fillOpacity: 1
+        }).bindPopup("<b>OBJETIVO CIENTÍFICO</b><br>Destino de muestreo geológico");
+
+        routeLayerGroup.addLayer(startMarker);
+        routeLayerGroup.addLayer(goalMarker);
+
+        // Update route metrics
+        document.getElementById('mDist').textContent = `${(data.safe_route.total_distance_meters / 1000).toFixed(2)} km`;
+        document.getElementById('mWp').textContent = data.safe_route.num_waypoints;
+        document.getElementById('mSlopeAvg').textContent = `${data.safe_route.mean_path_slope_deg}°`;
+        document.getElementById('mSlopeMax').textContent = `${data.safe_route.max_path_slope_deg}°`;
+        
+        const estMinutes = (data.safe_route.total_distance_meters / (0.8 * 60)).toFixed(0);
+        document.getElementById('mTime').textContent = `${estMinutes} min`;
+        document.getElementById('mO2').textContent = `${(estMinutes * 0.95).toFixed(1)} L`;
+      }
+
+      // Render Historical NASA Waypoints
+      if (data.historical_waypoints) {
+        data.historical_waypoints.forEach(wp => {
+          const marker = L.circleMarker([wp.lat, wp.lon], {
+            radius: 5,
+            fillColor: wp.type === 'LANDING' ? '#38bdf8' : (wp.type === 'SCARP' ? '#ff3366' : '#f59e0b'),
+            color: '#ffffff',
+            weight: 1.5,
+            fillOpacity: 0.9
+          }).bindPopup(`<b>${wp.name}</b><br>Lat: ${wp.lat.toFixed(4)}°, Lon: ${wp.lon.toFixed(4)}°<br>Tipo: ${wp.type}`);
+          wpsLayerGroup.addLayer(marker);
+        });
+      }
+
+      // Update summary stats
+      document.getElementById('sTotal').textContent = data.statistics.total_cells;
+      document.getElementById('sPassable').textContent = `${data.statistics.passable_cells} (${(100 - data.statistics.impassable_percentage).toFixed(1)}%)`;
+      document.getElementById('sBlocked').textContent = `${data.statistics.impassable_cells} (${data.statistics.impassable_percentage}%)`;
+      document.getElementById('sClusters').textContent = data.hazard_zones.length;
+      document.getElementById('sRes').textContent = `${data.cell_size_m.dx}m x ${data.cell_size_m.dy}m`;
+    }
+
+    function showCellInfo(cell, isClick = false) {
+      const box = document.getElementById('cellInfo');
+      const statusClass = cell.passable ? 'status-passable' : 'status-impassable';
+      const statusText = cell.passable ? 'TRANSITABLE (SEGURO)' : 'INTRANSITABLE (PELIGRO)';
+
+      box.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-weight: bold; color: var(--cyan);">Celda [${cell.r}, ${cell.c}]</span>
+          <span class="status-badge ${statusClass}">${statusText}</span>
+        </div>
+        <div style="margin-top: 4px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 10px;">
+          <div>Lat: <b>${cell.lat}°</b></div>
+          <div>Lon: <b>${cell.lon}°</b></div>
+          <div>Elevación: <b>${cell.elev} m</b></div>
+          <div>Pendiente: <b style="color: ${cell.passable ? '#22c55e' : 'var(--red)'};">${cell.slope}°</b></div>
+        </div>
+        ${!cell.passable ? '<p style="color: var(--red); font-size: 9px; margin-top: 4px;">⚠️ Excede el umbral de seguridad. Riesgo crítico de vuelco de traje/rover.</p>' : ''}
+      `;
+    }
+
+    // Event Listeners
+    document.addEventListener('DOMContentLoaded', () => {
+      initMap();
+      loadTerrainData();
+
+      // Controls
+      document.getElementById('zoneSelect').addEventListener('change', loadTerrainData);
+      document.getElementById('resSelect').addEventListener('change', loadTerrainData);
+      
+      const slopeRange = document.getElementById('slopeRange');
+      slopeRange.addEventListener('input', (e) => {
+        document.getElementById('slopeLabel').textContent = `${parseFloat(e.target.value).toFixed(1)}°`;
+      });
+      slopeRange.addEventListener('change', loadTerrainData);
+
+      // Basemap switch
+      document.getElementById('basemapSelect').addEventListener('change', (e) => {
+        map.removeLayer(currentBasemap);
+        currentBasemap = TILE_SERVICES[e.target.value];
+        currentBasemap.addTo(map);
+      });
+
+      // Layer checkboxes
+      document.getElementById('chkCells').addEventListener('change', (e) => {
+        if (e.target.checked) map.addLayer(cellsLayerGroup); else map.removeLayer(cellsLayerGroup);
+      });
+      document.getElementById('chkHazards').addEventListener('change', (e) => {
+        if (e.target.checked) map.addLayer(hazardsLayerGroup); else map.removeLayer(hazardsLayerGroup);
+      });
+      document.getElementById('chkClusters').addEventListener('change', (e) => {
+        if (e.target.checked) map.addLayer(clustersLayerGroup); else map.removeLayer(clustersLayerGroup);
+      });
+      document.getElementById('chkRoute').addEventListener('change', (e) => {
+        if (e.target.checked) map.addLayer(routeLayerGroup); else map.removeLayer(routeLayerGroup);
+      });
+      document.getElementById('chkWps').addEventListener('change', (e) => {
+        if (e.target.checked) map.addLayer(wpsLayerGroup); else map.removeLayer(wpsLayerGroup);
+      });
+    });
+  </script>
+</body>
+</html>

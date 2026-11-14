@@ -14,5 +14,21 @@
   </head>
   <body class="bg-[#050608] text-slate-100 overflow-hidden select-none">
     <div id="root"></div>
+
+    <!-- Direct Switcher to 2D Tactical Cell Map -->
+    <a id="btnTactical2D" href="/tactical" style="position: fixed; bottom: 24px; right: 24px; z-index: 9999; background: rgba(9, 13, 20, 0.92); border: 1.5px solid #45f3ff; color: #45f3ff; font-family: 'Orbitron', sans-serif; font-size: 11px; letter-spacing: 0.16em; padding: 11px 20px; text-decoration: none; border-radius: 2px; box-shadow: 0 0 24px rgba(69, 243, 255, 0.45); display: flex; align-items: center; gap: 10px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#45f3ff'; this.style.color='#050608'; this.style.boxShadow='0 0 32px rgba(69, 243, 255, 0.8)';" onmouseout="this.style.background='rgba(9, 13, 20, 0.92)'; this.style.color='#45f3ff'; this.style.boxShadow='0 0 24px rgba(69, 243, 255, 0.45)';">
+      <span style="font-size: 14px;">🗺️</span>
+      <span>AMPLIAR A MAPA 2D POR CELDAS (USGS)</span>
+    </a>
+
+    <script>
+      // Allow clicking any Hyperlocal button in the React UI to jump to the 2D tactical map
+      document.addEventListener('click', (e) => {
+        const target = e.target.closest('button');
+        if (target && target.innerText && target.innerText.toLowerCase().includes('hyperlocal')) {
+          window.location.href = '/tactical';
+        }
+      });
+    </script>
   </body>
 </html>
