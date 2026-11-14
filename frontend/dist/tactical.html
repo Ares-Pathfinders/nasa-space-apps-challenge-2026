@@ -95,6 +95,141 @@
       background: #0b0f19;
       border: 1px solid rgba(255, 255, 255, 0.18);
     }
+    input[type=number], input[type=datetime-local], textarea {
+      width: 100%;
+      padding: 7px;
+      color: #f1f5f9;
+      background: #0b0f19;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      font: inherit;
+    }
+    textarea { min-height: 56px; resize: vertical; }
+    .status-toggle {
+      width: 100%;
+      margin: 14px 0 0;
+      padding: 9px 0;
+      border: 0;
+      border-top: 1px solid rgba(69, 243, 255, 0.2);
+      border-bottom: 1px solid rgba(69, 243, 255, 0.2);
+      background: transparent;
+      color: var(--cyan);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font: 10px 'Orbitron', sans-serif;
+      letter-spacing: 0.16em;
+      text-align: left;
+    }
+    .status-toggle:hover { color: #fff; }
+    .status-notebook { padding-top: 10px; }
+    .status-notebook[hidden], .fuel-fields[hidden] { display: none; }
+    .status-note { margin: 0 0 8px; color: #94a3b8; font-size: 9px; line-height: 1.5; }
+    .status-estimate {
+      padding: 8px;
+      background: rgba(69, 243, 255, 0.08);
+      border-left: 2px solid var(--cyan);
+    }
+    .status-estimate small { display: block; color: #94a3b8; font-size: 8px; text-transform: uppercase; }
+    .status-estimate strong { display: block; margin-top: 3px; color: #fff; font-size: 15px; }
+    .status-estimate span { display: block; margin-top: 2px; color: var(--cyan); font-size: 9px; }
+    .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 8px; }
+    .status-grid label, .status-notebook > label { margin-top: 8px; }
+    .status-grid .wide { grid-column: 1 / -1; }
+    .mode-switch {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      margin: 10px 0 0;
+      padding: 0;
+      border: 1px solid rgba(69, 243, 255, 0.3);
+    }
+    .mode-switch legend { padding: 0 5px; color: #94a3b8; font-size: 8px; text-transform: uppercase; }
+    .mode-switch label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin: 0;
+      padding: 8px 4px;
+      color: #94a3b8;
+      cursor: pointer;
+    }
+    .mode-switch label:has(input:checked) { background: rgba(69, 243, 255, 0.14); color: var(--cyan); }
+    .mode-switch input { accent-color: var(--cyan); }
+    .connection-control { display: flex; align-items: center; gap: 7px; margin-top: 10px; color: #cbd5e1; font-size: 9px; }
+    .connection-control input { accent-color: var(--green); }
+    .connection-state { margin-left: auto; color: var(--red); font-weight: 700; }
+    .connection-control input:checked ~ .connection-state { color: var(--green); }
+    .fuel-estimate { margin-top: 8px; }
+    .status-action {
+      width: 100%;
+      margin-top: 8px;
+      padding: 7px;
+      border: 1px solid rgba(69, 243, 255, 0.5);
+      background: rgba(69, 243, 255, 0.1);
+      color: var(--cyan);
+      font-weight: 600;
+    }
+    .status-log { display: grid; gap: 8px; margin-top: 10px; }
+    .status-entry { padding: 8px; border: 1px solid rgba(255, 255, 255, 0.12); background: rgba(0, 0, 0, 0.28); }
+    .status-entry-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; color: var(--cyan); font-size: 8px; text-transform: uppercase; }
+    .status-entry-snapshot { margin: 0 0 6px; color: #94a3b8; font-size: 8px; line-height: 1.5; }
+    .status-entry label { margin-top: 6px; }
+    .status-delete { border: 0; background: transparent; color: var(--red); font-size: 9px; }
+    .status-empty { color: #64748b; font-size: 9px; }
+    input[type=number], input[type=datetime-local], textarea {
+      width: 100%;
+      padding: 7px;
+      color: #f1f5f9;
+      background: #0b0f19;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      font: inherit;
+    }
+    textarea { min-height: 56px; resize: vertical; }
+    .status-toggle {
+      width: 100%;
+      margin: 14px 0 0;
+      padding: 9px 0;
+      border: 0;
+      border-top: 1px solid rgba(69, 243, 255, 0.2);
+      border-bottom: 1px solid rgba(69, 243, 255, 0.2);
+      background: transparent;
+      color: var(--cyan);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font: 10px 'Orbitron', sans-serif;
+      letter-spacing: 0.16em;
+      text-align: left;
+    }
+    .status-toggle:hover { color: #fff; }
+    .status-notebook { padding-top: 10px; }
+    .status-notebook[hidden] { display: none; }
+    .status-note { margin: 0 0 8px; color: #94a3b8; font-size: 9px; line-height: 1.5; }
+    .status-estimate {
+      padding: 8px;
+      background: rgba(69, 243, 255, 0.08);
+      border-left: 2px solid var(--cyan);
+    }
+    .status-estimate small { display: block; color: #94a3b8; font-size: 8px; text-transform: uppercase; }
+    .status-estimate strong { display: block; margin-top: 3px; color: #fff; font-size: 15px; }
+    .status-estimate span { display: block; margin-top: 2px; color: var(--cyan); font-size: 9px; }
+    .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 8px; }
+    .status-grid label, .status-notebook > label { margin-top: 8px; }
+    .status-action {
+      width: 100%;
+      margin-top: 8px;
+      padding: 7px;
+      border: 1px solid rgba(69, 243, 255, 0.5);
+      background: rgba(69, 243, 255, 0.1);
+      color: var(--cyan);
+      font-weight: 600;
+    }
+    .status-log { display: grid; gap: 8px; margin-top: 10px; }
+    .status-entry { padding: 8px; border: 1px solid rgba(255, 255, 255, 0.12); background: rgba(0, 0, 0, 0.28); }
+    .status-entry-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; color: var(--cyan); font-size: 8px; text-transform: uppercase; }
+    .status-entry label { margin-top: 6px; }
+    .status-delete { border: 0; background: transparent; color: var(--red); font-size: 9px; }
+    .status-empty { color: #64748b; font-size: 9px; }
     .checks { display: grid; gap: 7px; color: #cbd5e1; font-size: 9px; }
     .checks label { margin: 0; text-transform: none; letter-spacing: 0; display: flex; align-items: center; gap: 6px; cursor: pointer; }
     .legend, .info {
@@ -168,6 +303,7 @@
       .right { right: 8px; width: calc(50% - 12px); }
       .sub { display: none; }
       h1 { font-size: 10px; }
+      .status-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -199,9 +335,9 @@
     <h2>SELECCIÓN DE EXPEDICIÓN</h2>
     <label for="basemap">Mapa base</label>
     <select id="basemap">
-      <option value="mola" selected>MOLA · relieve sombreado (predeterminado)</option>
-      <option value="minerals">Mapa mineral colorimétrico (incluye Mars Odyssey)</option>
-      <option value="gale-imagery">Gale NASA · CTX / HiRISE y topónimos</option>
+      <option value="default" selected>Predeterminado (según zona marciana)</option>
+      <option value="minerals">Mapa mineral colorimétrico</option>
+      <option value="mola">Relieve sombreado MOLA</option>
     </select>
 
     <label for="zone">Zona Marciana</label>
@@ -209,6 +345,13 @@
       <option value="gale" selected>Cráter Gale - Monte Sharp (Curiosity / MSL)</option>
       <option value="jezero">Cráter Jezero - Delta Lakebed (Perseverance / M2020)</option>
     </select>
+
+    <fieldset class="mode-switch">
+      <legend>Desplazamiento</legend>
+      <label><input type="radio" name="travelMode" value="foot" checked> A pie</label>
+      <label><input type="radio" name="travelMode" value="vehicle"> Vehículo</label>
+    </fieldset>
+    <p class="status-note">Velocidad simulada: 2,9 km/h a pie · 7,2 km/h en vehículo.</p>
 
     <label for="slope">Pendiente máxima segura: <b id="slopeValue" style="color:var(--cyan)">15.0°</b></label>
     <input id="slope" type="range" min="8" max="25" step="0.5" value="15">
@@ -220,6 +363,45 @@
       <option value="60" selected>60 x 60 (Alta resolución)</option>
       <option value="80">80 x 80 (Submétrica)</option>
     </select>
+
+    <button id="statusToggle" class="status-toggle" type="button" aria-expanded="false" aria-controls="statusNotebook">
+      <span>ESTADO</span><span id="statusChevron" aria-hidden="true">▸</span>
+    </button>
+    <section id="statusNotebook" class="status-notebook" aria-label="Cuaderno de estado del astronauta" hidden>
+      <p class="status-note">CUADERNO EVA · Estimaciones hipotéticas y datos editables, no telemetría real.</p>
+      <div class="status-estimate" aria-live="polite">
+        <small>Tiempo estimado hasta agotar O₂</small>
+        <strong id="oxygenTimeRemaining">20 h 0 min</strong>
+        <span id="oxygenLevelSummary">100% · 1000 L disponibles</span>
+      </div>
+      <div class="status-grid">
+        <label for="oxygenRemaining">O₂ disponible (L)<input id="oxygenRemaining" type="number" min="0" step="1" value="1000"></label>
+        <label for="oxygenCapacity">Capacidad (L)<input id="oxygenCapacity" type="number" min="1" step="1" value="1000"></label>
+        <label for="oxygenConsumption">Consumo hipotético (L/h)<input id="oxygenConsumption" type="number" min="0" step="1" value="50"></label>
+        <label for="foodRations">Comida (raciones)<input id="foodRations" type="number" min="0" step="1" value="7"></label>
+        <label for="waterRemaining">Agua (L)<input id="waterRemaining" type="number" min="0" step="0.1" value="5"></label>
+        <label for="tabletBattery">Batería tablet (%)<input id="tabletBattery" type="number" min="0" max="100" step="1" value="100"></label>
+        <label for="flashlightBattery">Batería linterna (%)<input id="flashlightBattery" type="number" min="0" max="100" step="1" value="100"></label>
+      </div>
+      <label class="connection-control"><input id="baseConnection" type="checkbox"><span>Conexión con la base</span><strong id="connectionState" class="connection-state">NO ACTIVADA</strong></label>
+      <div id="fuelFields" class="fuel-fields" hidden>
+        <div class="status-estimate fuel-estimate">
+          <small>Tiempo estimado de combustible</small>
+          <strong id="fuelTimeRemaining">6 h 15 min</strong>
+          <span id="fuelLevelSummary">50 L disponibles</span>
+        </div>
+        <div class="status-grid">
+          <label for="fuelRemaining">Combustible restante (L)<input id="fuelRemaining" type="number" min="0" step="1" value="50"></label>
+          <label for="fuelConsumption">Consumo hipotético (L/h)<input id="fuelConsumption" type="number" min="0" step="0.1" value="8"></label>
+        </div>
+      </div>
+      <label for="equipmentName">Equipo o sistema</label>
+      <input id="equipmentName" type="text" placeholder="Traje EVA, radio, rover...">
+      <label for="equipmentNote">Estado / observación</label>
+      <textarea id="equipmentNote" placeholder="Anota el estado actual del equipo"></textarea>
+      <button id="addStatusEntry" class="status-action" type="button">＋ Registrar estado del equipo</button>
+      <div id="statusLog" class="status-log" aria-live="polite"></div>
+    </section>
 
     <h2 style="margin-top:16px">CAPAS VISIBLES</h2>
     <div class="checks">
@@ -236,6 +418,7 @@
       <div><span style="background:#eab308;border-color:#eab308"></span>Precaución (10° - 15°)</div>
       <div><span style="background:#ff3366;border-color:#ff3366"></span>Intransitable (&gt; 15°)</div>
       <div><span style="background:var(--cyan);border-color:var(--cyan);height:3px"></span>Ruta A* con menor coste</div>
+      <div><span style="background:#ffb703;border-color:#ffb703;height:3px"></span>Retorno automático</div>
       <div><span style="background:#a855f7;border-color:#a855f7"></span>Espectrometría ESA (NOMAD/ACS)</div>
     </div>
 
@@ -251,12 +434,13 @@
     </div>
     <div id="mineralPanel" class="info" style="font-size:10px;display:none;">
       <div style="color:#94a3b8;margin-bottom:8px;">Distribución de minerales acuosos · Mars Trek</div>
+      <div id="mineralStatus" style="color:#45f3ff;margin-bottom:8px;">Cargando detecciones minerales cercanas...</div>
       <div class="gas-row"><span style="display:flex;align-items:center;gap:7px;"><span style="width:12px;height:12px;background:#67f04a;"></span>Carbonato</span></div>
       <div class="gas-row"><span style="display:flex;align-items:center;gap:7px;"><span style="width:12px;height:12px;background:#f7fb43;"></span>Cloruro</span></div>
       <div class="gas-row"><span style="display:flex;align-items:center;gap:7px;"><span style="width:12px;height:12px;background:#49a8d7;"></span>Filosilicato</span></div>
       <div class="gas-row"><span style="display:flex;align-items:center;gap:7px;"><span style="width:12px;height:12px;background:#982bd8;"></span>Silicato / sílice</span></div>
       <div class="gas-row"><span style="display:flex;align-items:center;gap:7px;"><span style="width:12px;height:12px;background:#ef8181;"></span>Sulfato</span></div>
-      <p style="margin:8px 0 0;color:#94a3b8;line-height:1.5;">Los colores identifican clases y distribución mineral; no representan porcentajes ni concentraciones. La capa combina observaciones CRISM, OMEGA y THEMIS (Mars Odyssey).</p>
+      <p style="margin:8px 0 0;color:#94a3b8;line-height:1.5;">Los colores identifican detecciones de Mars Trek; algunos puntos están fuera de la cuadrícula topográfica. No representan porcentajes ni concentraciones.</p>
       <a href="https://trek.nasa.gov/mars/" target="_blank" class="psa-link">Ver ficha y leyenda en Mars Trek</a>
     </div>
 
@@ -274,6 +458,7 @@
       <div class="metric"><small>Tiempo estimado EVA</small><b id="time">--</b></div>
       <div class="metric"><small>Consumo O2</small><b id="oxygen" style="color:var(--amber)">--</b></div>
     </div>
+    <div id="routeReturnStatus" class="info" style="margin-top:10px;font-size:9px;" aria-live="polite">Esperando cálculo de ruta y recursos disponibles.</div>
 
     <div style="margin-top:14px;padding:8px;background:rgba(255,51,102,0.12);border:1px solid rgba(255,51,102,0.4);border-radius:2px;">
       <b style="color:var(--red);display:block;font-size:9px;text-transform:uppercase;">⚠️ ALERTA DE SUPERVIVENCIA EVA</b>
@@ -294,7 +479,12 @@
       maxZoom: 12, maxNativeZoom: 7, minZoom: 2, attribution: 'NASA / USGS MOLA'
     }).addTo(map);
     const mineralMapUrl = 'https://trek.nasa.gov/mars/trekarcgis/rest/services/Aquieous_Mineral_Distribution_Options_clon0/MapServer';
-    const mineralMapLayer = L.gridLayer({ tileSize: 256, minZoom: 2, maxZoom: 12, updateWhenIdle: true });
+    map.createPane('mineralPane').style.zIndex = '250';
+    map.createPane('mineralDetectionsPane').style.zIndex = '450';
+    const mineralMapLayer = L.gridLayer({ pane: 'mineralPane', tileSize: 256, minZoom: 2, maxZoom: 12, updateWhenIdle: true });
+    const mineralDetectionsLayer = L.layerGroup();
+    let currentTerrainBounds = null;
+    let mineralQueryId = 0;
     mineralMapLayer.createTile = (coords, done) => {
       const tileSize = L.point(256, 256);
       const northWest = map.unproject(coords.scaleBy(tileSize), coords.z);
@@ -316,7 +506,7 @@
       return tile;
     };
 
-    function createGaleTileLayer(urlTemplate, opacity = 1, className = '') {
+    function createMarsTmsTileLayer(urlTemplate, opacity = 1, className = '') {
       const layer = L.gridLayer({ tileSize: 256, minZoom: 5, maxZoom: 12, noWrap: true, updateWhenIdle: true, className });
       layer.createTile = (coords, done) => {
         const tileSize = L.point(256, 256);
@@ -342,18 +532,121 @@
     }
 
     const galeImageryLayer = L.layerGroup([
-      createGaleTileLayer('https://mars.nasa.gov/mmgis-maps/MSL/Layers/MSL_CTX_ortho_mosaic_6m/{z}/{x}/{y}.png', 0.72, 'ctx-tint'),
-      createGaleTileLayer('https://mars.nasa.gov/mmgis-maps/MSL/Layers/MSL_Gale_HiRISE-LRGB_78quads/{z}/{x}/{y}.png'),
-      createGaleTileLayer('https://mars.nasa.gov/mmgis-maps/MSL/Layers/MSL_WebGIS_PlaceText/{z}/{x}/{y}.png', 0.96)
+      createMarsTmsTileLayer('https://mars.nasa.gov/mmgis-maps/MSL/Layers/MSL_CTX_ortho_mosaic_6m/{z}/{x}/{y}.png', 0.72, 'ctx-tint'),
+      createMarsTmsTileLayer('https://mars.nasa.gov/mmgis-maps/MSL/Layers/MSL_Gale_HiRISE-LRGB_78quads/{z}/{x}/{y}.png'),
+      createMarsTmsTileLayer('https://mars.nasa.gov/mmgis-maps/MSL/Layers/MSL_WebGIS_PlaceText/{z}/{x}/{y}.png', 0.96)
     ]);
+    const jezeroImageryLayer = L.layerGroup([
+      createMarsTmsTileLayer('https://mars.nasa.gov/mmgis-maps/M20/Layers/HMC_13E10_co5_colorcorrect_rect/{z}/{x}/{y}.png'),
+      createMarsTmsTileLayer('https://mars.nasa.gov/mmgis-maps/M20/Layers/JEZ_hirise_soc_007_orthoMosaic_25cm_Ortho_blend120/{z}/{x}/{y}.png'),
+      createMarsTmsTileLayer('https://mars.nasa.gov/mmgis-maps/M20/Layers/M20_HiRISE_RGB_CTX_mosaic_25cm_v7_Merge_LERC_clip/{z}/{x}/{y}.png')
+    ]);
+
+    async function loadMineralDetections(bounds, zone) {
+      const queryId = ++mineralQueryId;
+      const centerLat = (bounds.min_lat + bounds.max_lat) / 2;
+      const latitudeMargin = 0.5;
+      const longitudeMargin = latitudeMargin / Math.cos(centerLat * Math.PI / 180);
+      const geometry = [
+        bounds.min_lon - longitudeMargin,
+        bounds.min_lat - latitudeMargin,
+        bounds.max_lon + longitudeMargin,
+        bounds.max_lat + latitudeMargin
+      ].join(',');
+      const params = new URLSearchParams({
+        where: '1=1',
+        geometry,
+        geometryType: 'esriGeometryEnvelope',
+        inSR: '104905',
+        spatialRel: 'esriSpatialRelIntersects',
+        outFields: 'Class',
+        returnGeometry: 'true',
+        f: 'json'
+      });
+      const status = document.getElementById('mineralStatus');
+
+      try {
+        const response = await fetch(`${mineralMapUrl}/0/query?${params.toString()}`);
+        if (!response.ok) throw new Error(`Mars Trek HTTP ${response.status}`);
+        const data = await response.json();
+        if (queryId !== mineralQueryId || zone !== document.getElementById('zone').value) return;
+
+        mineralDetectionsLayer.clearLayers();
+        const styles = {
+          carbonate: { label: 'Carbonato', color: '#67f04a' },
+          chloride: { label: 'Cloruro', color: '#f7fb43' },
+          phyllosilicate: { label: 'Filosilicato', color: '#49a8d7' },
+          silica: { label: 'Silicato / sílice', color: '#982bd8' },
+          sulfate: { label: 'Sulfato', color: '#ef8181' }
+        };
+        const seen = new Set();
+        const displayBounds = L.latLngBounds(
+          [bounds.min_lat, bounds.min_lon],
+          [bounds.max_lat, bounds.max_lon]
+        );
+        let detectionCount = 0;
+
+        (data.features || []).forEach(feature => {
+          const mineral = styles[String(feature.attributes?.Class || '').toLowerCase()];
+          const point = feature.geometry;
+          if (!mineral || !point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) return;
+
+          const key = `${mineral.label}:${point.x.toFixed(5)}:${point.y.toFixed(5)}`;
+          if (seen.has(key)) return;
+          seen.add(key);
+          detectionCount += 1;
+
+          const marker = L.circleMarker([point.y, point.x], {
+            pane: 'mineralDetectionsPane',
+            radius: 7,
+            color: '#ffffff',
+            weight: 1.5,
+            fillColor: mineral.color,
+            fillOpacity: 1
+          }).bindPopup(`<b style="color:${mineral.color}">${mineral.label}</b><br>NASA Mars Trek<br>Lat: ${point.y.toFixed(3)}°, Lon: ${point.x.toFixed(3)}°`);
+          mineralDetectionsLayer.addLayer(marker);
+          displayBounds.extend([point.y, point.x]);
+        });
+
+        if (document.getElementById('basemap').value === 'minerals') {
+          map.addLayer(mineralDetectionsLayer);
+          map.fitBounds(displayBounds, { padding: [40, 40] });
+        }
+        status.textContent = detectionCount
+          ? `${detectionCount} detecciones minerales cercanas de Mars Trek.`
+          : 'Sin detecciones cercanas en Mars Trek para esta zona.';
+      } catch (error) {
+        if (queryId !== mineralQueryId) return;
+        status.textContent = 'No se pudieron cargar las detecciones minerales de Mars Trek.';
+        console.warn('Error fetching mineral detections:', error);
+      }
+    }
 
     function setBaseMapMode(mode) {
       const showMinerals = mode === 'minerals';
-      const showGaleImagery = mode === 'gale-imagery';
-      if (showMinerals) map.addLayer(mineralMapLayer);
-      else map.removeLayer(mineralMapLayer);
+      const zone = document.getElementById('zone').value;
+      const showMola = mode === 'mola';
+      const showRegionalImagery = mode === 'default' || showMinerals;
+      const showGaleImagery = showRegionalImagery && zone === 'gale';
+      const showJezeroImagery = showRegionalImagery && zone === 'jezero';
+      if (showMola) map.addLayer(baseMap);
+      else map.removeLayer(baseMap);
       if (showGaleImagery) map.addLayer(galeImageryLayer);
       else map.removeLayer(galeImageryLayer);
+      if (showJezeroImagery) map.addLayer(jezeroImageryLayer);
+      else map.removeLayer(jezeroImageryLayer);
+      if (showMinerals) map.addLayer(mineralMapLayer);
+      else {
+        mineralQueryId += 1;
+        map.removeLayer(mineralMapLayer);
+        map.removeLayer(mineralDetectionsLayer);
+        if (currentTerrainBounds) {
+          map.fitBounds([
+            [currentTerrainBounds.min_lat, currentTerrainBounds.min_lon],
+            [currentTerrainBounds.max_lat, currentTerrainBounds.max_lon]
+          ], { padding: [40, 40] });
+        }
+      }
       document.getElementById('rightDataTitle').textContent = showMinerals
         ? 'IDENTIFICACIÓN MINERAL // COLORIMETRÍA'
         : '🪐 GASES POR ZONA // ESA PSA';
@@ -362,20 +655,305 @@
     }
 
     document.getElementById('basemap').addEventListener('change', (event) => {
-      if (event.target.value === 'gale-imagery' && document.getElementById('zone').value !== 'gale') {
-        document.getElementById('zone').value = 'gale';
-        load();
+      const mapMode = event.target.value;
+      setBaseMapMode(mapMode);
+      if (mapMode === 'minerals' && currentTerrainBounds) {
+        loadMineralDetections(currentTerrainBounds, document.getElementById('zone').value);
       }
-      setBaseMapMode(event.target.value);
     });
+    setBaseMapMode(document.getElementById('basemap').value);
 
     const layers = {
       cells: L.layerGroup().addTo(map),
       hazards: L.layerGroup().addTo(map),
       route: L.layerGroup().addTo(map),
+      returnRoute: L.layerGroup().addTo(map),
       wps: L.layerGroup().addTo(map),
       gases: L.layerGroup().addTo(map)
     };
+
+    const STATUS_STORAGE_KEY = 'ares-nav-astronaut-status-v1';
+    const DEFAULT_STATUS = {
+      oxygenRemaining: 1000,
+      oxygenCapacity: 1000,
+      oxygenConsumption: 50,
+      foodRations: 7,
+      waterRemaining: 5,
+      tabletBattery: 100,
+      flashlightBattery: 100,
+      fuelRemaining: 50,
+      fuelConsumption: 8,
+      baseConnection: false,
+      travelMode: 'foot',
+      entries: []
+    };
+    const statusInputIds = [
+      'oxygenRemaining', 'oxygenCapacity', 'oxygenConsumption', 'foodRations', 'waterRemaining',
+      'tabletBattery', 'flashlightBattery', 'fuelRemaining', 'fuelConsumption'
+    ];
+
+    function loadStatusNotebook() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STATUS_STORAGE_KEY) || '{}');
+        return { ...DEFAULT_STATUS, ...saved, entries: Array.isArray(saved.entries) ? saved.entries : [] };
+      } catch {
+        return { ...DEFAULT_STATUS, entries: [] };
+      }
+    }
+
+    const savedStatus = loadStatusNotebook();
+    let statusEntries = savedStatus.entries;
+    let latestRoute = null;
+    const savedTravelMode = savedStatus.travelMode === 'vehicle' ? 'vehicle' : 'foot';
+    statusInputIds.forEach(id => {
+      document.getElementById(id).value = savedStatus[id];
+    });
+    document.getElementById('baseConnection').checked = savedStatus.baseConnection;
+    document.querySelector(`input[name="travelMode"][value="${savedTravelMode}"]`).checked = true;
+
+    function saveStatusNotebook() {
+      const saved = Object.fromEntries(statusInputIds.map(id => [id, Number(document.getElementById(id).value) || 0]));
+      saved.entries = statusEntries;
+      saved.baseConnection = document.getElementById('baseConnection').checked;
+      saved.travelMode = document.querySelector('input[name="travelMode"]:checked').value;
+      try {
+        localStorage.setItem(STATUS_STORAGE_KEY, JSON.stringify(saved));
+      } catch (error) {
+        console.warn('Could not save astronaut status notebook:', error);
+      }
+    }
+
+    function updateOxygenEstimate() {
+      const remaining = Math.max(0, Number(document.getElementById('oxygenRemaining').value) || 0);
+      const capacity = Math.max(0, Number(document.getElementById('oxygenCapacity').value) || 0);
+      const consumption = Math.max(0, Number(document.getElementById('oxygenConsumption').value) || 0);
+      const percentage = capacity ? Math.min(100, remaining / capacity * 100) : 0;
+      const timeElement = document.getElementById('oxygenTimeRemaining');
+      const levelElement = document.getElementById('oxygenLevelSummary');
+
+      if (remaining === 0) {
+        timeElement.textContent = '0 h 0 min';
+        timeElement.style.color = 'var(--red)';
+      } else if (consumption === 0) {
+        timeElement.textContent = 'Sin consumo estimado';
+        timeElement.style.color = '#fff';
+      } else {
+        const totalMinutes = Math.ceil(remaining / consumption * 60);
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        timeElement.textContent = `${hours} h ${minutes} min`;
+        timeElement.style.color = totalMinutes <= 60 ? 'var(--amber)' : '#fff';
+      }
+
+      levelElement.textContent = `${percentage.toFixed(0)}% · ${remaining} L disponibles`;
+    }
+
+    function formatRemainingTime(minutes) {
+      if (!Number.isFinite(minutes)) return 'Sin límite estimado';
+      const totalMinutes = Math.max(0, Math.ceil(minutes));
+      return `${Math.floor(totalMinutes / 60)} h ${totalMinutes % 60} min`;
+    }
+
+    function availableResourceTime() {
+      const oxygenRemaining = Math.max(0, Number(document.getElementById('oxygenRemaining').value) || 0);
+      const oxygenRate = Math.max(0, Number(document.getElementById('oxygenConsumption').value) || 0);
+      const resources = [{
+        name: 'O₂',
+        minutes: oxygenRate ? oxygenRemaining / oxygenRate * 60 : Infinity
+      }];
+
+      if (document.querySelector('input[name="travelMode"]:checked').value === 'vehicle') {
+        const fuelRemaining = Math.max(0, Number(document.getElementById('fuelRemaining').value) || 0);
+        const fuelRate = Math.max(0, Number(document.getElementById('fuelConsumption').value) || 0);
+        resources.push({ name: 'combustible', minutes: fuelRate ? fuelRemaining / fuelRate * 60 : Infinity });
+      }
+
+      return resources.reduce((limiting, resource) => resource.minutes < limiting.minutes ? resource : limiting);
+    }
+
+    function updateFuelEstimate() {
+      const isVehicle = document.querySelector('input[name="travelMode"]:checked').value === 'vehicle';
+      document.getElementById('fuelFields').hidden = !isVehicle;
+      const remaining = Math.max(0, Number(document.getElementById('fuelRemaining').value) || 0);
+      const consumption = Math.max(0, Number(document.getElementById('fuelConsumption').value) || 0);
+      document.getElementById('fuelTimeRemaining').textContent = formatRemainingTime(consumption ? remaining / consumption * 60 : Infinity);
+      document.getElementById('fuelLevelSummary').textContent = `${remaining} L disponibles`;
+    }
+
+    function updateReturnRoute() {
+      const status = document.getElementById('routeReturnStatus');
+      layers.returnRoute.clearLayers();
+      if (!latestRoute) {
+        status.textContent = 'Esperando cálculo de ruta y recursos disponibles.';
+        return;
+      }
+
+      const travelMode = document.querySelector('input[name="travelMode"]:checked').value;
+      const speedMetersPerMinute = travelMode === 'vehicle' ? 120 : 48;
+      const outboundMinutes = latestRoute.distanceMeters / speedMetersPerMinute;
+      const returnMinutes = outboundMinutes;
+      const limitingResource = availableResourceTime();
+      const timeAfterOutbound = limitingResource.minutes - outboundMinutes;
+      const returnTriggered = Number.isFinite(limitingResource.minutes) && returnMinutes >= timeAfterOutbound * 0.8;
+
+      if (returnTriggered) {
+        const returnPoints = [...latestRoute.points].reverse();
+        layers.returnRoute.addLayer(L.polyline(returnPoints, {
+          color: '#ffb703',
+          weight: 5,
+          dashArray: '9 8',
+          opacity: 0.95
+        }));
+        layers.returnRoute.addLayer(L.circleMarker(returnPoints.at(-1), {
+          radius: 8,
+          color: '#fff',
+          fillColor: '#ff3366',
+          fillOpacity: 1,
+          weight: 2
+        }));
+        if (document.getElementById('route').checked) map.addLayer(layers.returnRoute);
+        status.style.color = 'var(--amber)';
+        status.textContent = `Retorno automático activado: vuelta estimada ${formatRemainingTime(returnMinutes)}; ${limitingResource.name} restante tras la ida: ${formatRemainingTime(timeAfterOutbound)}.`;
+      } else {
+        map.removeLayer(layers.returnRoute);
+        status.style.color = '#94a3b8';
+        status.textContent = `Retorno no activado · vuelta estimada ${formatRemainingTime(returnMinutes)}; recurso limitante (${limitingResource.name}): ${formatRemainingTime(limitingResource.minutes)}.`;
+      }
+    }
+
+    function localDateTimeValue() {
+      const date = new Date();
+      date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+      return date.toISOString().slice(0, 16);
+    }
+
+    function createEntryField(entry, property, labelText, type) {
+      const label = document.createElement('label');
+      label.textContent = labelText;
+      const field = type === 'textarea' ? document.createElement('textarea') : document.createElement('input');
+      if (type !== 'textarea') field.type = type;
+      field.value = entry[property] || '';
+      if (type === 'textarea') field.rows = 2;
+      field.addEventListener('input', () => {
+        entry[property] = field.value;
+        saveStatusNotebook();
+      });
+      label.appendChild(field);
+      return label;
+    }
+
+    function renderStatusEntries() {
+      const log = document.getElementById('statusLog');
+      log.replaceChildren();
+      if (!statusEntries.length) {
+        const empty = document.createElement('div');
+        empty.className = 'status-empty';
+        empty.textContent = 'Aún no hay registros de equipo.';
+        log.appendChild(empty);
+        return;
+      }
+
+      [...statusEntries].sort((a, b) => b.time.localeCompare(a.time)).forEach(entry => {
+        const card = document.createElement('article');
+        card.className = 'status-entry';
+        const header = document.createElement('div');
+        header.className = 'status-entry-head';
+        const title = document.createElement('span');
+        title.textContent = 'REGISTRO DE EQUIPO';
+        const remove = document.createElement('button');
+        remove.className = 'status-delete';
+        remove.type = 'button';
+        remove.textContent = 'Eliminar';
+        remove.setAttribute('aria-label', 'Eliminar registro de equipo');
+        remove.addEventListener('click', () => {
+          statusEntries = statusEntries.filter(item => item.id !== entry.id);
+          saveStatusNotebook();
+          renderStatusEntries();
+        });
+        header.append(title, remove);
+        card.append(header);
+        if (entry.snapshot) {
+          const snapshot = document.createElement('p');
+          snapshot.className = 'status-entry-snapshot';
+          const details = [
+            `O₂ ${entry.snapshot.oxygenRemaining} L`,
+            `tablet ${entry.snapshot.tabletBattery}%`,
+            `linterna ${entry.snapshot.flashlightBattery}%`,
+            `comida ${entry.snapshot.foodRations}`,
+            `agua ${entry.snapshot.waterRemaining} L`,
+            `base ${entry.snapshot.baseConnection ? 'activa' : 'inactiva'}`
+          ];
+          if (entry.snapshot.fuelRemaining !== null) details.push(`combustible ${entry.snapshot.fuelRemaining} L`);
+          snapshot.textContent = `Estado capturado (${entry.snapshot.travelMode === 'vehicle' ? 'vehículo' : 'a pie'}): ${details.join(' · ')}`;
+          card.append(snapshot);
+        }
+        card.append(
+          createEntryField(entry, 'time', 'Fecha y hora', 'datetime-local'),
+          createEntryField(entry, 'equipment', 'Equipo o sistema', 'text'),
+          createEntryField(entry, 'note', 'Estado / observación', 'textarea')
+        );
+        log.appendChild(card);
+      });
+    }
+
+    const statusToggle = document.getElementById('statusToggle');
+    const statusNotebook = document.getElementById('statusNotebook');
+    statusToggle.addEventListener('click', () => {
+      const isOpening = statusNotebook.hidden;
+      statusNotebook.hidden = !isOpening;
+      statusToggle.setAttribute('aria-expanded', String(isOpening));
+      document.getElementById('statusChevron').textContent = isOpening ? '▾' : '▸';
+    });
+
+    statusInputIds.forEach(id => {
+      document.getElementById(id).addEventListener('input', () => {
+        saveStatusNotebook();
+        updateOxygenEstimate();
+        updateFuelEstimate();
+        updateReturnRoute();
+      });
+    });
+    document.getElementById('baseConnection').addEventListener('change', event => {
+      document.getElementById('connectionState').textContent = event.target.checked ? 'ACTIVADA' : 'NO ACTIVADA';
+      saveStatusNotebook();
+    });
+    document.querySelectorAll('input[name="travelMode"]').forEach(input => {
+      input.addEventListener('change', () => {
+        saveStatusNotebook();
+        updateFuelEstimate();
+        updateReturnRoute();
+      });
+    });
+    document.getElementById('addStatusEntry').addEventListener('click', () => {
+      const equipment = document.getElementById('equipmentName');
+      const note = document.getElementById('equipmentNote');
+      statusEntries.push({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        time: localDateTimeValue(),
+        equipment: equipment.value.trim() || 'Equipo EVA',
+        note: note.value.trim(),
+        snapshot: {
+          oxygenRemaining: Number(document.getElementById('oxygenRemaining').value) || 0,
+          tabletBattery: Number(document.getElementById('tabletBattery').value) || 0,
+          flashlightBattery: Number(document.getElementById('flashlightBattery').value) || 0,
+          foodRations: Number(document.getElementById('foodRations').value) || 0,
+          waterRemaining: Number(document.getElementById('waterRemaining').value) || 0,
+          fuelRemaining: document.querySelector('input[name="travelMode"]:checked').value === 'vehicle'
+            ? Number(document.getElementById('fuelRemaining').value) || 0
+            : null,
+          baseConnection: document.getElementById('baseConnection').checked,
+          travelMode: document.querySelector('input[name="travelMode"]:checked').value
+        }
+      });
+      equipment.value = '';
+      note.value = '';
+      saveStatusNotebook();
+      renderStatusEntries();
+    });
+    updateOxygenEstimate();
+    document.getElementById('connectionState').textContent = savedStatus.baseConnection ? 'ACTIVADA' : 'NO ACTIVADA';
+    updateFuelEstimate();
+    renderStatusEntries();
 
     let currentZoneAtmosphere = null;
 
@@ -490,6 +1068,8 @@
       const zone = document.getElementById('zone').value;
       const slope = document.getElementById('slope').value;
       const resolution = document.getElementById('resolution').value;
+      mineralQueryId += 1;
+      mineralDetectionsLayer.clearLayers();
 
       try {
         // Cargar gases de la ESA para esta zona en paralelo
@@ -499,12 +1079,16 @@
         const response = await fetch(`${API_BASE}/terrain?zone=${zone}&resolution=${resolution}&max_slope=${slope}`);
         if (!response.ok) throw new Error(`API terrain HTTP error ${response.status}`);
         const data = await response.json();
+        currentTerrainBounds = data.bounds;
 
         // Limpiar capas anteriores
         layers.cells.clearLayers();
         layers.hazards.clearLayers();
         layers.route.clearLayers();
+        layers.returnRoute.clearLayers();
         layers.wps.clearLayers();
+        latestRoute = null;
+        updateReturnRoute();
 
         map.fitBounds([
           [data.bounds.min_lat, data.bounds.min_lon],
@@ -540,6 +1124,7 @@
         // Trazar ruta segura A*
         if (data.safe_route && data.safe_route.coordinates_lon_lat_elev) {
           const points = data.safe_route.coordinates_lon_lat_elev.map(p => [p[1], p[0]]);
+          latestRoute = { points, distanceMeters: data.safe_route.total_distance_meters };
           layers.route.addLayer(L.polyline(points, { color: '#45f3ff', weight: 8, opacity: 0.25 }));
           layers.route.addLayer(L.polyline(points, { color: '#45f3ff', weight: 3 }));
           layers.route.addLayer(L.circleMarker(points[0], { radius: 7, color: '#fff', fillColor: '#22c55e', fillOpacity: 1 }));
@@ -549,9 +1134,14 @@
           document.getElementById('waypoints').textContent = data.safe_route.num_waypoints;
           document.getElementById('average').textContent = data.safe_route.mean_path_slope_deg + '°';
           document.getElementById('maximum').textContent = data.safe_route.max_path_slope_deg + '°';
-          const minutes = (data.safe_route.total_distance_meters / 48).toFixed(0);
-          document.getElementById('time').textContent = minutes + ' min';
-          document.getElementById('oxygen').textContent = (minutes * 0.95).toFixed(1) + ' L';
+          const speedMetersPerMinute = document.querySelector('input[name="travelMode"]:checked').value === 'vehicle' ? 120 : 48;
+          const minutes = data.safe_route.total_distance_meters / speedMetersPerMinute;
+          document.getElementById('time').textContent = Math.ceil(minutes) + ' min';
+          const oxygenRate = Math.max(0, Number(document.getElementById('oxygenConsumption').value) || 0);
+          document.getElementById('oxygen').textContent = (minutes * oxygenRate / 60).toFixed(1) + ' L';
+          updateReturnRoute();
+        } else {
+          document.getElementById('routeReturnStatus').textContent = 'No se encontró una ruta segura para calcular el retorno.';
         }
 
         // Hitos históricos de rovers
@@ -575,6 +1165,10 @@
           Grupos de escarpes detectados: <b>${data.hazard_zones.length}</b>
         `;
 
+        if (document.getElementById('basemap').value === 'minerals') {
+          loadMineralDetections(data.bounds, zone);
+        }
+
       } catch (error) {
         document.getElementById('stats').innerHTML = `<span style="color:#ff3366">Error conectando con la API de terreno (${error.message}). Comprueba que el servidor está corriendo en el puerto 8000.</span>`;
         console.error('Error cargando terreno:', error);
@@ -594,10 +1188,7 @@
 
     // Listeners interactivos
     document.getElementById('zone').onchange = event => {
-      if (event.target.value === 'jezero' && document.getElementById('basemap').value === 'gale-imagery') {
-        document.getElementById('basemap').value = 'mola';
-        setBaseMapMode('mola');
-      }
+      setBaseMapMode(document.getElementById('basemap').value);
       load();
     };
     document.getElementById('resolution').onchange = load;
@@ -607,7 +1198,15 @@
     // Toggle de capas
     document.getElementById('cells').onchange = e => e.target.checked ? map.addLayer(layers.cells) : map.removeLayer(layers.cells);
     document.getElementById('hazards').onchange = e => e.target.checked ? map.addLayer(layers.hazards) : map.removeLayer(layers.hazards);
-    document.getElementById('route').onchange = e => e.target.checked ? map.addLayer(layers.route) : map.removeLayer(layers.route);
+    document.getElementById('route').onchange = e => {
+      if (e.target.checked) {
+        map.addLayer(layers.route);
+        if (layers.returnRoute.getLayers().length) map.addLayer(layers.returnRoute);
+      } else {
+        map.removeLayer(layers.route);
+        map.removeLayer(layers.returnRoute);
+      }
+    };
     document.getElementById('wps').onchange = e => e.target.checked ? map.addLayer(layers.wps) : map.removeLayer(layers.wps);
     document.getElementById('gasesLayer').onchange = e => e.target.checked ? map.addLayer(layers.gases) : map.removeLayer(layers.gases);
 

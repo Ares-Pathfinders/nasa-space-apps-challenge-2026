@@ -1,16 +1,28 @@
 import os
 import json
+import math
 from typing import Optional, Tuple
 import numpy as np
 import requests
 
 from ..terrain.grid import ElevationGrid
 
-# Curiosity Landing Site (Bradbury Landing) & Corridor Bounds
-GALE_MIN_LAT = -4.750  # South (Mount Sharp slopes)
-GALE_MAX_LAT = -4.560  # North (Bradbury Landing / Crater floor)
-GALE_MIN_LON = 137.340 # West
-GALE_MAX_LON = 137.520 # East
+# Curiosity Landing Site (Bradbury Landing) & 5 km expansion around the corridor
+MARS_RADIUS_KM = 3389.5
+ANALYSIS_MARGIN_KM = 5.0
+GALE_BASE_MIN_LAT = -4.750
+GALE_BASE_MAX_LAT = -4.560
+GALE_BASE_MIN_LON = 137.340
+GALE_BASE_MAX_LON = 137.520
+GALE_CENTER_LAT = (GALE_BASE_MIN_LAT + GALE_BASE_MAX_LAT) / 2
+GALE_LAT_MARGIN_DEG = math.degrees(ANALYSIS_MARGIN_KM / MARS_RADIUS_KM)
+GALE_LON_MARGIN_DEG = math.degrees(
+    ANALYSIS_MARGIN_KM / (MARS_RADIUS_KM * math.cos(math.radians(GALE_CENTER_LAT)))
+)
+GALE_MIN_LAT = GALE_BASE_MIN_LAT - GALE_LAT_MARGIN_DEG
+GALE_MAX_LAT = GALE_BASE_MAX_LAT + GALE_LAT_MARGIN_DEG
+GALE_MIN_LON = GALE_BASE_MIN_LON - GALE_LON_MARGIN_DEG
+GALE_MAX_LON = GALE_BASE_MAX_LON + GALE_LON_MARGIN_DEG
 
 MSL_WAYPOINTS_URL = "https://mars.nasa.gov/mmgis-maps/MSL/Layers/json/MSL_waypoints.json"
 
