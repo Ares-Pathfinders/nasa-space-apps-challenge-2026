@@ -9,6 +9,7 @@ Zero third-party dependencies required; runs directly with standard library Pyth
 import os
 import sys
 import json
+import math
 import mimetypes
 from urllib.parse import urlparse, parse_qs
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
@@ -16,7 +17,9 @@ from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 # Add repo root to sys.path
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, REPO_ROOT)
+sys.path.insert(0, os.path.dirname(__file__))
 
+from app.services.psa_service import PSAService
 from backend.data.gale_crater_topography import generate_gale_crater_elevation_grid, GALE_MIN_LAT, GALE_MAX_LAT, GALE_MIN_LON, GALE_MAX_LON
 from backend.data.jezero_crater_topography import generate_jezero_crater_elevation_grid, JEZERO_MIN_LAT, JEZERO_MAX_LAT, JEZERO_MIN_LON, JEZERO_MAX_LON
 from backend.terrain.slope import SlopeAnalyzer
@@ -24,6 +27,26 @@ from backend.terrain.cell_graph import CellGraphBuilder
 
 FRONTEND_DIST_DIR = os.path.join(REPO_ROOT, "frontend", "dist")
 TERRAIN_CACHE_FILE = os.path.join(os.path.dirname(__file__), "terrain_analysis_output.json")
+
+
+def _nearest_passable_cell(grid, builder, cell, max_radius=2):
+    row, col = cell
+    for radius in range(max_radius + 1):
+        candidates = []
+        for candidate_row in range(max(0, row - radius), min(grid.rows, row + radius + 1)):
+            for candidate_col in range(max(0, col - radius), min(grid.cols, col + radius + 1)):
+                if max(abs(candidate_row - row), abs(candidate_col - col)) != radius:
+                    continue
+                candidate = (candidate_row, candidate_col)
+                if candidate in builder.graph:
+                    candidates.append(candidate)
+        if candidates:
+            return min(
+                candidates,
+                key=lambda candidate: grid.get_distance_meters(row, col, candidate[0], candidate[1])
+            )
+    return None
+
 
 # Preload or initialize Gale Crater terrain graph once on server startup
 print("[ARES-Nav Server] Initializing Gale Crater cell graph...")
@@ -138,6 +161,13 @@ class AresNavHandler(SimpleHTTPRequestHandler):
             })
         elif path == "/api/sites":
             self._send_json(EXPLORATION_SITES)
+        elif path.startswith("/api/atmosphere/zones/"):
+            zone_id = path.rsplit("/", 1)[-1]
+            zone = PSAService.get_zone_by_id(zone_id)
+            if zone is None:
+                self._send_json({"error": f"Atmospheric zone not found: {zone_id}"}, status=404)
+            else:
+                self._send_json(json.loads(zone.model_dump_json()))
         elif path == "/api/rover-photos":
             rover = query.get("rover", ["curiosity"])[0]
             sol = int(query.get("sol", [1000])[0])
@@ -249,76 +279,135 @@ class AresNavHandler(SimpleHTTPRequestHandler):
             self.send_error(404, f"API endpoint not found: {path}")
 
     def _handle_pathfinding_simulate(self):
+        content_len = int(self.headers.get("Content-Length", 0))
         try:
-            content_len = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_len)
             req = json.loads(body.decode("utf-8")) if body else {}
+        except (UnicodeDecodeError, json.JSONDecodeError) as error:
+            self._send_json({"error": f"Invalid JSON request: {error}"}, status=400)
+            return
 
+        if not isinstance(req, dict):
+            self._send_json({"error": "Request body must be a JSON object."}, status=400)
+            return
+
+        zone = req.get("zone", "gale")
+        if not isinstance(zone, str) or zone.lower() not in ("gale", "jezero"):
+            self._send_json({"error": "zone must be either 'gale' or 'jezero'."}, status=400)
+            return
+        zone = zone.lower()
+
+        try:
+            resolution = int(req.get("resolution", 80))
+            max_slope = float(req.get("max_slope", 15.0))
             start_coords = req.get("start", {"latitude": -4.596, "longitude": 137.488})
             target_coords = req.get("target", {"latitude": -4.716, "longitude": 137.397})
+            start = (float(start_coords["latitude"]), float(start_coords["longitude"]))
+            target = (float(target_coords["latitude"]), float(target_coords["longitude"]))
+        except (KeyError, TypeError, ValueError) as error:
+            self._send_json({"error": f"Invalid route parameters: {error}"}, status=400)
+            return
 
-            start_cell = elevation_grid.geo_to_cell(start_coords["latitude"], start_coords["longitude"])
-            goal_cell = elevation_grid.geo_to_cell(target_coords["latitude"], target_coords["longitude"])
+        if not 20 <= resolution <= 100:
+            self._send_json({"error": "resolution must be between 20 and 100."}, status=400)
+            return
+        if not math.isfinite(max_slope) or not 8.0 <= max_slope <= 25.0:
+            self._send_json({"error": "max_slope must be between 8 and 25 degrees."}, status=400)
+            return
+        if not all(math.isfinite(value) for value in (*start, *target)):
+            self._send_json({"error": "Route coordinates must be finite numbers."}, status=400)
+            return
 
-            # Ensure start/goal cells are navigable
-            if not slope_analyzer.is_cell_passable(*start_cell):
-                start_cell = (max(0, start_cell[0] - 1), start_cell[1])
-            if not slope_analyzer.is_cell_passable(*goal_cell):
-                goal_cell = (max(0, goal_cell[0] - 1), goal_cell[1])
+        if zone == "gale" and resolution == 80 and max_slope == 15.0:
+            grid, analyzer, builder = elevation_grid, slope_analyzer, cell_graph_builder
+        else:
+            if zone == "jezero":
+                grid = generate_jezero_crater_elevation_grid(resolution_rows=resolution, resolution_cols=resolution)
+            else:
+                grid = generate_gale_crater_elevation_grid(resolution_rows=resolution, resolution_cols=resolution)
+            analyzer = SlopeAnalyzer(grid, max_slope_deg=max_slope)
+            builder = CellGraphBuilder(grid, analyzer, slope_penalty_weight=3.5)
 
-            route = cell_graph_builder.find_path_astar(start_cell, goal_cell)
-            if not route:
-                self._send_json({"error": "No navigable route found avoiding impassable slopes"}, status=422)
+        for name, coords in (("start", start), ("target", target)):
+            latitude, longitude = coords
+            if not (grid.min_lat <= latitude <= grid.max_lat and grid.min_lon <= longitude <= grid.max_lon):
+                self._send_json({
+                    "error": f"{name} must be inside the loaded {zone} terrain bounds.",
+                    "bounds": {
+                        "min_lat": grid.min_lat,
+                        "max_lat": grid.max_lat,
+                        "min_lon": grid.min_lon,
+                        "max_lon": grid.max_lon,
+                    },
+                }, status=400)
                 return
 
-            # Format to PathfindingResponse specification in types/mars.ts
-            waypoints = []
-            cum_dist = 0.0
-            for idx, (lon, lat, elev) in enumerate(route["coordinates_lon_lat_elev"]):
-                if idx > 0:
-                    prev_c = route["cell_path"][idx - 1]
-                    curr_c = route["cell_path"][idx]
-                    cum_dist += elevation_grid.get_distance_meters(prev_c[0], prev_c[1], curr_c[0], curr_c[1])
+        requested_start_cell = grid.geo_to_cell(*start)
+        requested_goal_cell = grid.geo_to_cell(*target)
+        start_cell = _nearest_passable_cell(grid, builder, requested_start_cell)
+        goal_cell = _nearest_passable_cell(grid, builder, requested_goal_cell)
+        if start_cell is None or goal_cell is None:
+            self._send_json({
+                "error": "The selected endpoint is on impassable terrain with no safe cell nearby. Choose a safer point."
+            }, status=422)
+            return
+        if start_cell == goal_cell:
+            self._send_json({"error": "Choose two points at least one navigable cell apart."}, status=422)
+            return
 
-                cell = route["cell_path"][idx]
-                slope = slope_analyzer.get_cell_slope(cell[0], cell[1])
-                waypoints.append({
-                    "index": idx,
-                    "latitude": round(lat, 5),
-                    "longitude": round(lon, 5),
-                    "elevation_m": round(elev, 2),
-                    "slope_deg": round(slope, 2),
-                    "cumulative_distance_m": round(cum_dist, 1),
-                    "hazard_warning": "High slope scarp nearby" if slope > 12.0 else None,
-                    "radiation_rate_ugy_h": 9.8,
-                    "estimated_energy_kcal": round(cum_dist * 0.12, 1),
-                })
+        route = builder.find_path_astar(start_cell, goal_cell)
+        if not route:
+            self._send_json({"error": "No safe route connects the selected points at this slope limit."}, status=422)
+            return
 
-            dist_m = route["total_distance_meters"]
-            est_time_min = round(dist_m / (0.8 * 60.0), 1)  # 0.8 m/s astronaut walk speed
-            o2_liters = round(est_time_min * 0.95, 1)        # ~0.95 L/min O2 consumption under EVA
+        waypoints = []
+        cumulative_distance = 0.0
+        for idx, (lon, lat, elev) in enumerate(route["coordinates_lon_lat_elev"]):
+            if idx > 0:
+                previous = route["cell_path"][idx - 1]
+                current = route["cell_path"][idx]
+                cumulative_distance += grid.get_distance_meters(previous[0], previous[1], current[0], current[1])
 
-            response = {
-                "site_id": req.get("site_id", "mount-sharp-boxwork"),
-                "total_distance_m": round(dist_m, 1),
-                "estimated_duration_min": est_time_min,
-                "max_slope_deg": route["max_path_slope_deg"],
-                "average_slope_deg": route["mean_path_slope_deg"],
-                "total_elevation_gain_m": max(0.0, route["elevation_gain_m"]),
-                "total_elevation_loss_m": abs(min(0.0, route["elevation_gain_m"])),
-                "estimated_o2_consumed_liters": o2_liters,
-                "total_radiation_dose_usv": round((est_time_min / 60.0) * 10.5, 2),
-                "risk_level": "LOW" if route["max_path_slope_deg"] < 12.0 else "MODERATE",
-                "safety_margins": {
-                    "o2_reserve_remaining_percent": round(max(0.0, 100.0 - (o2_liters / 400.0) * 100.0), 1),
-                    "safe_return_time_buffer_min": round(est_time_min * 0.6, 1),
-                    "point_of_no_return_distance_m": round(dist_m * 0.5, 1),
-                },
-                "waypoints": waypoints,
-            }
-            self._send_json(response)
-        except Exception as e:
-            self._send_json({"error": str(e)}, status=500)
+            cell = route["cell_path"][idx]
+            slope = analyzer.get_cell_slope(cell[0], cell[1])
+            waypoints.append({
+                "index": idx,
+                "latitude": round(lat, 5),
+                "longitude": round(lon, 5),
+                "elevation_m": round(elev, 2),
+                "slope_deg": round(slope, 2),
+                "cumulative_distance_m": round(cumulative_distance, 1),
+                "hazard_warning": "High slope scarp nearby" if slope > 12.0 else None,
+                "radiation_rate_ugy_h": 9.8,
+                "estimated_energy_kcal": round(cumulative_distance * 0.12, 1),
+            })
+
+        distance_m = route["total_distance_meters"]
+        duration_min = round(distance_m / (0.8 * 60.0), 1)
+        oxygen_liters = round(duration_min * 0.95, 1)
+        snapped_start_coords = grid.cell_to_geo(*start_cell)
+        snapped_target_coords = grid.cell_to_geo(*goal_cell)
+        self._send_json({
+            "site_id": req.get("site_id", "jezero-crater-delta" if zone == "jezero" else "mount-sharp-boxwork"),
+            "zone": zone,
+            "total_distance_m": round(distance_m, 1),
+            "estimated_duration_min": duration_min,
+            "max_slope_deg": route["max_path_slope_deg"],
+            "average_slope_deg": route["mean_path_slope_deg"],
+            "total_elevation_gain_m": max(0.0, route["elevation_gain_m"]),
+            "total_elevation_loss_m": abs(min(0.0, route["elevation_gain_m"])),
+            "estimated_o2_consumed_liters": oxygen_liters,
+            "total_radiation_dose_usv": round((duration_min / 60.0) * 10.5, 2),
+            "risk_level": "LOW" if route["max_path_slope_deg"] < 12.0 else "MODERATE",
+            "safety_margins": {
+                "o2_reserve_remaining_percent": round(max(0.0, 100.0 - (oxygen_liters / 400.0) * 100.0), 1),
+                "safe_return_time_buffer_min": round(duration_min * 0.6, 1),
+                "point_of_no_return_distance_m": round(distance_m * 0.5, 1),
+            },
+            "snapped_start": start_cell != requested_start_cell,
+            "snapped_target": goal_cell != requested_goal_cell,
+            "waypoints": waypoints,
+        })
 
     def _handle_static_get(self, path: str):
         """Serves compiled frontend files from frontend/dist."""

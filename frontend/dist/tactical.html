@@ -57,7 +57,6 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      text-decoration: none;
     }
     .nav-btn:hover {
       background: var(--cyan);
@@ -197,11 +196,11 @@
   <!-- Panel Izquierdo: Configuración del terreno y cuadrícula -->
   <aside class="panel side left">
     <h2>SELECCIÓN DE EXPEDICIÓN</h2>
-    <label for="basemap">Mapa base</label>
+    <label for="basemap">Mapa temático</label>
     <select id="basemap">
-      <option value="mola" selected>MOLA · relieve sombreado (predeterminado)</option>
-      <option value="minerals">Mapa mineral colorimétrico (incluye Mars Odyssey)</option>
-      <option value="gale-imagery">Gale NASA · CTX / HiRISE y topónimos</option>
+      <option value="normal" selected>Vista normal · imagen orbital/topografía</option>
+      <option value="minerals">Minerales acuosos · detecciones NASA Mars Trek</option>
+      <option value="gases">Gases · resumen regional ESA PSA</option>
     </select>
 
     <label for="zone">Zona Marciana</label>
@@ -221,13 +220,18 @@
       <option value="80">80 x 80 (Submétrica)</option>
     </select>
 
+    <h2 style="margin-top:16px">PLANIFICADOR DE RUTA</h2>
+    <button id="planRoute" class="nav-btn" style="width:100%;justify-content:center;">🧭 ELEGIR ORIGEN Y DESTINO</button>
+    <button id="clearCustomRoute" class="nav-btn" style="width:100%;justify-content:center;margin-top:6px;border-color:#94a3b8;color:#cbd5e1;background:rgba(148,163,184,.08);">BORRAR RUTA PERSONALIZADA</button>
+    <div id="routeStatus" class="info" style="margin-top:7px;font-size:9px;">Elige dos puntos del mapa. La ruta evitará las pendientes que superen el límite configurado.</div>
+
     <h2 style="margin-top:16px">CAPAS VISIBLES</h2>
     <div class="checks">
       <label><input id="cells" type="checkbox" checked> ▦ Cuadrícula topográfica</label>
       <label><input id="hazards" type="checkbox" checked> ⛔ Celdas intransitables (Escarpadas)</label>
       <label><input id="route" type="checkbox" checked> ⚡ Ruta segura A* optimizada</label>
       <label><input id="wps" type="checkbox" checked> 📍 Hitos de expedición rover</label>
-      <label><input id="gasesLayer" type="checkbox" checked> 🪐 Auras y balizas de gases (ESA PSA)</label>
+      <label><input id="gasesLayer" type="checkbox" checked> 🪐 Referencia de gases de la zona</label>
     </div>
 
     <h2 style="margin-top:16px">LEYENDA</h2>
@@ -236,28 +240,27 @@
       <div><span style="background:#eab308;border-color:#eab308"></span>Precaución (10° - 15°)</div>
       <div><span style="background:#ff3366;border-color:#ff3366"></span>Intransitable (&gt; 15°)</div>
       <div><span style="background:var(--cyan);border-color:var(--cyan);height:3px"></span>Ruta A* con menor coste</div>
-      <div><span style="background:#a855f7;border-color:#a855f7"></span>Espectrometría ESA (NOMAD/ACS)</div>
+      <div><span style="background:#a855f7;border-color:#a855f7"></span>Centro de referencia atmosférica (no es una medición puntual)</div>
     </div>
 
     <h2 style="margin-top:16px">ESTADÍSTICAS DEL TERRENO</h2>
     <div id="stats" class="info">Calculando celdas...</div>
   </aside>
 
-  <!-- Panel Derecho: Gases de la ESA PSA e Inspector de Celdas -->
+  <!-- Panel Derecho: datos regionales de ESA PSA e inspector de celdas -->
   <aside class="panel side right">
-    <h2 id="rightDataTitle">🪐 GASES POR ZONA // ESA PSA</h2>
+    <h2 id="rightDataTitle">VISTA NORMAL // IMAGEN ORBITAL</h2>
+    <div id="normalPanel" class="info" style="font-size:10px;">
+      <div style="color:#94a3b8;line-height:1.5;">Gale: mosaico HiRISE de NASA Mars Trek (~0,25 m/píxel nativo). Jezero: relieve MOLA/HRSC (~200 m/píxel); no se ha verificado aquí un mosaico local HiRISE equivalente.</div>
+      <a href="https://trek.nasa.gov/mars/trekarcgis/rest/services/curiosity_hirise_mosaic/ImageServer" target="_blank" class="psa-link">Fuente orbital / topográfica NASA Mars Trek</a>
+    </div>
     <div id="gasesPanel" class="info" style="font-size:10px;">
-      <div style="color:#94a3b8">Consultando espectrometría ExoMars TGO & Mars Express...</div>
+      <div style="color:#94a3b8;line-height:1.5;">El registro muestra un resumen atmosférico regional. La marca señala el centro representativo de la zona; no es una capa continua ni una concentración medida en superficie.</div>
     </div>
     <div id="mineralPanel" class="info" style="font-size:10px;display:none;">
-      <div style="color:#94a3b8;margin-bottom:8px;">Distribución de minerales acuosos · Mars Trek</div>
-      <div class="gas-row"><span style="display:flex;align-items:center;gap:7px;"><span style="width:12px;height:12px;background:#67f04a;"></span>Carbonato</span></div>
-      <div class="gas-row"><span style="display:flex;align-items:center;gap:7px;"><span style="width:12px;height:12px;background:#f7fb43;"></span>Cloruro</span></div>
-      <div class="gas-row"><span style="display:flex;align-items:center;gap:7px;"><span style="width:12px;height:12px;background:#49a8d7;"></span>Filosilicato</span></div>
-      <div class="gas-row"><span style="display:flex;align-items:center;gap:7px;"><span style="width:12px;height:12px;background:#982bd8;"></span>Silicato / sílice</span></div>
-      <div class="gas-row"><span style="display:flex;align-items:center;gap:7px;"><span style="width:12px;height:12px;background:#ef8181;"></span>Sulfato</span></div>
-      <p style="margin:8px 0 0;color:#94a3b8;line-height:1.5;">Los colores identifican clases y distribución mineral; no representan porcentajes ni concentraciones. La capa combina observaciones CRISM, OMEGA y THEMIS (Mars Odyssey).</p>
-      <a href="https://trek.nasa.gov/mars/" target="_blank" class="psa-link">Ver ficha y leyenda en Mars Trek</a>
+      <div style="color:#94a3b8;margin-bottom:8px;">Puntos de detección mineral del servicio NASA Mars Trek. La simbología y las clases las determina el servicio.</div>
+      <p style="margin:8px 0 0;color:#94a3b8;line-height:1.5;">La consulta del corredor táctico inmediato no devuelve detecciones para Gale ni Jezero; el mapa no interpola ni inventa cobertura. Hay observaciones en las regiones circundantes.</p>
+      <a href="https://trek.nasa.gov/mars/trekarcgis/rest/services/Aquieous_Mineral_Distribution_Options_clon0/MapServer" target="_blank" class="psa-link">Abrir datos y leyenda oficiales de NASA Mars Trek</a>
     </div>
 
     <h2 style="margin-top:16px">🔍 INSPECTOR DE CELDA</h2>
@@ -290,82 +293,80 @@
     const map = L.map('map', { crs: L.CRS.EPSG4326, center: [-4.65, 137.43], zoom: 11, zoomControl: false });
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    const baseMap = L.tileLayer('https://trek.nasa.gov/tiles/Mars/EQ/Mars_MGS_MOLA_ClrShade_merge_global_463m/1.0.0/default/default028mm/{z}/{y}/{x}.jpg', {
-      maxZoom: 12, maxNativeZoom: 7, minZoom: 2, attribution: 'NASA / USGS MOLA'
-    }).addTo(map);
-    const mineralMapUrl = 'https://trek.nasa.gov/mars/trekarcgis/rest/services/Aquieous_Mineral_Distribution_Options_clon0/MapServer';
-    const mineralMapLayer = L.gridLayer({ tileSize: 256, minZoom: 2, maxZoom: 12, updateWhenIdle: true });
-    mineralMapLayer.createTile = (coords, done) => {
-      const tileSize = L.point(256, 256);
-      const northWest = map.unproject(coords.scaleBy(tileSize), coords.z);
-      const southEast = map.unproject(coords.add(L.point(1, 1)).scaleBy(tileSize), coords.z);
-      const bbox = [northWest.lng, southEast.lat, southEast.lng, northWest.lat].join(',');
-      const params = new URLSearchParams({
-        bbox,
-        bboxSR: '104905',
-        imageSR: '104905',
-        size: `${tileSize.x},${tileSize.y}`,
-        format: 'png32',
-        transparent: 'true',
-        f: 'image'
-      });
-      const tile = L.DomUtil.create('img', 'leaflet-tile');
-      tile.onload = () => done(null, tile);
-      tile.onerror = (error) => done(error, tile);
-      tile.src = `${mineralMapUrl}/export?${params.toString()}`;
-      return tile;
+    const trekService = 'https://trek.nasa.gov/mars/trekarcgis/rest/services';
+    const regionContextBounds = {
+      gale: [[-7.0, 135.0], [-3.0, 140.0]],
+      jezero: [[16.0, 75.0], [20.0, 80.0]]
     };
+    const galeNormalLayer = createTrekExportLayer(
+      `${trekService}/curiosity_hirise_mosaic/ImageServer`,
+      'exportImage',
+      'jpg',
+      false
+    );
+    const jezeroNormalLayer = createTrekExportLayer(
+      `${trekService}/Mars_MOLA_blend200ppx_HRSC_ClrShade_clon0dd_200mpp/ImageServer`,
+      'exportImage',
+      'jpg',
+      false
+    );
+    const mineralMapLayer = createTrekExportLayer(
+      `${trekService}/Aquieous_Mineral_Distribution_Options_clon0/MapServer`,
+      'export',
+      'png32',
+      true
+    );
 
-    function createGaleTileLayer(urlTemplate, opacity = 1, className = '') {
-      const layer = L.gridLayer({ tileSize: 256, minZoom: 5, maxZoom: 12, noWrap: true, updateWhenIdle: true, className });
+    function createTrekExportLayer(serviceUrl, operation, format, transparent, className = '') {
+      const layer = L.gridLayer({ tileSize: 256, minZoom: 2, maxZoom: 14, noWrap: true, updateWhenIdle: true, className });
       layer.createTile = (coords, done) => {
         const tileSize = L.point(256, 256);
         const northWest = map.unproject(coords.scaleBy(tileSize), coords.z);
-        const sourceZoom = coords.z + 1;
-        const matrixSize = 2 ** sourceZoom;
-        const latitude = Math.max(-85.05112878, Math.min(85.05112878, northWest.lat));
-        const latitudeRadians = latitude * Math.PI / 180;
-        const x = Math.floor((northWest.lng + 180) / 360 * matrixSize);
-        const yTop = Math.floor((1 - Math.asinh(Math.tan(latitudeRadians)) / Math.PI) / 2 * matrixSize);
-        const y = matrixSize - 1 - Math.max(0, Math.min(matrixSize - 1, yTop));
+        const southEast = map.unproject(coords.add(L.point(1, 1)).scaleBy(tileSize), coords.z);
+        const bbox = [northWest.lng, southEast.lat, southEast.lng, northWest.lat].join(',');
         const tile = L.DomUtil.create('img', 'leaflet-tile');
-        tile.style.opacity = String(opacity);
         tile.onload = () => done(null, tile);
         tile.onerror = error => done(error, tile);
-        tile.src = urlTemplate
-          .replace('{z}', String(sourceZoom))
-          .replace('{x}', String(x))
-          .replace('{y}', String(y));
+        const params = new URLSearchParams({
+          bbox,
+          bboxSR: '104905',
+          imageSR: '104905',
+          size: `${tileSize.x},${tileSize.y}`,
+          format,
+          transparent: String(transparent),
+          f: 'image'
+        });
+        tile.src = `${serviceUrl}/${operation}?${params.toString()}`;
         return tile;
       };
       return layer;
     }
 
-    const galeImageryLayer = L.layerGroup([
-      createGaleTileLayer('https://mars.nasa.gov/mmgis-maps/MSL/Layers/MSL_CTX_ortho_mosaic_6m/{z}/{x}/{y}.png', 0.72, 'ctx-tint'),
-      createGaleTileLayer('https://mars.nasa.gov/mmgis-maps/MSL/Layers/MSL_Gale_HiRISE-LRGB_78quads/{z}/{x}/{y}.png'),
-      createGaleTileLayer('https://mars.nasa.gov/mmgis-maps/MSL/Layers/MSL_WebGIS_PlaceText/{z}/{x}/{y}.png', 0.96)
-    ]);
+    galeNormalLayer.addTo(map);
 
     function setBaseMapMode(mode) {
+      const zone = document.getElementById('zone').value;
+      const baseLayer = zone === 'jezero' ? jezeroNormalLayer : galeNormalLayer;
       const showMinerals = mode === 'minerals';
-      const showGaleImagery = mode === 'gale-imagery';
+      const showGases = mode === 'gases' && document.getElementById('gasesLayer').checked;
+      [galeNormalLayer, jezeroNormalLayer, mineralMapLayer, layers.gases].forEach(layer => map.removeLayer(layer));
+      map.addLayer(baseLayer);
       if (showMinerals) map.addLayer(mineralMapLayer);
-      else map.removeLayer(mineralMapLayer);
-      if (showGaleImagery) map.addLayer(galeImageryLayer);
-      else map.removeLayer(galeImageryLayer);
+      if (showGases) map.addLayer(layers.gases);
       document.getElementById('rightDataTitle').textContent = showMinerals
-        ? 'IDENTIFICACIÓN MINERAL // COLORIMETRÍA'
-        : '🪐 GASES POR ZONA // ESA PSA';
-      document.getElementById('gasesPanel').style.display = showMinerals ? 'none' : 'block';
+        ? 'MINERALES // DETECCIONES NASA MARS TREK'
+        : mode === 'gases' ? 'GASES // RESUMEN REGIONAL ESA PSA' : 'VISTA NORMAL // IMAGEN ORBITAL';
+      document.getElementById('normalPanel').style.display = mode === 'normal' ? 'block' : 'none';
+      document.getElementById('gasesPanel').style.display = showMinerals || mode !== 'gases' ? 'none' : 'block';
       document.getElementById('mineralPanel').style.display = showMinerals ? 'block' : 'none';
+      if (showMinerals) {
+        map.fitBounds(regionContextBounds[zone], { padding: [40, 40] });
+      } else if (currentTerrainBounds) {
+        map.fitBounds(currentTerrainBounds, { padding: [40, 40] });
+      }
     }
 
     document.getElementById('basemap').addEventListener('change', (event) => {
-      if (event.target.value === 'gale-imagery' && document.getElementById('zone').value !== 'gale') {
-        document.getElementById('zone').value = 'gale';
-        load();
-      }
       setBaseMapMode(event.target.value);
     });
 
@@ -374,12 +375,21 @@
       hazards: L.layerGroup().addTo(map),
       route: L.layerGroup().addTo(map),
       wps: L.layerGroup().addTo(map),
-      gases: L.layerGroup().addTo(map)
+      gases: L.layerGroup(),
+      customRoute: L.layerGroup().addTo(map)
     };
 
     let currentZoneAtmosphere = null;
+    let currentTerrainBounds = null;
+    let defaultRouteMetrics = null;
+    let isPickingRoute = false;
+    let selectedRouteStart = null;
+    let customRouteRequestId = 0;
+    setBaseMapMode(document.getElementById('basemap').value);
 
+    // Calcular presión barométrica local según cota altimétrica de la celda
     function calcPressure(elevM, basePressurePa) {
+      // Mars atmospheric scale height ~ 11.1 km
       const scaleHeight = 11100;
       return Math.round(basePressurePa * Math.exp(-elevM / scaleHeight));
     }
@@ -428,7 +438,7 @@
               <span style="color:#94a3b8">Dominante:</span> <b style="color:#10b981">${data.dominant_gas}</b>
             </div>
           </div>
-          <div style="font-weight:700;color:#c084fc;margin-bottom:4px;">GASES DETECTADOS (NOMAD / ACS / PFS):</div>
+          <div style="font-weight:700;color:#c084fc;margin-bottom:4px;">GASES EN EL RESUMEN REGIONAL:</div>
         `;
 
         data.gases.forEach(g => {
@@ -468,13 +478,20 @@
         layers.gases.clearLayers();
         if (data.coordinates) {
           const gasBeacon = L.circleMarker([data.coordinates.latitude, data.coordinates.longitude], {
-            radius: 12,
+            radius: 14,
             color: '#a855f7',
             fillColor: '#c084fc',
-            fillOpacity: 0.35,
-            weight: 2
-          }).bindPopup(`<b>Estación Espectrométrica ESA PSA</b><br>Zona: ${data.zone_name}<br>CH4: <b style="color:#45f3ff">Monitorizado</b><br>HCl: <b style="color:#f59e0b">Sensor TGO ACS</b>`);
+            fillOpacity: 0.95,
+            weight: 3
+          }).bindTooltip(`ESA PSA · ${data.zone_name} · resumen regional`, {
+            permanent: true,
+            direction: 'top',
+            className: 'gas-badge'
+          }).bindPopup(`<b>Referencia atmosférica regional</b><br>Zona: ${data.zone_name}<br>Coordenada representativa; no es una estación de medición ni indica una concentración local.`);
           layers.gases.addLayer(gasBeacon);
+        }
+        if (document.getElementById('basemap').value === 'gases' && document.getElementById('gasesLayer').checked) {
+          map.addLayer(layers.gases);
         }
 
       } catch (err) {
@@ -485,6 +502,12 @@
 
     async function load() {
       const loading = document.getElementById('loading');
+      customRouteRequestId += 1;
+      isPickingRoute = false;
+      selectedRouteStart = null;
+      layers.customRoute.clearLayers();
+      map.getContainer().style.cursor = '';
+      document.getElementById('routeStatus').textContent = 'Elige dos puntos del mapa para calcular una ruta segura.';
       loading.style.display = 'grid';
 
       const zone = document.getElementById('zone').value;
@@ -506,10 +529,16 @@
         layers.route.clearLayers();
         layers.wps.clearLayers();
 
-        map.fitBounds([
+        currentTerrainBounds = [
           [data.bounds.min_lat, data.bounds.min_lon],
           [data.bounds.max_lat, data.bounds.max_lon]
-        ], { padding: [40, 40] });
+        ];
+        map.fitBounds(
+          document.getElementById('basemap').value === 'minerals'
+            ? regionContextBounds[zone]
+            : currentTerrainBounds,
+          { padding: [40, 40] }
+        );
 
         const dlat = (data.bounds.max_lat - data.bounds.min_lat) / (data.resolution[0] - 1);
         const dlon = (data.bounds.max_lon - data.bounds.min_lon) / (data.resolution[1] - 1);
@@ -524,7 +553,8 @@
             color,
             weight: 0.7,
             fillColor: color,
-            fillOpacity: !cell.passable ? 0.75 : cell.slope > 10 ? 0.35 : 0.12
+            fillOpacity: !cell.passable ? 0.75 : cell.slope > 10 ? 0.35 : 0.12,
+            bubblingMouseEvents: true
           });
 
           rect.on('mouseover', () => cellInfo(cell));
@@ -545,13 +575,13 @@
           layers.route.addLayer(L.circleMarker(points[0], { radius: 7, color: '#fff', fillColor: '#22c55e', fillOpacity: 1 }));
           layers.route.addLayer(L.circleMarker(points.at(-1), { radius: 7, color: '#fff', fillColor: '#ffb703', fillOpacity: 1 }));
 
-          document.getElementById('distance').textContent = (data.safe_route.total_distance_meters / 1000).toFixed(2) + ' km';
-          document.getElementById('waypoints').textContent = data.safe_route.num_waypoints;
-          document.getElementById('average').textContent = data.safe_route.mean_path_slope_deg + '°';
-          document.getElementById('maximum').textContent = data.safe_route.max_path_slope_deg + '°';
-          const minutes = (data.safe_route.total_distance_meters / 48).toFixed(0);
-          document.getElementById('time').textContent = minutes + ' min';
-          document.getElementById('oxygen').textContent = (minutes * 0.95).toFixed(1) + ' L';
+          defaultRouteMetrics = {
+            distance: data.safe_route.total_distance_meters,
+            waypoints: data.safe_route.num_waypoints,
+            average: data.safe_route.mean_path_slope_deg,
+            maximum: data.safe_route.max_path_slope_deg
+          };
+          renderRouteMetrics(defaultRouteMetrics);
         }
 
         // Hitos históricos de rovers
@@ -583,6 +613,111 @@
       }
     }
 
+    function renderRouteMetrics(metrics) {
+      document.getElementById('distance').textContent = (metrics.distance / 1000).toFixed(2) + ' km';
+      document.getElementById('waypoints').textContent = metrics.waypoints;
+      document.getElementById('average').textContent = metrics.average + '°';
+      document.getElementById('maximum').textContent = metrics.maximum + '°';
+      const minutes = (metrics.distance / 48).toFixed(0);
+      document.getElementById('time').textContent = minutes + ' min';
+      document.getElementById('oxygen').textContent = (minutes * 0.95).toFixed(1) + ' L';
+    }
+
+    function addRoutePoint(latlng) {
+      const status = document.getElementById('routeStatus');
+      if (!currentTerrainBounds ||
+          latlng.lat < currentTerrainBounds[0][0] || latlng.lat > currentTerrainBounds[1][0] ||
+          latlng.lng < currentTerrainBounds[0][1] || latlng.lng > currentTerrainBounds[1][1]) {
+        status.textContent = 'Elige puntos dentro de los límites del terreno cargado.';
+        return;
+      }
+
+      const point = { latitude: latlng.lat, longitude: latlng.lng };
+      if (!selectedRouteStart) {
+        selectedRouteStart = point;
+        layers.customRoute.clearLayers();
+        layers.customRoute.addLayer(L.circleMarker([point.latitude, point.longitude], {
+          radius: 8, color: '#fff', weight: 2, fillColor: '#22c55e', fillOpacity: 1
+        }).bindTooltip('ORIGEN', { permanent: true, direction: 'top' }));
+        status.textContent = 'Origen fijado. Haz clic en el destino.';
+        return;
+      }
+
+      isPickingRoute = false;
+      map.getContainer().style.cursor = '';
+      layers.customRoute.addLayer(L.circleMarker([point.latitude, point.longitude], {
+        radius: 8, color: '#fff', weight: 2, fillColor: '#ffb703', fillOpacity: 1
+      }).bindTooltip('DESTINO', { permanent: true, direction: 'top' }));
+      calculateCustomRoute(selectedRouteStart, point);
+    }
+
+    async function calculateCustomRoute(start, target) {
+      const status = document.getElementById('routeStatus');
+      const requestId = ++customRouteRequestId;
+      status.textContent = 'Calculando una ruta segura sobre la cuadrícula topográfica...';
+      try {
+        const response = await fetch(`${API_BASE}/pathfinding/simulate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            zone: document.getElementById('zone').value,
+            resolution: Number(document.getElementById('resolution').value),
+            max_slope: Number(document.getElementById('slope').value),
+            start,
+            target
+          })
+        });
+        const result = await response.json();
+        if (requestId !== customRouteRequestId) return;
+        if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
+
+        const points = result.waypoints.map(waypoint => [waypoint.latitude, waypoint.longitude]);
+        layers.customRoute.addLayer(L.polyline(points, {
+          color: '#ffb703',
+          weight: 7,
+          opacity: 0.25
+        }));
+        layers.customRoute.addLayer(L.polyline(points, {
+          color: '#ffb703',
+          weight: 3,
+          dashArray: '9 7'
+        }));
+        renderRouteMetrics({
+          distance: result.total_distance_m,
+          waypoints: result.waypoints.length,
+          average: result.average_slope_deg,
+          maximum: result.max_slope_deg
+        });
+        const snapped = result.snapped_start || result.snapped_target;
+        status.textContent = `Ruta segura calculada${snapped ? ' (extremos ajustados a celdas transitables)' : ''}. Distancia: ${(result.total_distance_m / 1000).toFixed(2)} km.`;
+      } catch (error) {
+        if (requestId !== customRouteRequestId) return;
+        status.textContent = `No se pudo calcular la ruta: ${error.message}`;
+      }
+    }
+
+    map.on('click', event => {
+      if (isPickingRoute) addRoutePoint(event.latlng);
+    });
+
+    document.getElementById('planRoute').onclick = () => {
+      selectedRouteStart = null;
+      isPickingRoute = true;
+      layers.customRoute.clearLayers();
+      if (currentTerrainBounds) map.fitBounds(currentTerrainBounds, { padding: [40, 40] });
+      map.getContainer().style.cursor = 'crosshair';
+      document.getElementById('routeStatus').textContent = 'Haz clic en el origen del recorrido.';
+    };
+    document.getElementById('clearCustomRoute').onclick = () => {
+      customRouteRequestId += 1;
+      isPickingRoute = false;
+      selectedRouteStart = null;
+      map.getContainer().style.cursor = '';
+      layers.customRoute.clearLayers();
+      document.getElementById('routeStatus').textContent = 'Ruta personalizada borrada.';
+      if (defaultRouteMetrics) renderRouteMetrics(defaultRouteMetrics);
+    };
+
     // Navegación
     document.getElementById('return').onclick = () => {
       if (window.parent !== window) {
@@ -593,11 +728,8 @@
     };
 
     // Listeners interactivos
-    document.getElementById('zone').onchange = event => {
-      if (event.target.value === 'jezero' && document.getElementById('basemap').value === 'gale-imagery') {
-        document.getElementById('basemap').value = 'mola';
-        setBaseMapMode('mola');
-      }
+    document.getElementById('zone').onchange = () => {
+      setBaseMapMode(document.getElementById('basemap').value);
       load();
     };
     document.getElementById('resolution').onchange = load;
@@ -609,7 +741,10 @@
     document.getElementById('hazards').onchange = e => e.target.checked ? map.addLayer(layers.hazards) : map.removeLayer(layers.hazards);
     document.getElementById('route').onchange = e => e.target.checked ? map.addLayer(layers.route) : map.removeLayer(layers.route);
     document.getElementById('wps').onchange = e => e.target.checked ? map.addLayer(layers.wps) : map.removeLayer(layers.wps);
-    document.getElementById('gasesLayer').onchange = e => e.target.checked ? map.addLayer(layers.gases) : map.removeLayer(layers.gases);
+    document.getElementById('gasesLayer').onchange = e => {
+      if (e.target.checked && document.getElementById('basemap').value === 'gases') map.addLayer(layers.gases);
+      else map.removeLayer(layers.gases);
+    };
 
     // Cargar mapa y gases al iniciar
     load();
