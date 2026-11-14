@@ -70,6 +70,11 @@
   animation: pulseGlow 2.5s infinite ease-in-out;
 }
 
+.curiosity-label {
+  transform-origin: center;
+  transition: transform 180ms ease-out;
+}
+
 .local-map-transition {
   position: absolute;
   inset: 0;

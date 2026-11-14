@@ -115,23 +115,37 @@ const SiteMarker: React.FC<{
 };
 
 const CuriosityMarker: React.FC<{ onOpen: () => void }> = ({ onOpen }) => {
+  const markerRef = useRef<THREE.Group>(null);
+  const visualRef = useRef<THREE.Group>(null);
+  const { camera } = useThree();
   const position = useMemo(
     () => latLonToVector3(CURIOSITY_LOCATION.latitude, CURIOSITY_LOCATION.longitude, GLOBE_RADIUS * 1.018),
     [],
   );
 
+  useFrame(() => {
+    if (!markerRef.current || !visualRef.current) return;
+    const markerWorldPosition = new THREE.Vector3();
+    markerRef.current.getWorldPosition(markerWorldPosition);
+    const cameraDistance = camera.position.distanceTo(markerWorldPosition);
+    const constantScreenScale = THREE.MathUtils.clamp(cameraDistance / 6.4, 0.04, 2);
+    visualRef.current.scale.setScalar(constantScreenScale);
+  });
+
   return (
-    <group position={position}>
-      <mesh onClick={(event) => { event.stopPropagation(); onOpen(); }}>
-        <sphereGeometry args={[0.035, 20, 20]} />
-        <meshStandardMaterial color="#62f6a5" emissive="#62f6a5" emissiveIntensity={2.2} />
-      </mesh>
-      <mesh onClick={(event) => { event.stopPropagation(); onOpen(); }} rotation={[Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[0.052, 0.075, 32]} />
-        <meshBasicMaterial color="#62f6a5" transparent opacity={0.95} side={THREE.DoubleSide} />
-      </mesh>
-      <Html distanceFactor={6} position={[0, 0.16, 0]} center className="pointer-events-auto">
-        <button onClick={onOpen} className="flex items-center gap-1.5 whitespace-nowrap border border-hud-green bg-black/85 px-2 py-1 font-mono text-[10px] text-hud-green shadow-[0_0_14px_rgba(98,246,165,0.5)] transition-transform hover:scale-105">
+    <group ref={markerRef} position={position}>
+      <group ref={visualRef}>
+        <mesh onClick={(event) => { event.stopPropagation(); onOpen(); }}>
+          <sphereGeometry args={[0.035, 20, 20]} />
+          <meshStandardMaterial color="#62f6a5" emissive="#62f6a5" emissiveIntensity={2.2} />
+        </mesh>
+        <mesh onClick={(event) => { event.stopPropagation(); onOpen(); }} rotation={[Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[0.052, 0.075, 32]} />
+          <meshBasicMaterial color="#62f6a5" transparent opacity={0.95} side={THREE.DoubleSide} />
+        </mesh>
+      </group>
+      <Html position={[0, 0.16, 0]} center className="pointer-events-auto">
+        <button onClick={onOpen} className="curiosity-label flex items-center gap-1.5 whitespace-nowrap border border-hud-green bg-black/85 px-2 py-1 font-mono text-[10px] text-hud-green shadow-[0_0_14px_rgba(98,246,165,0.5)] transition-transform hover:scale-105">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-hud-green" />
           CURIOSITY // OPEN LOCAL MAP
         </button>
@@ -332,27 +346,58 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
   React.useEffect(() => {
     if (!focusCuriosity || !controlsRef.current) return;
 
+    const controls = controlsRef.current;
+    const transitionMinDistance = 0.01;
+    controls.enabled = false;
+    controls.minDistance = transitionMinDistance;
+
     const roverPosition = new THREE.Vector3(...MARS_POSITION);
-    const roverSurface = latLonToVector3(
+    const roverLocalSurface = latLonToVector3(
       CURIOSITY_LOCATION.latitude,
       CURIOSITY_LOCATION.longitude,
       GLOBE_RADIUS,
-    ).add(roverPosition);
-    const startCam = camera.position.clone();
-    const zoomDirection = startCam.clone().sub(roverSurface).normalize();
-    const endCam = roverSurface.clone().add(zoomDirection.multiplyScalar(1.8));
-    const startTarget = controlsRef.current.target.clone();
+    );
+    // The marker is a child of the rotating Mars group, so its world position
+    // must include the globe's current rotation before we aim the camera.
+    const globeRotation = globeRef.current?.rotation.y ?? 0;
+    const roverSurface = roverLocalSurface
+      .applyAxisAngle(new THREE.Vector3(0, 1, 0), globeRotation)
+      .add(roverPosition);
+    const startRelativeCamera = camera.position.clone().sub(roverPosition);
+    const startRadius = startRelativeCamera.length();
+    const startDirection = startRelativeCamera.normalize();
+    const endDirection = roverSurface.clone().sub(roverPosition).normalize();
+    const orbitRotation = new THREE.Quaternion().setFromUnitVectors(startDirection, endDirection);
+    const endRadius = GLOBE_RADIUS + 0.05;
+    const safeOrbitRadius = Math.max(startRadius, GLOBE_RADIUS + 1.4);
     const endTarget = roverSurface.clone();
+    const startTarget = roverPosition.clone();
+    controls.target.copy(startTarget);
     const startTime = performance.now();
     const duration = 4500;
 
     const animateLocalFocus = (now: number) => {
       const progress = Math.min((now - startTime) / duration, 1);
       const ease = 0.5 - Math.cos(progress * Math.PI) / 2;
-      camera.position.lerpVectors(startCam, endCam, ease);
-      controlsRef.current.target.lerpVectors(startTarget, endTarget, ease);
-      controlsRef.current.update();
-      if (progress < 1) requestAnimationFrame(animateLocalFocus);
+      // Finish the orbital reorientation before moving the camera into the
+      // close-up distance, avoiding a line of sight through Mars.
+      const rotationProgress = THREE.MathUtils.smoothstep(progress, 0, 0.68);
+      const zoomProgress = THREE.MathUtils.smoothstep(progress, 0.58, 1);
+      const partialRotation = new THREE.Quaternion().slerp(orbitRotation, rotationProgress);
+      const orbitDirection = startDirection.clone().applyQuaternion(partialRotation).normalize();
+      const orbitRadius = THREE.MathUtils.lerp(safeOrbitRadius, endRadius, zoomProgress);
+      camera.position.copy(roverPosition).add(orbitDirection.multiplyScalar(orbitRadius));
+      controls.target.lerpVectors(startTarget, endTarget, zoomProgress);
+      controls.update();
+      if (progress < 1) {
+        requestAnimationFrame(animateLocalFocus);
+      } else {
+        // Keep the final transition zoom instead of letting OrbitControls pull back.
+        controls.target.copy(endTarget);
+        camera.lookAt(endTarget);
+        controls.minDistance = 0.12;
+        controls.enabled = true;
+      }
     };
 
     requestAnimationFrame(animateLocalFocus);
