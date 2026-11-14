@@ -11,12 +11,54 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Orbitron:wght@400;600;800;900&display=swap" rel="stylesheet">
     <script type="module" crossorigin src="/assets/index-2upCvTbU.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-7JvnEKxg.css">
+    
     <style>
+      /* Ensure the transition scales to exactly 1.0 (no over-zoom or border clipping) */
+      .local-map-transition {
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        z-index: 50 !important;
+        overflow: hidden !important;
+        background: #050608 !important;
+        animation: localMapReveal 4.5s cubic-bezier(0.22, 0.8, 0.24, 1) forwards !important;
+      }
+
+      .local-map-surface {
+        position: absolute !important;
+        inset: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        overflow: hidden !important;
+        display: block !important;
+        background: #050608 !important;
+      }
+
       .local-map-iframe {
-        width: 100%;
-        height: 100%;
-        border: none;
-        animation: localMapImageFocus 4.5s cubic-bezier(0.22, 0.8, 0.24, 1) both;
+        width: 100% !important;
+        height: 100% !important;
+        border: none !important;
+        display: block !important;
+        transform-origin: center center !important;
+        animation: localMapIframeFocus 4.5s cubic-bezier(0.22, 0.8, 0.24, 1) forwards !important;
+      }
+
+      @keyframes localMapIframeFocus {
+        0% { opacity: 0; filter: blur(20px) contrast(0.85); transform: scale(1.35); }
+        40% { opacity: 0.35; filter: blur(12px) contrast(0.95); transform: scale(1.18); }
+        72% { opacity: 0.88; filter: blur(3px) contrast(1); transform: scale(1.04); }
+        100% { opacity: 1; filter: blur(0px) contrast(1); transform: scale(1.0) !important; }
+      }
+
+      /* Once ready, force strict 1:1 pixel rendering with zero crop or scale */
+      .local-map-transition.local-map-transition--ready,
+      .local-map-transition--ready .local-map-surface,
+      .local-map-transition--ready .local-map-iframe {
+        animation: none !important;
+        transform: none !important;
+        filter: none !important;
+        border-radius: 0 !important;
       }
     </style>
   </head>
@@ -43,24 +85,39 @@
             <div class="local-map-surface">
               <iframe src="/tactical" class="local-map-iframe" allow="fullscreen"></iframe>
             </div>
-            <div class="local-map-chrome" style="z-index: 50;">
-              <button id="btnReturnToOrbit" class="hud-panel" style="background: rgba(9, 13, 20, 0.95); border: 1.5px solid #45f3ff; color: #45f3ff; font-family: 'Orbitron', sans-serif; font-size: 11px; letter-spacing: 0.16em; padding: 10px 22px; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 0 20px rgba(69, 243, 255, 0.5); border-radius: 2px; margin: 0 auto;">
-                <span>🌐</span> <span>VOLVER A VISTA GLOBAL 3D</span>
-              </button>
-            </div>
           </div>
         `;
 
         const wrapper = document.getElementById('transitionWrapper');
-        setTimeout(() => {
-          if (wrapper) wrapper.classList.add('local-map-transition--ready');
-        }, 4500);
+        const iframe = container.querySelector('iframe');
 
-        document.getElementById('btnReturnToOrbit').addEventListener('click', () => {
-          container.style.display = 'none';
-          container.innerHTML = '';
-        });
+        // Once the 4.5s camera dive completes:
+        setTimeout(() => {
+          if (wrapper) {
+            wrapper.classList.add('local-map-transition--ready');
+            wrapper.style.transform = 'none';
+            wrapper.style.animation = 'none';
+          }
+          if (iframe) {
+            iframe.style.transform = 'none';
+            iframe.style.animation = 'none';
+            try {
+              iframe.contentWindow.postMessage('transition-ready', '*');
+            } catch (err) {}
+          }
+        }, 4500);
       }
+
+      // Close message listener from inside tactical iframe
+      window.addEventListener('message', (e) => {
+        if (e.data === 'close-tactical') {
+          const container = document.getElementById('localMapContainer');
+          if (container) {
+            container.style.display = 'none';
+            container.innerHTML = '';
+          }
+        }
+      });
 
       // Listen for click on Curiosity marker button or direct button
       document.addEventListener('click', (e) => {
