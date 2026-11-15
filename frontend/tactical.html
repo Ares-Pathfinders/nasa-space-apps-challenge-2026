@@ -561,7 +561,11 @@
       center: [-4.65, 137.43],
       zoom: 11,
       zoomControl: false,
-      scrollWheelZoom: 'center'
+      scrollWheelZoom: 'center',
+      maxBoundsViscosity: 1.0,
+      // Fractional zoom lets the minimum zoom fit the terrain closely (whole crater visible, no flat background).
+      zoomSnap: 0.25,
+      zoomDelta: 0.5
     });
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
@@ -817,6 +821,27 @@
       layers.cells.addLayer(L.imageOverlay(passableCanvas.toDataURL(), imageBounds, overlayOptions));
       layers.hazards.addLayer(L.imageOverlay(hazardCanvas.toDataURL(), imageBounds, overlayOptions));
     }
+
+    // Keep the 2D map inside the terrain grid (which only covers areas with imagery):
+    // it cannot be dragged outside and cannot zoom out past the point where it fills the view.
+    let terrainViewBounds = null;
+    function updateTerrainMinZoom() {
+      if (!terrainViewBounds) return;
+      map.setMinZoom(map.getBoundsZoom(terrainViewBounds, true));
+    }
+    function restrictMapToTerrain(data) {
+      const [rows, cols] = data.resolution;
+      const dlat = (data.bounds.max_lat - data.bounds.min_lat) / (rows - 1);
+      const dlon = (data.bounds.max_lon - data.bounds.min_lon) / (cols - 1);
+      terrainViewBounds = L.latLngBounds(
+        [data.bounds.min_lat - dlat / 2, data.bounds.min_lon - dlon / 2],
+        [data.bounds.max_lat + dlat / 2, data.bounds.max_lon + dlon / 2]
+      );
+      map.setMinZoom(0);
+      map.setMaxBounds(terrainViewBounds);
+      updateTerrainMinZoom();
+    }
+    map.on('resize', updateTerrainMinZoom);
 
     function gridCellAt(latlng) {
       if (!currentGrid) return null;
@@ -1454,10 +1479,8 @@
         defaultRouteMetrics = null;
         updateReturnRoute();
 
-        map.fitBounds([
-          [data.bounds.min_lat, data.bounds.min_lon],
-          [data.bounds.max_lat, data.bounds.max_lon]
-        ], { padding: [40, 40] });
+        restrictMapToTerrain(data);
+        map.fitBounds(terrainViewBounds);
 
         // Render the topographic cell grid (hidden until its checkbox is ticked)
         renderGridOverlays(data);

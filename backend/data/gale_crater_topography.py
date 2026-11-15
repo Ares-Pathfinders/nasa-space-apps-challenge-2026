@@ -21,11 +21,19 @@ GALE_STL_GRID = 513
 GALE_STL_ELEV_SCALE = 0.00147483  # STL units per metre
 GALE_STL_ELEV_OFFSET = 8.426
 
-# The grid covers the whole 3D model (all of Gale Crater, ~210 x 275 km).
-GALE_MIN_LAT = -7.84402
-GALE_MAX_LAT = -3.21708
-GALE_MIN_LON = 135.97957
-GALE_MAX_LON = 139.49492
+# Extent of the 3D model (all of Gale Crater, ~210 x 275 km).
+GALE_STL_MIN_LAT = -7.84402
+GALE_STL_MAX_LAT = -3.21708
+GALE_STL_MIN_LON = 135.97957
+GALE_STL_MAX_LON = 139.49492
+
+# The tactical grid only covers the part of the 3D model that has 2D map imagery
+# (MSL CTX 6 m mosaic: lat -7.844..-3.397, lon 135.978..139.487), inset by ~0.01 deg
+# so that cells never stick out past the imagery.
+GALE_MIN_LAT = -7.834
+GALE_MAX_LAT = -3.410
+GALE_MIN_LON = 135.990
+GALE_MAX_LON = 139.476
 
 MSL_WAYPOINTS_URL = "https://mars.nasa.gov/mmgis-maps/MSL/Layers/json/MSL_waypoints.json"
 
@@ -94,10 +102,10 @@ def _load_gale_stl_terrain() -> Tuple[np.ndarray, np.ndarray]:
     elevation = (stl_height - GALE_STL_ELEV_OFFSET) / GALE_STL_ELEV_SCALE
     native_grid = ElevationGrid(
         elevation=elevation,
-        min_lat=GALE_MIN_LAT,
-        max_lat=GALE_MAX_LAT,
-        min_lon=GALE_MIN_LON,
-        max_lon=GALE_MAX_LON,
+        min_lat=GALE_STL_MIN_LAT,
+        max_lat=GALE_STL_MAX_LAT,
+        min_lon=GALE_STL_MIN_LON,
+        max_lon=GALE_STL_MAX_LON,
     )
     slope = SlopeAnalyzer(native_grid).slope_deg_matrix
     return elevation, slope
@@ -134,8 +142,8 @@ def generate_gale_crater_elevation_grid(
 
     lats = np.linspace(max_lat, min_lat, resolution_rows)  # row 0 = north
     lons = np.linspace(min_lon, max_lon, resolution_cols)  # column 0 = west
-    native_rows = (GALE_MAX_LAT - lats) / (GALE_MAX_LAT - GALE_MIN_LAT) * (n - 1)
-    native_cols = (lons - GALE_MIN_LON) / (GALE_MAX_LON - GALE_MIN_LON) * (n - 1)
+    native_rows = (GALE_STL_MAX_LAT - lats) / (GALE_STL_MAX_LAT - GALE_STL_MIN_LAT) * (n - 1)
+    native_cols = (lons - GALE_STL_MIN_LON) / (GALE_STL_MAX_LON - GALE_STL_MIN_LON) * (n - 1)
     row_grid, col_grid = np.meshgrid(native_rows, native_cols, indexing="ij")
     cell_elevation = map_coordinates(elevation, [row_grid, col_grid], order=1, mode="nearest")
 
