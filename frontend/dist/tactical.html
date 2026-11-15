@@ -23,6 +23,9 @@
     body { overflow: hidden; background: var(--bg); color: #e2e8f0; font: 11px 'JetBrains Mono', monospace; }
     #map { position: absolute; inset: 0; background: #70463d; }
     .ctx-tint { filter: sepia(.72) saturate(1.55) hue-rotate(326deg) brightness(.92); }
+    /* HiRISE de Gale: sólo aporta detalle (luminancia); el color lo pone el CTX teñido de debajo,
+       así no hay saltos entre quads en color, quads grises y el CTX. */
+    .hirise-luminance { mix-blend-mode: luminosity; }
     .panel {
       position: absolute;
       z-index: 1000;
@@ -558,7 +561,7 @@
 
     const galeImageryLayer = L.layerGroup([
       createMarsTmsTileLayer('https://mars.nasa.gov/mmgis-maps/MSL/Layers/MSL_CTX_ortho_mosaic_6m/{z}/{x}/{y}.png', 0.72, 'ctx-tint'),
-      createMarsTmsTileLayer('https://mars.nasa.gov/mmgis-maps/MSL/Layers/MSL_Gale_HiRISE-LRGB_78quads/{z}/{x}/{y}.png'),
+      createMarsTmsTileLayer('https://mars.nasa.gov/mmgis-maps/MSL/Layers/MSL_Gale_HiRISE-LRGB_78quads/{z}/{x}/{y}.png', 0.8, 'hirise-luminance'),
       createMarsTmsTileLayer('https://mars.nasa.gov/mmgis-maps/MSL/Layers/MSL_WebGIS_PlaceText/{z}/{x}/{y}.png', 0.96)
     ]);
     const jezeroImageryLayer = L.layerGroup([
