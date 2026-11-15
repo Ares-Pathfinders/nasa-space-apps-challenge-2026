@@ -159,6 +159,10 @@
   padding: 1.25rem;
 }
 
+.local-map-chrome--terrain3d {
+  bottom: 6rem;
+}
+
 .local-map-transition:not(.local-map-transition--ready) .local-map-chrome {
   opacity: 0;
 }

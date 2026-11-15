@@ -20,6 +20,7 @@ function App() {
   const [zoomComplete, setZoomComplete] = useState(false);
   const [tacticalReady, setTacticalReady] = useState(false);
   const [handoffComplete, setHandoffComplete] = useState(false);
+  const [terrain3DActive, setTerrain3DActive] = useState(false);
 
   useEffect(() => {
     fetchHealth().then((health) => setApiOnline(health.status === 'operational'));
@@ -27,6 +28,7 @@ function App() {
 
   const handleOpenLocalMap = (rover: RoverId) => {
     setSelectedRover(rover);
+    setTerrain3DActive(false);
     setZoomComplete(false);
     setTacticalReady(false);
     setHandoffComplete(false);
@@ -41,6 +43,7 @@ function App() {
   };
 
   const handleCloseLocalMap = () => {
+    setTerrain3DActive(false);
     setLocalMapPhase('exit-handoff');
     window.setTimeout(() => {
       setLocalMapPhase('zooming-out');
@@ -59,6 +62,9 @@ function App() {
       if (event.origin !== window.location.origin) return;
       if (event.data === 'close-tactical') handleCloseLocalMap();
       if (event.data === 'tactical-ready') setTacticalReady(true);
+      if (event.data?.type === 'terrain3d-state' && typeof event.data.active === 'boolean') {
+        setTerrain3DActive(event.data.active);
+      }
     };
 
     window.addEventListener('message', handleMessage);
@@ -120,7 +126,7 @@ function App() {
             </div>
           )}
           {localMapPhase === 'ready' && (
-            <div className="local-map-chrome" style={{ zIndex: 50 }}>
+            <div className={`local-map-chrome${terrain3DActive ? ' local-map-chrome--terrain3d' : ''}`} style={{ zIndex: 50 }}>
               <button
                 onClick={handleCloseLocalMap}
                 className="hud-panel mx-auto flex items-center gap-2 border border-hud-cyan bg-black/90 px-6 py-2.5 font-display text-xs tracking-wider text-hud-cyan hover:bg-hud-cyan/20"
@@ -150,6 +156,7 @@ function App() {
             >
               <span className="h-2 w-2 rounded-full bg-amber-300" />
               <span>Perseverance</span>
+              <span className="border border-amber-300/60 px-1 text-[8px] font-semibold tracking-wider text-amber-300">WIP</span>
               <span className="ml-auto text-[9px] text-slate-400">Jezero · M2020</span>
             </button>
           </div>

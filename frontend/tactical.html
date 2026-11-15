@@ -490,7 +490,7 @@
     <label for="zone">Martian zone</label>
     <select id="zone">
       <option value="gale" selected>Gale Crater - Mount Sharp (Curiosity / MSL)</option>
-      <option value="jezero">Jezero Crater - Delta Lakebed (Perseverance / M2020)</option>
+      <option value="jezero">Jezero Crater - Delta Lakebed (Perseverance / M2020 · WIP)</option>
     </select>
 
     <fieldset class="mode-switch">
@@ -631,8 +631,6 @@
       </dl>
       <p class="route-summary-note">Time and consumption estimated from the travel mode and the configured rates.</p>
     </section>
-    <div id="routeReturnStatus" class="info" style="margin-top:10px;font-size:9px;" aria-live="polite">Waiting for route calculation and available resources.</div>
-
   </aside>
   <!-- Layers control (Google Maps style): base map type + map details -->
   <div id="layersControl" class="layers-control">
@@ -1269,20 +1267,16 @@
     }
 
     function updateReturnRoute() {
-      const status = document.getElementById('routeReturnStatus');
       layers.returnRoute.clearLayers();
-      if (!latestRoute) {
-        status.textContent = 'Waiting for route calculation and available resources.';
-        return;
-      }
+      if (!latestRoute) return;
 
       const travelMode = document.querySelector('input[name="travelMode"]:checked').value;
       const speedMetersPerMinute = travelMode === 'vehicle' ? 120 : 48;
       const outboundMinutes = latestRoute.distanceMeters / speedMetersPerMinute;
       const returnMinutes = outboundMinutes;
       const limitingResource = availableResourceTime();
-      const timeAfterOutbound = limitingResource.minutes - outboundMinutes;
-      const returnTriggered = Number.isFinite(limitingResource.minutes) && returnMinutes >= timeAfterOutbound * 0.8;
+      const returnTriggered = Number.isFinite(limitingResource.minutes)
+        && returnMinutes >= (limitingResource.minutes - outboundMinutes) * 0.8;
 
       if (returnTriggered) {
         const returnPoints = [...latestRoute.points].reverse();
@@ -1300,12 +1294,8 @@
           weight: 2
         }));
         if (document.getElementById('route').checked) map.addLayer(layers.returnRoute);
-        status.style.color = 'var(--amber)';
-        status.textContent = `Automatic return enabled: estimated return ${formatRemainingTime(returnMinutes)}; ${limitingResource.name} left after the outbound leg: ${formatRemainingTime(timeAfterOutbound)}.`;
       } else {
         map.removeLayer(layers.returnRoute);
-        status.style.color = '#94a3b8';
-        status.textContent = `Return not enabled · estimated return ${formatRemainingTime(returnMinutes)}; limiting resource (${limitingResource.name}): ${formatRemainingTime(limitingResource.minutes)}.`;
       }
     }
 
@@ -1877,8 +1867,6 @@
             elevationLossMeters: data.safe_route.elevation_loss_m
           };
           renderRouteMetrics(defaultRouteMetrics);
-        } else {
-          document.getElementById('routeReturnStatus').textContent = 'No safe route was found to compute the return.';
         }
         updateReturnRoute();
 
