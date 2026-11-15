@@ -1,10 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import {
-  Activity,
   Crosshair,
-  Navigation,
-  Route,
   Wifi,
 } from 'lucide-react';
 import { MarsGlobe } from './components/MarsGlobe';
@@ -72,7 +69,7 @@ function App() {
         </div>
         <div className="hidden items-center gap-6 md:flex">
           <div className="text-right"><p className="text-[9px] uppercase tracking-widest text-slate-500">Mission clock</p><p className="font-display text-xs text-hud-cyan">SOL 1000 / 14:32 LMST</p></div>
-          <div className="flex items-center gap-2 border-l border-slate-700 pl-5 text-[10px] uppercase tracking-widest text-slate-400"><Wifi size={14} className={apiOnline ? 'text-hud-green' : 'text-amber-400'} /> {apiOnline ? 'API online' : 'offline cache'}</div>
+          <div className="flex items-center gap-2 border-l border-slate-700 pl-5 text-[10px] uppercase tracking-widest text-slate-400"><Wifi size={14} className={apiOnline ? 'text-hud-green' : 'text-amber-400'} /> {apiOnline ? 'Conexión con la central' : 'Sin conexión con la central'}</div>
         </div>
       </header>
 
@@ -120,7 +117,6 @@ function App() {
         </section>
       )}
 
-      <div className="absolute bottom-6 left-1/2 z-20 hidden -translate-x-1/2 items-center gap-6 border border-slate-800 bg-black/50 px-4 py-2 text-[9px] uppercase tracking-[0.18em] text-slate-500 backdrop-blur md:flex"><span className="flex items-center gap-2"><Navigation size={13} className="text-hud-cyan" /> orbital view</span><span className="flex items-center gap-2"><Activity size={13} className="text-hud-green" /> systems nominal</span><span className="flex items-center gap-2"><Route size={13} className="text-hud-amber" /> EVA route ready</span></div>
     </main>
   );
 }

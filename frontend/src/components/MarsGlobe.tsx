@@ -34,19 +34,16 @@ const ROVER_LOCATIONS: Record<RoverId, {
   latitude: number;
   longitude: number;
   color: string;
-  label: string;
 }> = {
   curiosity: {
     latitude: -4.78530567,
     longitude: 137.41715099,
-    color: '#62f6a5',
-    label: 'CURIOSITY // MAPA TÁCTICO',
+    color: '#83a895',
   },
   perseverance: {
     latitude: 18.43559434,
     longitude: 77.23322287,
-    color: '#ffb703',
-    label: 'PERSEVERANCE // MAPA TÁCTICO',
+    color: '#b59c72',
   },
 };
 
@@ -133,7 +130,7 @@ const RoverMarker: React.FC<{ rover: RoverId; onOpen: () => void }> = ({ rover, 
   const markerRef = useRef<THREE.Group>(null);
   const visualRef = useRef<THREE.Group>(null);
   const { camera } = useThree();
-  const { latitude, longitude, color, label } = ROVER_LOCATIONS[rover];
+  const { latitude, longitude, color } = ROVER_LOCATIONS[rover];
   const position = useMemo(
     () => latLonToVector3(latitude, longitude, GLOBE_RADIUS * 1.018),
     [latitude, longitude],
@@ -151,25 +148,15 @@ const RoverMarker: React.FC<{ rover: RoverId; onOpen: () => void }> = ({ rover, 
   return (
     <group ref={markerRef} position={position}>
       <group ref={visualRef}>
-        <mesh onClick={(event) => { event.stopPropagation(); onOpen(); }}>
-          <sphereGeometry args={[0.035, 20, 20]} />
-          <meshStandardMaterial color={color} emissive={color} emissiveIntensity={2.2} />
-        </mesh>
-        <mesh onClick={(event) => { event.stopPropagation(); onOpen(); }} rotation={[Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[0.052, 0.075, 32]} />
-          <meshBasicMaterial color={color} transparent opacity={0.95} side={THREE.DoubleSide} />
+        <mesh
+          onClick={(event) => { event.stopPropagation(); onOpen(); }}
+          onPointerOver={(event) => { event.stopPropagation(); document.body.style.cursor = 'pointer'; }}
+          onPointerOut={() => { document.body.style.cursor = 'auto'; }}
+        >
+          <sphereGeometry args={[0.018, 12, 12]} />
+          <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.35} roughness={0.8} />
         </mesh>
       </group>
-      <Html position={[0, 0.16, 0]} center className="pointer-events-auto">
-        <button
-          onClick={onOpen}
-          style={{ color, borderColor: color, boxShadow: `0 0 14px ${color}80` }}
-          className="flex items-center gap-1.5 whitespace-nowrap border bg-black/85 px-2 py-1 font-mono text-[10px] transition-transform hover:scale-105"
-        >
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full" style={{ backgroundColor: color }} />
-          {label}
-        </button>
-      </Html>
     </group>
   );
 };
