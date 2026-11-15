@@ -11,6 +11,8 @@ import sys
 import json
 import math
 import mimetypes
+
+import numpy as np
 from functools import lru_cache
 from urllib.parse import urlparse, parse_qs
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
@@ -50,7 +52,7 @@ GALE_TERRAIN_SOURCE = {
         "cell slope = 75th percentile of the real slope inside the cell."
     ),
 }
-GALE_MAX_RESOLUTION = 256
+GALE_MAX_RESOLUTION = 512  # ~native STL resolution (513x513 heights)
 # Default Gale route: from Bradbury Landing to the slopes of Mount Sharp.
 GALE_DEFAULT_ROUTE = ((-4.5895, 137.4417), (-4.90, 137.45))
 JEZERO_TERRAIN_SOURCE = {
@@ -79,7 +81,8 @@ def _nearest_passable_cell(grid, builder, cell, max_radius=2):
     return None
 
 
-@lru_cache(maxsize=6)
+# A 512x512 graph uses ~1 GB of RAM, so keep only two terrains cached.
+@lru_cache(maxsize=2)
 def _gale_terrain(resolution: int, max_slope: float):
     """Gale grid, slopes and graph (from the STL), cached per parameters."""
     grid = generate_gale_crater_elevation_grid(resolution_rows=resolution, resolution_cols=resolution)
@@ -90,7 +93,7 @@ def _gale_terrain(resolution: int, max_slope: float):
 
 # Preload Gale Crater terrain graph once on server startup (default UI parameters)
 print("[ARES-Nav Server] Initializing Gale Crater cell graph from the 3D model...")
-elevation_grid, slope_analyzer, cell_graph_builder = _gale_terrain(128, 15.0)
+elevation_grid, slope_analyzer, cell_graph_builder = _gale_terrain(256, 15.0)
 print(f"[ARES-Nav Server] Cell graph ready with {cell_graph_builder.graph.number_of_nodes()} navigable nodes.")
 
 
@@ -233,7 +236,7 @@ class AresNavHandler(SimpleHTTPRequestHandler):
             })
         elif path == "/api/terrain":
             zone = query.get("zone", ["gale"])[0].lower()
-            res = min(GALE_MAX_RESOLUTION if zone == "gale" else 100, max(20, int(query.get("resolution", [128])[0])))
+            res = min(GALE_MAX_RESOLUTION if zone == "gale" else 100, max(20, int(query.get("resolution", [256])[0])))
             max_slope = float(query.get("max_slope", [15.0])[0])
 
             if zone == "jezero":
@@ -297,23 +300,17 @@ class AresNavHandler(SimpleHTTPRequestHandler):
                 else None
             )
 
-            # Compile compact cell list for 2D map rendering
-            cells_data = []
-            for r in range(grid.rows):
-                for c in range(grid.cols):
-                    lat, lon = grid.cell_to_geo(r, c)
-                    elev = grid.get_elevation(r, c)
-                    slope = analyzer.get_cell_slope(r, c)
-                    passable = analyzer.is_cell_passable(r, c)
-                    cells_data.append({
-                        "r": r,
-                        "c": c,
-                        "lat": round(lat, 5),
-                        "lon": round(lon, 5),
-                        "elev": round(elev, 1),
-                        "slope": round(slope, 1) if math.isfinite(slope) else None,
-                        "passable": passable
-                    })
+            # Compact row-major grid for 2D rendering (row 0 = north, column 0 = west).
+            # Cell (r, c) is centred at (max_lat - r * dlat, min_lon + c * dlon).
+            slope_values = np.round(analyzer.slope_deg_matrix, 1)
+            grid_data = {
+                "elevation_m": np.rint(grid.elevation).astype(int).ravel().tolist(),
+                "slope_deg": [
+                    float(value) if math.isfinite(value) else None
+                    for value in slope_values.ravel()
+                ],
+                "passable": analyzer.passable_mask.astype(int).ravel().tolist(),
+            }
 
             self._send_json({
                 "zone": zone,
@@ -335,7 +332,7 @@ class AresNavHandler(SimpleHTTPRequestHandler):
                 "hazard_zones": hazard_clusters,
                 "historical_waypoints": historical_wps,
                 "safe_route": route,
-                "cells": cells_data
+                "grid": grid_data
             })
         else:
             self.send_error(404, f"API endpoint not found: {path}")
@@ -360,7 +357,7 @@ class AresNavHandler(SimpleHTTPRequestHandler):
         zone = zone.lower()
 
         try:
-            resolution = int(req.get("resolution", 128))
+            resolution = int(req.get("resolution", 256))
             max_slope = float(req.get("max_slope", 15.0))
             start_coords = req.get("start", {"latitude": -4.596, "longitude": 137.488})
             target_coords = req.get("target", {"latitude": -4.716, "longitude": 137.397})

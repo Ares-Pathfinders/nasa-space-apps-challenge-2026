@@ -13,11 +13,14 @@ from backend.terrain.grid import ElevationGrid
 from backend.terrain.slope import SlopeAnalyzer
 
 
-def test_gale_grid_covers_the_whole_3d_model_with_real_elevations():
+def test_gale_grid_covers_the_imagery_part_of_the_3d_model_with_real_elevations():
     grid = gale.generate_gale_crater_elevation_grid(resolution_rows=64, resolution_cols=64)
 
     assert (grid.min_lat, grid.max_lat) == (gale.GALE_MIN_LAT, gale.GALE_MAX_LAT)
     assert (grid.min_lon, grid.max_lon) == (gale.GALE_MIN_LON, gale.GALE_MAX_LON)
+    # The grid stays inside the 3D model and inside the 2D imagery (north edge ~-3.397).
+    assert gale.GALE_STL_MIN_LAT <= grid.min_lat and grid.max_lat <= -3.397
+    assert gale.GALE_STL_MIN_LON <= grid.min_lon and grid.max_lon <= gale.GALE_STL_MAX_LON
     # Gale floor (~-4.6 km) and rim/highlands (~+1.4 km) per MOLA/HRSC.
     assert -4800 < grid.elevation.min() < -4400
     assert 1000 < grid.elevation.max() < 1600

@@ -42,13 +42,13 @@ def test_api():
     r = requests.get(f"{BASE_URL}/api/terrain?zone=gale&resolution=40&max_slope=15.0", timeout=8)
     assert r.status_code == 200
     gale_data = r.json()
-    print(f"[OK] GET /api/terrain (Gale Crater) -> {len(gale_data.get('cells', []))} cells, Route waypoints: {gale_data.get('safe_route', {}).get('num_waypoints')}")
+    print(f"[OK] GET /api/terrain (Gale Crater) -> {len(gale_data.get('grid', {}).get('passable', []))} cells, Route waypoints: {gale_data.get('safe_route', {}).get('num_waypoints')}")
 
     # 5. Dynamic Terrain for Jezero Crater
     r = requests.get(f"{BASE_URL}/api/terrain?zone=jezero&resolution=40&max_slope=15.0", timeout=8)
     assert r.status_code == 200
     jezero_data = r.json()
-    print(f"[OK] GET /api/terrain (Jezero Crater) -> {len(jezero_data.get('cells', []))} cells, Route waypoints: {jezero_data.get('safe_route', {}).get('num_waypoints')}")
+    print(f"[OK] GET /api/terrain (Jezero Crater) -> {len(jezero_data.get('grid', {}).get('passable', []))} cells, Route waypoints: {jezero_data.get('safe_route', {}).get('num_waypoints')}")
 
     # 6. Pathfinding Simulation
     payload = {

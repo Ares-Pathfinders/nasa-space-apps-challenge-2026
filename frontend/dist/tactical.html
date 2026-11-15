@@ -22,6 +22,7 @@
     html, body, #map { width: 100%; height: 100%; margin: 0; }
     body { overflow: hidden; background: var(--bg); color: #e2e8f0; font: 11px 'JetBrains Mono', monospace; }
     #map { position: absolute; inset: 0; background: #70463d; }
+    .grid-overlay { image-rendering: pixelated; }
     .ctx-tint { filter: sepia(.72) saturate(1.55) hue-rotate(326deg) brightness(.92); }
     /* Gale HiRISE only adds detail (luminance); colour comes from the tinted CTX underneath,
        so there are no jumps between colour quads, grey quads and CTX. */
@@ -350,7 +351,7 @@
       .status-grid .wide { grid-column: auto; }
     }
   </style>
-  <script type="module" crossorigin src="/assets/tactical-D-22hWW9.js"></script>
+  <script type="module" crossorigin src="/assets/tactical-DuT5QXrj.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/three.module-BbwUxmN5.js">
 </head>
 <body class="setup-incomplete">
@@ -423,10 +424,9 @@
 
     <label for="resolution">Grid resolution</label>
     <select id="resolution">
-      <option value="64">64 x 64 (Fast · ~3.5 km cells)</option>
-      <option value="128" selected>128 x 128 (Medium · ~1.8 km)</option>
-      <option value="192">192 x 192 (High · ~1.2 km)</option>
-      <option value="256">256 x 256 (Maximum · ~0.9 km)</option>
+      <option value="256" selected>256 x 256 (Standard · ~0.9 km cells)</option>
+      <option value="384">384 x 384 (High · ~0.6 km)</option>
+      <option value="512">512 x 512 (Native 3D model · ~0.45 km)</option>
     </select>
 
     <h2 style="margin-top:16px">ROUTE PLANNER</h2>
@@ -478,8 +478,8 @@
 
     <h2 style="margin-top:16px">VISIBLE LAYERS</h2>
     <div class="checks">
-      <label><input id="cells" type="checkbox" checked> ▦ Topographic grid</label>
-      <label><input id="hazards" type="checkbox" checked> ⛔ Impassable cells (steep)</label>
+      <label><input id="cells" type="checkbox"> ▦ Topographic grid</label>
+      <label><input id="hazards" type="checkbox"> ⛔ Impassable cells (steep)</label>
       <label><input id="route" type="checkbox" checked> ⚡ Optimised A* safe route</label>
       <label><input id="wps" type="checkbox" checked> 📍 Rover expedition waypoints</label>
       <label><input id="gasesLayer" type="checkbox" checked> 🪐 Gas auras and beacons (ESA PSA)</label>
@@ -519,7 +519,7 @@
 
     <h2 style="margin-top:16px">🔍 CELL INSPECTOR</h2>
     <div id="cellInfo" class="info">
-      Hover over or click any grid cell to see its elevation, slope and local barometric pressure.
+      Turn on the topographic grid layer, then hover over or click any cell to see its elevation, slope and local barometric pressure.
     </div>
 
     <h2 style="margin-top:16px">ROUTES</h2>
@@ -578,9 +578,12 @@
       center: [-4.65, 137.43],
       zoom: 11,
       zoomControl: false,
-      scrollWheelZoom: 'center'
+      scrollWheelZoom: 'center',
+      maxBoundsViscosity: 1.0,
+      // Fractional zoom lets the minimum zoom fit the terrain closely (whole crater visible, no flat background).
+      zoomSnap: 0.25,
+      zoomDelta: 0.5
     });
-    const terrainRenderer = L.canvas({ padding: 0.5 });
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
     const baseMap = L.tileLayer('https://trek.nasa.gov/tiles/Mars/EQ/Mars_MGS_MOLA_ClrShade_merge_global_463m/1.0.0/default/default028mm/{z}/{y}/{x}.jpg', {
@@ -782,9 +785,117 @@
     });
     setBaseMapMode(document.getElementById('basemap').value);
 
+    // The terrain grid is drawn as two canvas images (up to 512x512 cells), below routes and markers.
+    map.createPane('gridPane').style.zIndex = '350';
+    let currentGrid = null;
+
+    function renderGridOverlays(data) {
+      const [rows, cols] = data.resolution;
+      const { elevation_m: elevation, slope_deg: slopes, passable } = data.grid;
+      const dlat = (data.bounds.max_lat - data.bounds.min_lat) / (rows - 1);
+      const dlon = (data.bounds.max_lon - data.bounds.min_lon) / (cols - 1);
+      currentGrid = { rows, cols, dlat, dlon, bounds: data.bounds, elevation, slopes, passable };
+
+      // Pixels per cell: keep the image around 2048 px; draw cell borders when cells are big enough.
+      const scale = Math.max(1, Math.min(8, Math.floor(2048 / Math.max(rows, cols))));
+      const makeCanvas = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = cols * scale;
+        canvas.height = rows * scale;
+        return canvas;
+      };
+      const passableCanvas = makeCanvas();
+      const hazardCanvas = makeCanvas();
+      const passableCtx = passableCanvas.getContext('2d');
+      const hazardCtx = hazardCanvas.getContext('2d');
+      const styles = {
+        safe: { fill: 'rgba(34, 197, 94, 0.12)', line: 'rgba(34, 197, 94, 0.55)' },
+        caution: { fill: 'rgba(234, 179, 8, 0.35)', line: 'rgba(234, 179, 8, 0.75)' },
+        blocked: { fill: 'rgba(255, 51, 102, 0.75)', line: 'rgba(255, 51, 102, 0.95)' }
+      };
+      const border = scale >= 4 ? 1 : 0;
+      for (let r = 0; r < rows; r += 1) {
+        for (let c = 0; c < cols; c += 1) {
+          const i = r * cols + c;
+          const style = !passable[i] ? styles.blocked : slopes[i] > 10 ? styles.caution : styles.safe;
+          const ctx = passable[i] ? passableCtx : hazardCtx;
+          const x = c * scale, y = r * scale;
+          ctx.fillStyle = style.fill;
+          ctx.fillRect(x, y, scale, scale);
+          if (border) {
+            ctx.fillStyle = style.line;
+            ctx.fillRect(x + scale - 1, y, 1, scale);
+            ctx.fillRect(x, y + scale - 1, scale, 1);
+          }
+        }
+      }
+
+      const imageBounds = [
+        [data.bounds.min_lat - dlat / 2, data.bounds.min_lon - dlon / 2],
+        [data.bounds.max_lat + dlat / 2, data.bounds.max_lon + dlon / 2]
+      ];
+      const overlayOptions = { pane: 'gridPane', interactive: false, className: 'grid-overlay' };
+      layers.cells.addLayer(L.imageOverlay(passableCanvas.toDataURL(), imageBounds, overlayOptions));
+      layers.hazards.addLayer(L.imageOverlay(hazardCanvas.toDataURL(), imageBounds, overlayOptions));
+    }
+
+    // Keep the 2D map inside the terrain grid (which only covers areas with imagery):
+    // it cannot be dragged outside and cannot zoom out past the point where it fills the view.
+    let terrainViewBounds = null;
+    function updateTerrainMinZoom() {
+      if (!terrainViewBounds) return;
+      map.setMinZoom(map.getBoundsZoom(terrainViewBounds, true));
+    }
+    function restrictMapToTerrain(data) {
+      const [rows, cols] = data.resolution;
+      const dlat = (data.bounds.max_lat - data.bounds.min_lat) / (rows - 1);
+      const dlon = (data.bounds.max_lon - data.bounds.min_lon) / (cols - 1);
+      terrainViewBounds = L.latLngBounds(
+        [data.bounds.min_lat - dlat / 2, data.bounds.min_lon - dlon / 2],
+        [data.bounds.max_lat + dlat / 2, data.bounds.max_lon + dlon / 2]
+      );
+      map.setMinZoom(0);
+      map.setMaxBounds(terrainViewBounds);
+      updateTerrainMinZoom();
+    }
+    map.on('resize', updateTerrainMinZoom);
+
+    function gridCellAt(latlng) {
+      if (!currentGrid) return null;
+      const { rows, cols, dlat, dlon, bounds } = currentGrid;
+      const r = Math.round((bounds.max_lat - latlng.lat) / dlat);
+      const c = Math.round((latlng.lng - bounds.min_lon) / dlon);
+      if (r < 0 || r >= rows || c < 0 || c >= cols) return null;
+      const i = r * cols + c;
+      return {
+        r,
+        c,
+        lat: Number((bounds.max_lat - r * dlat).toFixed(5)),
+        lon: Number((bounds.min_lon + c * dlon).toFixed(5)),
+        elev: currentGrid.elevation[i],
+        slope: currentGrid.slopes[i],
+        passable: Boolean(currentGrid.passable[i])
+      };
+    }
+
+    // Cell inspector: hover or click while the grid (or impassable cells) layer is visible.
+    let lastInspectedCell = -1;
+    const inspectGridCell = event => {
+      if (!map.hasLayer(layers.cells) && !map.hasLayer(layers.hazards)) return;
+      const cell = gridCellAt(event.latlng);
+      if (!cell) return;
+      const key = cell.r * currentGrid.cols + cell.c;
+      if (key === lastInspectedCell && event.type === 'mousemove') return;
+      lastInspectedCell = key;
+      cellInfo(cell);
+    };
+    map.on('mousemove', inspectGridCell);
+    map.on('click', inspectGridCell);
+
     const layers = {
-      cells: L.layerGroup().addTo(map),
-      hazards: L.layerGroup().addTo(map),
+      // Hidden by default; shown with the "Topographic grid" / "Impassable cells" checkboxes.
+      cells: L.layerGroup(),
+      hazards: L.layerGroup(),
       route: L.layerGroup().addTo(map),
       customRoute: L.layerGroup().addTo(map),
       returnRoute: L.layerGroup().addTo(map),
@@ -1399,7 +1510,7 @@
         const data = await response.json();
         currentTerrainBounds = data.bounds;
 
-        // Limpiar capas anteriores
+        // Clear previous layers
         layers.cells.clearLayers();
         layers.hazards.clearLayers();
         layers.route.clearLayers();
@@ -1411,37 +1522,11 @@
         defaultRouteMetrics = null;
         updateReturnRoute();
 
-        map.fitBounds([
-          [data.bounds.min_lat, data.bounds.min_lon],
-          [data.bounds.max_lat, data.bounds.max_lon]
-        ], { padding: [40, 40] });
+        restrictMapToTerrain(data);
+        map.fitBounds(terrainViewBounds);
 
-        const dlat = (data.bounds.max_lat - data.bounds.min_lat) / (data.resolution[0] - 1);
-        const dlon = (data.bounds.max_lon - data.bounds.min_lon) / (data.resolution[1] - 1);
-
-        // Render the topographic cell grid
-        data.cells.forEach(cell => {
-          const color = !cell.passable ? '#ff3366' : cell.slope > 10 ? '#eab308' : '#22c55e';
-          const rect = L.rectangle([
-            [cell.lat - dlat / 2, cell.lon - dlon / 2],
-            [cell.lat + dlat / 2, cell.lon + dlon / 2]
-          ], {
-            renderer: terrainRenderer,
-            color,
-            weight: 0.4,
-            fillColor: color,
-            fillOpacity: !cell.passable ? 0.75 : cell.slope > 10 ? 0.35 : 0.12
-          });
-
-          rect.on('mouseover', () => cellInfo(cell));
-          rect.on('click', () => cellInfo(cell));
-
-          if (cell.passable) {
-            layers.cells.addLayer(rect);
-          } else {
-            layers.hazards.addLayer(rect);
-          }
-        });
+        // Render the topographic cell grid (hidden until its checkbox is ticked)
+        renderGridOverlays(data);
 
         // Trazar ruta segura A*
         if (data.safe_route && data.safe_route.coordinates_lon_lat_elev) {
@@ -1557,12 +1642,7 @@
       document.getElementById('startNavigation').disabled = true;
       document.getElementById('startNavigation').style.opacity = '.45';
       if (defaultRouteMetrics) renderRouteMetrics(defaultRouteMetrics);
-      if (currentTerrainBounds) {
-        map.fitBounds([
-          [currentTerrainBounds.min_lat, currentTerrainBounds.min_lon],
-          [currentTerrainBounds.max_lat, currentTerrainBounds.max_lon]
-        ], { padding: [40, 40] });
-      }
+      // Keep the current view: pick the origin and destination where the user is looking.
       map.getContainer().style.cursor = 'crosshair';
       setRouteStatus('Click the origin of the traverse.');
     }

@@ -480,8 +480,8 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
     <>
       {/* Space Environment: Deep space stars & cosmic lighting */}
       <color attach="background" args={['#030508']} />
-      <Stars radius={200} depth={80} count={3500} factor={4} saturation={0.5} fade speed={1.2} />
-      <Stars radius={420} depth={220} count={2600} factor={1.1} saturation={0.25} fade speed={0.2} />
+      <Stars radius={200} depth={80} count={3500} factor={4} saturation={0.5} fade speed={0} />
+      <Stars radius={420} depth={220} count={2600} factor={1.1} saturation={0.25} fade speed={0} />
       <SolarSystemBackdrop />
 
       {/* Directional Sun Light illuminating the red planet */}
