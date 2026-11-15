@@ -1,3 +1,4 @@
+import math
 from typing import Tuple, Dict, Any, List, Optional
 import networkx as nx
 import numpy as np
@@ -18,6 +19,7 @@ class CellGraphBuilder:
         (-1, 0), (1, 0), (0, -1), (0, 1),     # Orthogonal (N, S, W, E)
         (-1, -1), (-1, 1), (1, -1), (1, 1)    # Diagonal (NW, NE, SW, SE)
     ]
+    BASE_EVA_SPEED_MPS = 0.8
 
     def __init__(
         self,
@@ -34,7 +36,7 @@ class CellGraphBuilder:
         self.slope_analyzer = slope_analyzer
         self.slope_weight = float(slope_penalty_weight)
         self.max_slope = slope_analyzer.max_slope_deg
-        self.graph = nx.Graph()
+        self.graph = nx.DiGraph()
         self._build_graph()
 
     def _build_graph(self):
@@ -59,7 +61,7 @@ class CellGraphBuilder:
                         slope_deg=slope,
                     )
 
-        # Step 2: Add passable edges between adjacent cells (8-connectivity)
+        # Step 2: Add directed transitions; uphill and downhill take different time.
         for r in range(rows):
             for c in range(cols):
                 if not passable_mask[r, c]:
@@ -70,7 +72,7 @@ class CellGraphBuilder:
                     nr, nc = r + dr, c + dc
                     v = (nr, nc)
 
-                    # Only connect to neighbors with larger indices to avoid duplicate edge processing
+                    # Process each adjacent pair once before adding both directions.
                     if (dr < 0) or (dr == 0 and dc < 0):
                         continue
 
@@ -78,6 +80,12 @@ class CellGraphBuilder:
                         continue
 
                     if not passable_mask[nr, nc]:
+                        continue
+                    # A diagonal must not pass between blocked orthogonal cells.
+                    if dr and dc and (
+                        not passable_mask[r + dr, c]
+                        or not passable_mask[r, c + dc]
+                    ):
                         continue
 
                     # Check directional slope between adjacent cells
@@ -91,20 +99,42 @@ class CellGraphBuilder:
                     slope_factor = (edge_slope / max(0.1, self.max_slope)) ** 2
                     cost = dist_m * (1.0 + self.slope_weight * slope_factor)
 
-                    self.graph.add_edge(
-                        u,
-                        v,
-                        weight=cost,
-                        distance_m=dist_m,
-                        edge_slope_deg=round(edge_slope, 2),
+                    elevation_change = (
+                        self.grid.get_elevation(nr, nc) - self.grid.get_elevation(r, c)
                     )
+                    self._add_transition(u, v, dist_m, edge_slope, cost, elevation_change)
+                    self._add_transition(v, u, dist_m, edge_slope, cost, -elevation_change)
+
+    def _add_transition(
+        self,
+        start: Tuple[int, int],
+        end: Tuple[int, int],
+        distance_m: float,
+        slope_deg: float,
+        distance_cost: float,
+        elevation_change_m: float,
+    ) -> None:
+        grade = elevation_change_m / max(distance_m, 0.1)
+        speed_mps = self.BASE_EVA_SPEED_MPS * math.exp(
+            -2.0 * abs(grade) - max(grade, 0.0)
+        )
+        self.graph.add_edge(
+            start,
+            end,
+            weight=distance_cost,
+            travel_time_s=distance_m / speed_mps,
+            distance_m=distance_m,
+            edge_slope_deg=round(slope_deg, 2),
+            elevation_change_m=elevation_change_m,
+        )
 
     def find_path_astar(
         self, start: Tuple[int, int], goal: Tuple[int, int]
     ) -> Optional[Dict[str, Any]]:
         """
         Computes the optimal hazard-aware path between start and goal cells using A*.
-        Uses Euclidean physical distance as the admissible heuristic.
+        Minimizes estimated travel time; distance divided by the maximum EVA speed
+        is an admissible heuristic because slopes can only reduce traversal speed.
 
         :param start: (row, col) of origin
         :param goal: (row, col) of destination
@@ -116,38 +146,48 @@ class CellGraphBuilder:
             raise ValueError(f"Goal cell {goal} is either out of bounds or impassable.")
 
         def heuristic(u, v):
-            return self.grid.get_distance_meters(u[0], u[1], v[0], v[1])
+            return self.grid.get_distance_meters(u[0], u[1], v[0], v[1]) / self.BASE_EVA_SPEED_MPS
 
         try:
-            cell_path = nx.astar_path(self.graph, start, goal, heuristic=heuristic, weight="weight")
-            total_cost = nx.astar_path_length(self.graph, start, goal, heuristic=heuristic, weight="weight")
+            cell_path = nx.astar_path(
+                self.graph, start, goal, heuristic=heuristic, weight="travel_time_s"
+            )
 
             total_distance_m = 0.0
-            elevations = []
-            slopes = []
+            total_time_s = 0.0
+            elevation_gain_m = 0.0
+            elevation_loss_m = 0.0
+            edge_slopes = []
             coordinates = []
 
             for i in range(len(cell_path)):
                 curr = cell_path[i]
                 node_data = self.graph.nodes[curr]
-                elevations.append(node_data["elevation"])
-                slopes.append(node_data["slope_deg"])
                 coordinates.append([node_data["lon"], node_data["lat"], node_data["elevation"]])
 
                 if i > 0:
                     prev = cell_path[i - 1]
-                    total_distance_m += self.graph.edges[prev, curr]["distance_m"]
+                    edge = self.graph.edges[prev, curr]
+                    total_distance_m += edge["distance_m"]
+                    total_time_s += edge["travel_time_s"]
+                    edge_slopes.append(edge["edge_slope_deg"])
+                    if edge["elevation_change_m"] > 0:
+                        elevation_gain_m += edge["elevation_change_m"]
+                    else:
+                        elevation_loss_m += abs(edge["elevation_change_m"])
 
             return {
                 "success": True,
                 "num_waypoints": len(cell_path),
                 "total_distance_meters": round(total_distance_m, 2),
-                "total_cost": round(total_cost, 2),
+                "total_cost_seconds": round(total_time_s, 2),
+                "estimated_duration_min": round(total_time_s / 60.0, 1),
                 "cell_path": cell_path,
                 "coordinates_lon_lat_elev": coordinates,
-                "mean_path_slope_deg": round(float(np.mean(slopes)), 2),
-                "max_path_slope_deg": round(float(np.max(slopes)), 2),
-                "elevation_gain_m": round(float(elevations[-1] - elevations[0]), 2),
+                "mean_path_slope_deg": round(float(np.mean(edge_slopes)), 2) if edge_slopes else 0.0,
+                "max_path_slope_deg": round(float(np.max(edge_slopes)), 2) if edge_slopes else 0.0,
+                "elevation_gain_m": round(elevation_gain_m, 2),
+                "elevation_loss_m": round(elevation_loss_m, 2),
             }
         except nx.NetworkXNoPath:
             return None
@@ -201,7 +241,7 @@ class CellGraphBuilder:
         return {
             "num_nodes": self.graph.number_of_nodes(),
             "num_edges": self.graph.number_of_edges(),
-            "is_connected": nx.is_connected(self.graph) if self.graph.number_of_nodes() > 0 else False,
-            "connected_components": nx.number_connected_components(self.graph) if self.graph.number_of_nodes() > 0 else 0,
+            "is_connected": nx.is_weakly_connected(self.graph) if self.graph.number_of_nodes() > 0 else False,
+            "connected_components": nx.number_weakly_connected_components(self.graph) if self.graph.number_of_nodes() > 0 else 0,
             "max_slope_deg": self.max_slope,
         }

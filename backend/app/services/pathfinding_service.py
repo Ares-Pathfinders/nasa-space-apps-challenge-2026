@@ -1,138 +1,157 @@
-import math
-import numpy as np
-from typing import List
-from app.models.pathfinding import PathfindingRequest, PathfindingResponse, PathWaypoint
+from typing import Optional, Tuple
 
-MARS_RADIUS_KM = 3389.5
+from ..models.pathfinding import PathfindingRequest, PathfindingResponse, PathWaypoint
+try:
+    from backend.terrain.cell_graph import CellGraphBuilder
+    from backend.terrain.slope import SlopeAnalyzer
+except ModuleNotFoundError:
+    from terrain.cell_graph import CellGraphBuilder
+    from terrain.slope import SlopeAnalyzer
 
-def haversine_distance_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    """Calculate the great circle distance between two points on Mars in meters."""
-    phi1 = math.radians(lat1)
-    phi2 = math.radians(lat2)
-    delta_phi = math.radians(lat2 - lat1)
-    delta_lambda = math.radians(lon2 - lon1)
+try:
+    from backend.data.gale_crater_topography import (
+        generate_gale_crater_elevation_grid,
+    )
+    from backend.data.jezero_crater_topography import (
+        generate_jezero_crater_elevation_grid,
+    )
+except ModuleNotFoundError:
+    from data.gale_crater_topography import generate_gale_crater_elevation_grid
+    from data.jezero_crater_topography import generate_jezero_crater_elevation_grid
 
-    a = math.sin(delta_phi / 2.0) ** 2 + \
-        math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2.0) ** 2
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    return (MARS_RADIUS_KM * 1000.0) * c
+
+def _nearest_passable_cell(
+    grid, builder: CellGraphBuilder, cell: Tuple[int, int], max_radius: int = 2
+) -> Optional[Tuple[int, int]]:
+    row, col = cell
+    for radius in range(max_radius + 1):
+        candidates = []
+        for candidate_row in range(max(0, row - radius), min(grid.rows, row + radius + 1)):
+            for candidate_col in range(max(0, col - radius), min(grid.cols, col + radius + 1)):
+                if max(abs(candidate_row - row), abs(candidate_col - col)) != radius:
+                    continue
+                candidate = (candidate_row, candidate_col)
+                if candidate in builder.graph:
+                    candidates.append(candidate)
+        if candidates:
+            return min(
+                candidates,
+                key=lambda candidate: grid.get_distance_meters(
+                    row, col, candidate[0], candidate[1]
+                ),
+            )
+    return None
+
 
 class PathfindingService:
     @staticmethod
     def simulate_eva_route(req: PathfindingRequest) -> PathfindingResponse:
-        start_lat, start_lon = req.start.latitude, req.start.longitude
-        end_lat, end_lon = req.target.latitude, req.target.longitude
-        
-        base_dist_m = haversine_distance_m(start_lat, start_lon, end_lat, end_lon)
-        # Ensure at least 10 waypoints, or 1 every ~50m
-        num_waypoints = max(10, min(60, int(base_dist_m / 40.0) + 1))
-        
-        lats = np.linspace(start_lat, end_lat, num_waypoints)
-        lons = np.linspace(start_lon, end_lon, num_waypoints)
-        
-        start_elev = req.start.elevation_m if req.start.elevation_m is not None else -4500.0
-        target_elev = req.target.elevation_m if req.target.elevation_m is not None else -4350.0
-        
-        # Synthetic undulating microtopography based on sinusoidal Martian dunes and crater slopes
-        t = np.linspace(0, 1, num_waypoints)
-        macro_slope = (1 - t) * start_elev + t * target_elev
-        micro_relief = 18.0 * np.sin(t * 3 * np.pi) + 8.0 * np.cos(t * 7 * np.pi)
-        elevations = macro_slope + micro_relief
-        
-        waypoints: List[PathWaypoint] = []
-        cumulative_dist = 0.0
-        total_elev_gain = 0.0
-        total_elev_loss = 0.0
-        max_slope = 0.0
-        slopes: List[float] = []
-        
-        for i in range(num_waypoints):
-            if i == 0:
-                step_dist = 0.0
-                slope_deg = 0.0
-            else:
-                step_dist = haversine_distance_m(lats[i-1], lons[i-1], lats[i], lons[i])
-                cumulative_dist += step_dist
-                delta_h = elevations[i] - elevations[i-1]
-                if delta_h > 0:
-                    total_elev_gain += delta_h
-                else:
-                    total_elev_loss += abs(delta_h)
-                
-                # Slope in degrees
-                run = max(step_dist, 0.1)
-                slope_rad = math.atan(abs(delta_h) / run)
-                slope_deg = round(math.degrees(slope_rad), 2)
-            
-            slopes.append(slope_deg)
-            if slope_deg > max_slope:
-                max_slope = slope_deg
-                
-            hazard_warning = None
-            if slope_deg > req.max_slope_limit_deg:
-                hazard_warning = f"SLOPE EXCEEDED ({slope_deg}° > {req.max_slope_limit_deg}°)"
-            elif slope_deg > 14.0:
-                hazard_warning = f"MODERATE SLOPE WARNING ({slope_deg}°)"
-                
-            # Base Mars radiation at surface: ~25 uGy/h, modulated slightly by elevation
-            rad_rate = round(24.5 + (elevations[i] / 1000.0) * -1.2, 2)
-            
-            # Metabolic cost: ~250 kcal/km on flat Mars 0.38g, extra for slope
-            step_energy = (step_dist / 1000.0) * (240.0 + (slope_deg * 12.0))
-            
+        zone_generators = {
+            "mount-sharp-boxwork": generate_gale_crater_elevation_grid,
+            "gale": generate_gale_crater_elevation_grid,
+            "jezero-crater-delta": generate_jezero_crater_elevation_grid,
+            "jezero": generate_jezero_crater_elevation_grid,
+        }
+        generator = zone_generators.get(req.site_id.lower())
+        if generator is None:
+            raise ValueError("Pathfinding is available only for Gale Crater and Jezero.")
+
+        grid = generator(resolution_rows=80, resolution_cols=80)
+        analyzer = SlopeAnalyzer(grid, max_slope_deg=req.max_slope_limit_deg)
+        builder = CellGraphBuilder(grid, analyzer, slope_penalty_weight=3.5)
+
+        endpoints = (
+            ("start", req.start.latitude, req.start.longitude),
+            ("target", req.target.latitude, req.target.longitude),
+        )
+        endpoint_cells = []
+        for name, latitude, longitude in endpoints:
+            if not (
+                grid.min_lat <= latitude <= grid.max_lat
+                and grid.min_lon <= longitude <= grid.max_lon
+            ):
+                raise ValueError(f"{name} must be inside the loaded terrain bounds.")
+            requested_cell = grid.geo_to_cell(latitude, longitude)
+            passable_cell = _nearest_passable_cell(grid, builder, requested_cell)
+            if passable_cell is None:
+                raise ValueError(
+                    f"{name} is on impassable terrain with no safe cell nearby."
+                )
+            endpoint_cells.append((requested_cell, passable_cell))
+
+        (_, start_cell), (_, target_cell) = endpoint_cells
+        if start_cell == target_cell:
+            raise ValueError("Choose two points at least one navigable cell apart.")
+
+        route = builder.find_path_astar(start_cell, target_cell)
+        if route is None:
+            raise ValueError("No safe route connects the selected points.")
+
+        waypoints = []
+        cumulative_distance = 0.0
+        cumulative_energy = 0.0
+        for index, (longitude, latitude, elevation) in enumerate(
+            route["coordinates_lon_lat_elev"]
+        ):
+            slope = 0.0
+            if index:
+                previous = route["cell_path"][index - 1]
+                current = route["cell_path"][index]
+                edge = builder.graph.edges[previous, current]
+                cumulative_distance += edge["distance_m"]
+                slope = edge["edge_slope_deg"]
+                cumulative_energy += edge["distance_m"] * (0.24 + slope * 0.012)
+
             waypoints.append(
                 PathWaypoint(
-                    index=i,
-                    latitude=round(float(lats[i]), 6),
-                    longitude=round(float(lons[i]), 6),
-                    elevation_m=round(float(elevations[i]), 2),
-                    slope_deg=slope_deg,
-                    cumulative_distance_m=round(cumulative_dist, 2),
-                    hazard_warning=hazard_warning,
-                    radiation_rate_ugy_h=max(18.0, rad_rate),
-                    estimated_energy_kcal=round(step_energy, 2)
+                    index=index,
+                    latitude=round(latitude, 6),
+                    longitude=round(longitude, 6),
+                    elevation_m=round(elevation, 2),
+                    slope_deg=round(slope, 2),
+                    cumulative_distance_m=round(cumulative_distance, 2),
+                    hazard_warning=f"MODERATE SLOPE WARNING ({slope}°)" if slope > 14 else None,
+                    radiation_rate_ugy_h=9.8,
+                    estimated_energy_kcal=round(cumulative_energy, 2),
                 )
             )
 
-        avg_slope = round(float(np.mean(slopes)), 2)
-        
-        # Human Mars walking speed: ~2.8 km/h on suit, penalized by slope
-        avg_speed_kmh = max(1.2, 3.2 - (avg_slope * 0.08))
-        est_duration_min = round((cumulative_dist / 1000.0) / avg_speed_kmh * 60.0, 1)
-        
-        # O2 consumption: ~0.8 to 1.2 Liters/minute for active EVA
-        est_o2_liters = round(est_duration_min * 0.95, 1)
-        
-        # Radiation accumulated: (rate in uGy/h) * hours
-        total_rad_usv = round((24.5 * (est_duration_min / 60.0)), 2)
-        
-        # Risk assessment
-        if max_slope > req.max_slope_limit_deg or est_duration_min > req.eva_time_limit_minutes:
+        duration_min = route["estimated_duration_min"]
+        oxygen_liters = round(duration_min * 0.95, 1)
+        maximum_slope = route["max_path_slope_deg"]
+        if duration_min > req.eva_time_limit_minutes:
             risk_level = "CRITICAL"
-        elif max_slope > 15.0 or est_duration_min > (req.eva_time_limit_minutes * 0.75):
+        elif maximum_slope > 15 or duration_min > req.eva_time_limit_minutes * 0.75:
             risk_level = "HIGH"
-        elif max_slope > 10.0:
+        elif maximum_slope > 10:
             risk_level = "MODERATE"
         else:
             risk_level = "LOW"
-            
+
         return PathfindingResponse(
             site_id=req.site_id,
-            total_distance_m=round(cumulative_dist, 1),
-            estimated_duration_min=est_duration_min,
-            max_slope_deg=max_slope,
-            average_slope_deg=avg_slope,
-            total_elevation_gain_m=round(total_elev_gain, 1),
-            total_elevation_loss_m=round(total_elev_loss, 1),
-            estimated_o2_consumed_liters=est_o2_liters,
-            total_radiation_dose_usv=total_rad_usv,
+            total_distance_m=round(route["total_distance_meters"], 1),
+            estimated_duration_min=duration_min,
+            max_slope_deg=maximum_slope,
+            average_slope_deg=route["mean_path_slope_deg"],
+            total_elevation_gain_m=route["elevation_gain_m"],
+            total_elevation_loss_m=route["elevation_loss_m"],
+            estimated_o2_consumed_liters=oxygen_liters,
+            total_radiation_dose_usv=round(9.8 * duration_min / 60.0, 2),
             risk_level=risk_level,
             safety_margins={
-                "o2_reserve_remaining_percent": max(0.0, round(100.0 - (est_o2_liters / 300.0 * 100.0), 1)),
-                "safe_return_time_buffer_min": round(max(0.0, req.eva_time_limit_minutes - est_duration_min), 1),
-                "point_of_no_return_distance_m": round(cumulative_dist * 0.5, 1)
+                "o2_reserve_remaining_percent": max(
+                    0.0, round(100.0 - oxygen_liters / 300.0 * 100.0, 1)
+                ),
+                "safe_return_time_buffer_min": round(
+                    max(0.0, req.eva_time_limit_minutes - duration_min), 1
+                ),
+                "point_of_no_return_distance_m": round(
+                    route["total_distance_meters"] * 0.5, 1
+                ),
             },
-            waypoints=waypoints
+            waypoints=waypoints,
         )
+
 
 pathfinding_service = PathfindingService()
