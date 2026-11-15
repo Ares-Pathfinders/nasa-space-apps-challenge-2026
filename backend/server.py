@@ -20,14 +20,36 @@ sys.path.insert(0, REPO_ROOT)
 sys.path.insert(0, os.path.dirname(__file__))
 
 from app.services.psa_service import PSAService
-from backend.data.gale_crater_topography import generate_gale_crater_elevation_grid, GALE_MIN_LAT, GALE_MAX_LAT, GALE_MIN_LON, GALE_MAX_LON, GALE_TERRAIN_SOURCE
-from backend.data.jezero_crater_topography import generate_jezero_crater_elevation_grid, JEZERO_MIN_LAT, JEZERO_MAX_LAT, JEZERO_MIN_LON, JEZERO_MAX_LON, JEZERO_TERRAIN_SOURCE
+from backend.data.gale_crater_topography import (
+    GALE_MAX_LAT,
+    GALE_MAX_LON,
+    GALE_MIN_LAT,
+    GALE_MIN_LON,
+    generate_gale_crater_elevation_grid,
+)
+from backend.data.jezero_crater_topography import (
+    JEZERO_MAX_LAT,
+    JEZERO_MAX_LON,
+    JEZERO_MIN_LAT,
+    JEZERO_MIN_LON,
+    generate_jezero_crater_elevation_grid,
+)
 from backend.data.terrain_errors import TerrainDataError
 from backend.terrain.slope import SlopeAnalyzer
 from backend.terrain.cell_graph import CellGraphBuilder
 
 FRONTEND_DIST_DIR = os.path.join(REPO_ROOT, "frontend", "dist")
 TERRAIN_CACHE_FILE = os.path.join(os.path.dirname(__file__), "terrain_analysis_output.json")
+GALE_TERRAIN_SOURCE = {
+    "name": "Modelo sintético de terreno de Gale (no DEM medido)",
+    "url": "https://mars.nasa.gov/",
+    "method": "Topografía procedural demostrativa; no representa mediciones orbitales.",
+}
+JEZERO_TERRAIN_SOURCE = {
+    "name": "Modelo sintético de terreno de Jezero (no DEM medido)",
+    "url": "https://mars.nasa.gov/",
+    "method": "Topografía procedural demostrativa; no representa mediciones orbitales.",
+}
 
 
 def _nearest_passable_cell(grid, builder, cell, max_radius=2):

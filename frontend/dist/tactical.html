@@ -57,7 +57,6 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      text-decoration: none;
     }
     .nav-btn:hover {
       background: var(--cyan);
@@ -69,6 +68,42 @@
     }
     .left { left: 16px; }
     .right { right: 16px; width: 370px; }
+    .panel-close, .panel-reopen {
+      border: 1px solid rgba(69, 243, 255, 0.45);
+      background: rgba(5, 6, 8, 0.92);
+      color: var(--cyan);
+      font: 10px 'JetBrains Mono', monospace;
+    }
+    .panel-close { padding: 3px 7px; }
+    .panel-reopen {
+      position: fixed;
+      z-index: 1100;
+      top: 50%;
+      display: none;
+      padding: 10px 8px;
+      writing-mode: vertical-rl;
+    }
+    .panel-reopen:hover, .panel-close:hover { background: var(--cyan); color: var(--bg); }
+    #reopenLeftPanel { left: 8px; transform: translateY(-50%) rotate(180deg); }
+    #reopenRightPanel { right: 8px; transform: translateY(-50%); }
+    .panel[hidden] { display: none; }
+    .route-picker-hint {
+      position: fixed;
+      z-index: 1100;
+      top: 76px;
+      left: 50%;
+      max-width: calc(100vw - 32px);
+      padding: 8px 12px;
+      transform: translateX(-50%);
+      border: 1px solid rgba(69, 243, 255, 0.55);
+      background: rgba(5, 6, 8, 0.94);
+      color: var(--cyan);
+      text-align: center;
+      font-size: 10px;
+    }
+    .route-picker-hint[hidden] { display: none; }
+    .route-controls { display: grid; gap: 6px; margin-top: 16px; }
+    .route-status { margin-top: 7px; font-size: 9px; }
     h2 {
       margin: 0 0 10px;
       padding-bottom: 5px;
@@ -122,7 +157,7 @@
     }
     .status-toggle:hover { color: #fff; }
     .status-notebook { padding-top: 10px; }
-    .status-notebook[hidden], .fuel-fields[hidden] { display: none; }
+    .status-notebook[hidden] { display: none; }
     .status-note { margin: 0 0 8px; color: #94a3b8; font-size: 9px; line-height: 1.5; }
     .status-estimate {
       padding: 8px;
@@ -159,6 +194,7 @@
     .connection-control input { accent-color: var(--green); }
     .connection-state { margin-left: auto; color: var(--red); font-weight: 700; }
     .connection-control input:checked ~ .connection-state { color: var(--green); }
+    .fuel-fields[hidden] { display: none; }
     .fuel-estimate { margin-top: 8px; }
     .status-action {
       width: 100%;
@@ -173,60 +209,6 @@
     .status-entry { padding: 8px; border: 1px solid rgba(255, 255, 255, 0.12); background: rgba(0, 0, 0, 0.28); }
     .status-entry-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; color: var(--cyan); font-size: 8px; text-transform: uppercase; }
     .status-entry-snapshot { margin: 0 0 6px; color: #94a3b8; font-size: 8px; line-height: 1.5; }
-    .status-entry label { margin-top: 6px; }
-    .status-delete { border: 0; background: transparent; color: var(--red); font-size: 9px; }
-    .status-empty { color: #64748b; font-size: 9px; }
-    input[type=number], input[type=datetime-local], textarea {
-      width: 100%;
-      padding: 7px;
-      color: #f1f5f9;
-      background: #0b0f19;
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      font: inherit;
-    }
-    textarea { min-height: 56px; resize: vertical; }
-    .status-toggle {
-      width: 100%;
-      margin: 14px 0 0;
-      padding: 9px 0;
-      border: 0;
-      border-top: 1px solid rgba(69, 243, 255, 0.2);
-      border-bottom: 1px solid rgba(69, 243, 255, 0.2);
-      background: transparent;
-      color: var(--cyan);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font: 10px 'Orbitron', sans-serif;
-      letter-spacing: 0.16em;
-      text-align: left;
-    }
-    .status-toggle:hover { color: #fff; }
-    .status-notebook { padding-top: 10px; }
-    .status-notebook[hidden] { display: none; }
-    .status-note { margin: 0 0 8px; color: #94a3b8; font-size: 9px; line-height: 1.5; }
-    .status-estimate {
-      padding: 8px;
-      background: rgba(69, 243, 255, 0.08);
-      border-left: 2px solid var(--cyan);
-    }
-    .status-estimate small { display: block; color: #94a3b8; font-size: 8px; text-transform: uppercase; }
-    .status-estimate strong { display: block; margin-top: 3px; color: #fff; font-size: 15px; }
-    .status-estimate span { display: block; margin-top: 2px; color: var(--cyan); font-size: 9px; }
-    .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 8px; }
-    .status-grid label, .status-notebook > label { margin-top: 8px; }
-    .status-action {
-      width: 100%;
-      margin-top: 8px;
-      padding: 7px;
-      border: 1px solid rgba(69, 243, 255, 0.5);
-      background: rgba(69, 243, 255, 0.1);
-      color: var(--cyan);
-      font-weight: 600;
-    }
-    .status-log { display: grid; gap: 8px; margin-top: 10px; }
-    .status-entry { padding: 8px; border: 1px solid rgba(255, 255, 255, 0.12); background: rgba(0, 0, 0, 0.28); }
-    .status-entry-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; color: var(--cyan); font-size: 8px; text-transform: uppercase; }
     .status-entry label { margin-top: 6px; }
     .status-delete { border: 0; background: transparent; color: var(--red); font-size: 9px; }
     .status-empty { color: #64748b; font-size: 9px; }
@@ -304,6 +286,7 @@
       .sub { display: none; }
       h1 { font-size: 10px; }
       .status-grid { grid-template-columns: 1fr; }
+      .status-grid .wide { grid-column: auto; }
     }
   </style>
 </head>
@@ -331,8 +314,8 @@
   </header>
 
   <!-- Panel Izquierdo: Configuración del terreno y cuadrícula -->
-  <aside class="panel side left">
-    <h2>SELECCIÓN DE EXPEDICIÓN</h2>
+  <aside id="leftPanel" class="panel side left">
+    <h2><span>SELECCIÓN DE EXPEDICIÓN</span><button id="closeLeftPanel" class="panel-close" type="button" aria-label="Cerrar panel de expedición">×</button></h2>
     <label for="basemap">Mapa base</label>
     <select id="basemap">
       <option value="default" selected>Predeterminado (según zona marciana)</option>
@@ -363,6 +346,14 @@
       <option value="60" selected>60 x 60 (Alta resolución)</option>
       <option value="80">80 x 80 (Submétrica)</option>
     </select>
+
+    <h2 style="margin-top:16px">PLANIFICADOR DE RUTA</h2>
+    <div class="route-controls">
+      <button id="planRoute" class="nav-btn" type="button" style="justify-content:center;">🧭 ELEGIR ORIGEN Y DESTINO</button>
+      <button id="startNavigation" class="nav-btn" type="button" disabled style="justify-content:center;opacity:.45;">▶ INICIAR NAVEGACIÓN</button>
+      <button id="clearCustomRoute" class="nav-btn" type="button" style="justify-content:center;border-color:#94a3b8;color:#cbd5e1;background:rgba(148,163,184,.08);">BORRAR RUTA PERSONALIZADA</button>
+    </div>
+    <div id="routeStatus" class="info route-status" aria-live="polite">Elige dos puntos dentro del terreno para calcular una ruta segura.</div>
 
     <button id="statusToggle" class="status-toggle" type="button" aria-expanded="false" aria-controls="statusNotebook">
       <span>ESTADO</span><span id="statusChevron" aria-hidden="true">▸</span>
@@ -427,8 +418,8 @@
   </aside>
 
   <!-- Panel Derecho: Gases de la ESA PSA e Inspector de Celdas -->
-  <aside class="panel side right">
-    <h2 id="rightDataTitle">🪐 GASES POR ZONA // ESA PSA</h2>
+  <aside id="rightPanel" class="panel side right">
+    <h2><span id="rightDataTitle">🪐 GASES POR ZONA // ESA PSA</span><button id="closeRightPanel" class="panel-close" type="button" aria-label="Cerrar panel de datos">×</button></h2>
     <div id="gasesPanel" class="info" style="font-size:10px;">
       <div style="color:#94a3b8">Consultando espectrometría ExoMars TGO & Mars Express...</div>
     </div>
@@ -465,6 +456,9 @@
       <span style="font-size:9px;color:#cbd5e1;">Atmósfera 100% anóxica y letal. El traje espacial debe mantener contrapresión de 30-34 kPa frente a la presión ambiente marciana (&lt; 1 kPa).</span>
     </div>
   </aside>
+  <button id="reopenLeftPanel" class="panel-reopen" type="button" aria-controls="leftPanel" aria-expanded="true">MOSTRAR EXPEDICIÓN</button>
+  <button id="reopenRightPanel" class="panel-reopen" type="button" aria-controls="rightPanel" aria-expanded="true">MOSTRAR DATOS</button>
+  <div id="routePickerHint" class="route-picker-hint" role="status" aria-live="polite" hidden></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
@@ -667,6 +661,7 @@
       cells: L.layerGroup().addTo(map),
       hazards: L.layerGroup().addTo(map),
       route: L.layerGroup().addTo(map),
+      customRoute: L.layerGroup().addTo(map),
       returnRoute: L.layerGroup().addTo(map),
       wps: L.layerGroup().addTo(map),
       gases: L.layerGroup().addTo(map)
@@ -704,6 +699,13 @@
     const savedStatus = loadStatusNotebook();
     let statusEntries = savedStatus.entries;
     let latestRoute = null;
+    let defaultRoute = null;
+    let defaultRouteMetrics = null;
+    let selectedRouteStart = null;
+    let customRouteWaypoints = [];
+    let isPickingRoute = false;
+    let customRouteRequestId = 0;
+    let panelsBeforeRoute = null;
     const savedTravelMode = savedStatus.travelMode === 'vehicle' ? 'vehicle' : 'foot';
     statusInputIds.forEach(id => {
       document.getElementById(id).value = savedStatus[id];
@@ -957,7 +959,9 @@
 
     let currentZoneAtmosphere = null;
 
+    // Calcular presión barométrica local según cota altimétrica de la celda
     function calcPressure(elevM, basePressurePa) {
+      // Mars atmospheric scale height ~ 11.1 km
       const scaleHeight = 11100;
       return Math.round(basePressurePa * Math.exp(-elevM / scaleHeight));
     }
@@ -1061,8 +1065,128 @@
       }
     }
 
+    function renderRouteMetrics(metrics) {
+      document.getElementById('distance').textContent = (metrics.distanceMeters / 1000).toFixed(2) + ' km';
+      document.getElementById('waypoints').textContent = metrics.waypoints;
+      document.getElementById('average').textContent = metrics.averageSlope + '°';
+      document.getElementById('maximum').textContent = metrics.maxSlope + '°';
+      const speedMetersPerMinute = document.querySelector('input[name="travelMode"]:checked').value === 'vehicle' ? 120 : 48;
+      const minutes = metrics.distanceMeters / speedMetersPerMinute;
+      document.getElementById('time').textContent = Math.ceil(minutes) + ' min';
+      const oxygenRate = Math.max(0, Number(document.getElementById('oxygenConsumption').value) || 0);
+      document.getElementById('oxygen').textContent = (minutes * oxygenRate / 60).toFixed(1) + ' L';
+      updateReturnRoute();
+    }
+
+    function setRouteStatus(message) {
+      document.getElementById('routeStatus').textContent = message;
+      const hint = document.getElementById('routePickerHint');
+      if (isPickingRoute) {
+        hint.textContent = message;
+        hint.hidden = false;
+      }
+    }
+
+    function restorePanelsAfterRoute() {
+      document.body.classList.remove('route-picking');
+      document.getElementById('routePickerHint').hidden = true;
+      if (!panelsBeforeRoute) return;
+      const previous = panelsBeforeRoute;
+      panelsBeforeRoute = null;
+      setPanelVisible('leftPanel', 'closeLeftPanel', 'reopenLeftPanel', !previous.leftHidden);
+      setPanelVisible('rightPanel', 'closeRightPanel', 'reopenRightPanel', !previous.rightHidden);
+    }
+
+    function addRoutePoint(latlng) {
+      if (!currentTerrainBounds ||
+          latlng.lat < currentTerrainBounds.min_lat || latlng.lat > currentTerrainBounds.max_lat ||
+          latlng.lng < currentTerrainBounds.min_lon || latlng.lng > currentTerrainBounds.max_lon) {
+        setRouteStatus('Elige puntos dentro de los límites del terreno cargado.');
+        return;
+      }
+
+      const point = { latitude: latlng.lat, longitude: latlng.lng };
+      if (!selectedRouteStart) {
+        selectedRouteStart = point;
+        layers.customRoute.clearLayers();
+        layers.customRoute.addLayer(L.circleMarker([point.latitude, point.longitude], {
+          radius: 8, color: '#fff', weight: 2, fillColor: '#22c55e', fillOpacity: 1
+        }).bindTooltip('ORIGEN', { permanent: true, direction: 'top' }));
+        setRouteStatus('Origen fijado. Haz clic en el destino.');
+        return;
+      }
+
+      isPickingRoute = false;
+      map.getContainer().style.cursor = '';
+      restorePanelsAfterRoute();
+      layers.customRoute.addLayer(L.circleMarker([point.latitude, point.longitude], {
+        radius: 8, color: '#fff', weight: 2, fillColor: '#ffb703', fillOpacity: 1
+      }).bindTooltip('DESTINO', { permanent: true, direction: 'top' }));
+      calculateCustomRoute(selectedRouteStart, point);
+    }
+
+    async function calculateCustomRoute(start, target) {
+      const requestId = ++customRouteRequestId;
+      setRouteStatus('Calculando una ruta segura sobre la cuadrícula topográfica...');
+      document.getElementById('startNavigation').disabled = true;
+      document.getElementById('startNavigation').style.opacity = '.45';
+      try {
+        const response = await fetch(`${API_BASE}/pathfinding/simulate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            zone: document.getElementById('zone').value,
+            resolution: Number(document.getElementById('resolution').value),
+            max_slope: Number(document.getElementById('slope').value),
+            start,
+            target
+          })
+        });
+        const result = await response.json();
+        if (requestId !== customRouteRequestId) return;
+        if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
+
+        const points = result.waypoints.map(waypoint => [waypoint.latitude, waypoint.longitude]);
+        layers.customRoute.addLayer(L.polyline(points, {
+          color: '#ffb703', weight: 8, opacity: 0.3
+        }));
+        layers.customRoute.addLayer(L.polyline(points, {
+          color: '#ffb703', weight: 3, dashArray: '9 7'
+        }));
+        if (document.getElementById('route').checked) map.addLayer(layers.customRoute);
+
+        customRouteWaypoints = result.waypoints;
+        latestRoute = { points, distanceMeters: result.total_distance_m };
+        renderRouteMetrics({
+          distanceMeters: result.total_distance_m,
+          waypoints: result.waypoints.length,
+          averageSlope: result.average_slope_deg,
+          maxSlope: result.max_slope_deg
+        });
+        document.getElementById('startNavigation').disabled = false;
+        document.getElementById('startNavigation').style.opacity = '1';
+        const snapped = result.snapped_start || result.snapped_target;
+        setRouteStatus(`Ruta segura calculada${snapped ? ' (extremos ajustados a celdas transitables)' : ''}: ${(result.total_distance_m / 1000).toFixed(2)} km.`);
+      } catch (error) {
+        if (requestId !== customRouteRequestId) return;
+        setRouteStatus(`No se pudo calcular la ruta: ${error.message}`);
+      }
+    }
+
     async function load() {
       const loading = document.getElementById('loading');
+      if (panelsBeforeRoute) restorePanelsAfterRoute();
+      customRouteRequestId += 1;
+      isPickingRoute = false;
+      selectedRouteStart = null;
+      customRouteWaypoints = [];
+      document.getElementById('startNavigation').disabled = true;
+      document.getElementById('startNavigation').style.opacity = '.45';
+      layers.customRoute.clearLayers();
+      map.getContainer().style.cursor = '';
+      defaultRoute = null;
+      defaultRouteMetrics = null;
+      setRouteStatus('Elige dos puntos dentro del terreno para calcular una ruta segura.');
       loading.style.display = 'grid';
 
       const zone = document.getElementById('zone').value;
@@ -1085,9 +1209,12 @@
         layers.cells.clearLayers();
         layers.hazards.clearLayers();
         layers.route.clearLayers();
+        layers.customRoute.clearLayers();
         layers.returnRoute.clearLayers();
         layers.wps.clearLayers();
         latestRoute = null;
+        defaultRoute = null;
+        defaultRouteMetrics = null;
         updateReturnRoute();
 
         map.fitBounds([
@@ -1125,24 +1252,23 @@
         if (data.safe_route && data.safe_route.coordinates_lon_lat_elev) {
           const points = data.safe_route.coordinates_lon_lat_elev.map(p => [p[1], p[0]]);
           latestRoute = { points, distanceMeters: data.safe_route.total_distance_meters };
+          defaultRoute = latestRoute;
           layers.route.addLayer(L.polyline(points, { color: '#45f3ff', weight: 8, opacity: 0.25 }));
           layers.route.addLayer(L.polyline(points, { color: '#45f3ff', weight: 3 }));
           layers.route.addLayer(L.circleMarker(points[0], { radius: 7, color: '#fff', fillColor: '#22c55e', fillOpacity: 1 }));
           layers.route.addLayer(L.circleMarker(points.at(-1), { radius: 7, color: '#fff', fillColor: '#ffb703', fillOpacity: 1 }));
 
-          document.getElementById('distance').textContent = (data.safe_route.total_distance_meters / 1000).toFixed(2) + ' km';
-          document.getElementById('waypoints').textContent = data.safe_route.num_waypoints;
-          document.getElementById('average').textContent = data.safe_route.mean_path_slope_deg + '°';
-          document.getElementById('maximum').textContent = data.safe_route.max_path_slope_deg + '°';
-          const speedMetersPerMinute = document.querySelector('input[name="travelMode"]:checked').value === 'vehicle' ? 120 : 48;
-          const minutes = data.safe_route.total_distance_meters / speedMetersPerMinute;
-          document.getElementById('time').textContent = Math.ceil(minutes) + ' min';
-          const oxygenRate = Math.max(0, Number(document.getElementById('oxygenConsumption').value) || 0);
-          document.getElementById('oxygen').textContent = (minutes * oxygenRate / 60).toFixed(1) + ' L';
-          updateReturnRoute();
+          defaultRouteMetrics = {
+            distanceMeters: data.safe_route.total_distance_meters,
+            waypoints: data.safe_route.num_waypoints,
+            averageSlope: data.safe_route.mean_path_slope_deg,
+            maxSlope: data.safe_route.max_path_slope_deg
+          };
+          renderRouteMetrics(defaultRouteMetrics);
         } else {
           document.getElementById('routeReturnStatus').textContent = 'No se encontró una ruta segura para calcular el retorno.';
         }
+        updateReturnRoute();
 
         // Hitos históricos de rovers
         if (data.historical_waypoints) {
@@ -1186,6 +1312,89 @@
       }
     };
 
+    function setPanelVisible(panelId, closeId, reopenId, visible) {
+      document.getElementById(panelId).hidden = !visible;
+      document.getElementById(closeId).setAttribute('aria-expanded', String(visible));
+      const reopenButton = document.getElementById(reopenId);
+      reopenButton.setAttribute('aria-expanded', String(visible));
+      reopenButton.style.display = visible ? 'none' : 'block';
+      window.setTimeout(() => map.invalidateSize({ pan: false }), 250);
+    }
+
+    document.getElementById('closeLeftPanel').onclick = () =>
+      setPanelVisible('leftPanel', 'closeLeftPanel', 'reopenLeftPanel', false);
+    document.getElementById('reopenLeftPanel').onclick = () =>
+      setPanelVisible('leftPanel', 'closeLeftPanel', 'reopenLeftPanel', true);
+    document.getElementById('closeRightPanel').onclick = () =>
+      setPanelVisible('rightPanel', 'closeRightPanel', 'reopenRightPanel', false);
+    document.getElementById('reopenRightPanel').onclick = () =>
+      setPanelVisible('rightPanel', 'closeRightPanel', 'reopenRightPanel', true);
+
+    map.on('click', event => {
+      if (isPickingRoute) addRoutePoint(event.latlng);
+    });
+
+    document.getElementById('planRoute').onclick = () => {
+      selectedRouteStart = null;
+      customRouteWaypoints = [];
+      customRouteRequestId += 1;
+      isPickingRoute = true;
+      document.body.classList.add('route-picking');
+      const hint = document.getElementById('routePickerHint');
+      hint.hidden = false;
+      if (window.matchMedia('(max-width: 860px)').matches) {
+        panelsBeforeRoute = {
+          leftHidden: document.getElementById('leftPanel').hidden,
+          rightHidden: document.getElementById('rightPanel').hidden
+        };
+        if (!panelsBeforeRoute.leftHidden) {
+          setPanelVisible('leftPanel', 'closeLeftPanel', 'reopenLeftPanel', false);
+        }
+        if (!panelsBeforeRoute.rightHidden) {
+          setPanelVisible('rightPanel', 'closeRightPanel', 'reopenRightPanel', false);
+        }
+      }
+      layers.customRoute.clearLayers();
+      latestRoute = defaultRoute;
+      document.getElementById('startNavigation').disabled = true;
+      document.getElementById('startNavigation').style.opacity = '.45';
+      if (defaultRouteMetrics) renderRouteMetrics(defaultRouteMetrics);
+      if (currentTerrainBounds) {
+        map.fitBounds([
+          [currentTerrainBounds.min_lat, currentTerrainBounds.min_lon],
+          [currentTerrainBounds.max_lat, currentTerrainBounds.max_lon]
+        ], { padding: [40, 40] });
+      }
+      map.getContainer().style.cursor = 'crosshair';
+      setRouteStatus('Haz clic en el origen del recorrido.');
+    };
+
+    document.getElementById('startNavigation').onclick = () => {
+      if (customRouteWaypoints.length < 2) return;
+      const points = customRouteWaypoints.map(point => [point.latitude, point.longitude]);
+      map.fitBounds(points, { padding: [70, 70] });
+      const next = customRouteWaypoints[1];
+      setRouteStatus(
+        `Navegación iniciada · siguiente waypoint ${next.index}, ${Math.round(next.cumulative_distance_m)} m desde el origen. Sin telemetría de posición en tiempo real.`
+      );
+    };
+
+    document.getElementById('clearCustomRoute').onclick = () => {
+      customRouteRequestId += 1;
+      restorePanelsAfterRoute();
+      isPickingRoute = false;
+      selectedRouteStart = null;
+      customRouteWaypoints = [];
+      layers.customRoute.clearLayers();
+      latestRoute = defaultRoute;
+      map.getContainer().style.cursor = '';
+      document.getElementById('startNavigation').disabled = true;
+      document.getElementById('startNavigation').style.opacity = '.45';
+      setRouteStatus('Ruta personalizada borrada.');
+      if (defaultRouteMetrics) renderRouteMetrics(defaultRouteMetrics);
+      else updateReturnRoute();
+    };
+
     // Listeners interactivos
     document.getElementById('zone').onchange = event => {
       setBaseMapMode(document.getElementById('basemap').value);
@@ -1201,9 +1410,11 @@
     document.getElementById('route').onchange = e => {
       if (e.target.checked) {
         map.addLayer(layers.route);
+        if (layers.customRoute.getLayers().length) map.addLayer(layers.customRoute);
         if (layers.returnRoute.getLayers().length) map.addLayer(layers.returnRoute);
       } else {
         map.removeLayer(layers.route);
+        map.removeLayer(layers.customRoute);
         map.removeLayer(layers.returnRoute);
       }
     };
