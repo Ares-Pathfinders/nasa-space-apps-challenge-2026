@@ -388,13 +388,13 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
     const startDirection = startRelativeCamera.normalize();
     const endDirection = roverSurface.clone().sub(roverPosition).normalize();
     const orbitRotation = new THREE.Quaternion().setFromUnitVectors(startDirection, endDirection);
-    const endRadius = GLOBE_RADIUS + 0.05;
+    const endRadius = GLOBE_RADIUS + 0.15;
     const safeOrbitRadius = Math.max(startRadius, GLOBE_RADIUS + 1.4);
     const endTarget = roverSurface.clone();
     const startTarget = roverPosition.clone();
     controls.target.copy(startTarget);
     const startTime = performance.now();
-    const duration = 4500;
+    const duration = 6500;
 
     const animateLocalFocus = (now: number) => {
       const progress = Math.min((now - startTime) / duration, 1);

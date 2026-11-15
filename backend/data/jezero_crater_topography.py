@@ -4,7 +4,7 @@ import numpy as np
 from ..terrain.grid import ElevationGrid
 
 MARS_RADIUS_KM = 3389.5
-ANALYSIS_MARGIN_KM = 5.0
+ANALYSIS_MARGIN_KM = 25.0
 JEZERO_BASE_MIN_LAT = 18.300
 JEZERO_BASE_MAX_LAT = 18.460
 JEZERO_BASE_MIN_LON = 77.450

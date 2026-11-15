@@ -80,8 +80,21 @@
   inset: 0;
   z-index: 30;
   overflow: hidden;
+  visibility: hidden;
   background: transparent;
-  animation: localMapReveal 4.5s cubic-bezier(0.22, 0.8, 0.24, 1) forwards;
+  animation: none;
+}
+
+.local-map-transition--zooming {
+  visibility: hidden;
+}
+
+.local-map-transition--handoff {
+  visibility: visible;
+}
+
+.local-map-transition--ready {
+  visibility: visible;
 }
 
 .local-map-surface {
@@ -97,9 +110,29 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: saturate(0.86) contrast(1.05);
-  transform: scale(1);
-  animation: localMapImageFocus 4.5s cubic-bezier(0.22, 0.8, 0.24, 1) both;
+}
+
+.local-map-transition--zooming .local-map-surface iframe {
+  animation-play-state: paused;
+}
+
+.local-map-handoff {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  background: #000;
+  color: #45f3ff;
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(3rem, 12vw, 8rem);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.local-map-handoff--out {
+  pointer-events: none;
+  animation: localMapHandoffOut 0.75s ease-out forwards;
 }
 
 .local-map-chrome {
@@ -120,20 +153,12 @@
   animation: localMapChromeIn 0.45s ease-out 0.1s both;
 }
 
-@keyframes localMapReveal {
-  0% { opacity: 0; transform: scale(3.2); border-radius: 50%; }
-  62% { opacity: 1; transform: scale(1.08); border-radius: 12%; }
-  100% { opacity: 1; transform: scale(1); border-radius: 0; }
+@keyframes localMapHandoffOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 
 @keyframes localMapChromeIn {
   from { opacity: 0; transform: translateY(1rem); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes localMapImageFocus {
-  0% { opacity: 0; filter: blur(24px) saturate(0.45) contrast(0.8); transform: scale(1.55); }
-  38% { opacity: 0.12; filter: blur(16px) saturate(0.55) contrast(0.9); transform: scale(1.34); }
-  72% { opacity: 0.78; filter: blur(4px) saturate(0.76) contrast(1); transform: scale(1.16); }
-  100% { opacity: 1; filter: saturate(0.86) contrast(1.05); transform: scale(1); }
 }

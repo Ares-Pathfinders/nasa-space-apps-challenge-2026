@@ -8,12 +8,16 @@ import { MarsGlobe } from './components/MarsGlobe';
 import { fetchHealth } from './services/api';
 import { RoverId } from './types/mars';
 
-type LocalMapPhase = 'global' | 'zooming' | 'ready';
+type LocalMapPhase = 'global' | 'zooming' | 'handoff' | 'ready';
+const LOCAL_MAP_ZOOM_DURATION_MS = 6500;
+const LOCAL_MAP_HANDOFF_START_MS = 6000;
 
 function App() {
   const [apiOnline, setApiOnline] = useState(false);
   const [localMapPhase, setLocalMapPhase] = useState<LocalMapPhase>('global');
   const [selectedRover, setSelectedRover] = useState<RoverId | null>(null);
+  const [zoomComplete, setZoomComplete] = useState(false);
+  const [tacticalReady, setTacticalReady] = useState(false);
 
   useEffect(() => {
     fetchHealth().then((health) => setApiOnline(health.status === 'operational'));
@@ -21,27 +25,40 @@ function App() {
 
   const handleOpenLocalMap = (rover: RoverId) => {
     setSelectedRover(rover);
+    setZoomComplete(false);
+    setTacticalReady(false);
     setLocalMapPhase('zooming');
     setTimeout(() => {
-      setLocalMapPhase('ready');
-    }, 4500);
+      setLocalMapPhase('handoff');
+    }, LOCAL_MAP_HANDOFF_START_MS);
+    setTimeout(() => {
+      setZoomComplete(true);
+    }, LOCAL_MAP_ZOOM_DURATION_MS);
   };
 
   const handleCloseLocalMap = () => {
     setLocalMapPhase('global');
     setSelectedRover(null);
+    setZoomComplete(false);
+    setTacticalReady(false);
   };
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      if (event.origin === window.location.origin && event.data === 'close-tactical') {
-        handleCloseLocalMap();
-      }
+      if (event.origin !== window.location.origin) return;
+      if (event.data === 'close-tactical') handleCloseLocalMap();
+      if (event.data === 'tactical-ready') setTacticalReady(true);
     };
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, []);
+
+  useEffect(() => {
+    if (localMapPhase === 'handoff' && zoomComplete && tacticalReady) {
+      setLocalMapPhase('ready');
+    }
+  }, [localMapPhase, tacticalReady, zoomComplete]);
 
   return (
     <main className="relative h-screen w-screen overflow-hidden bg-[#050608] text-slate-100">
@@ -73,23 +90,34 @@ function App() {
         </div>
       </header>
 
-      {localMapPhase === 'ready' && (
-        <div className="local-map-transition local-map-transition--ready">
+      {localMapPhase !== 'global' && (
+        <div className={`local-map-transition local-map-transition--${localMapPhase}`}>
           <div className="local-map-surface">
             <iframe
               src={`/tactical.html?zone=${selectedRover === 'perseverance' ? 'jezero' : 'gale'}`}
               className="w-full h-full border-0"
               allow="fullscreen"
+              title="Mapa táctica de Marte"
             />
           </div>
-          <div className="local-map-chrome" style={{ zIndex: 50 }}>
-            <button
-              onClick={handleCloseLocalMap}
-              className="hud-panel mx-auto flex items-center gap-2 border border-hud-cyan bg-black/90 px-6 py-2.5 font-display text-xs tracking-wider text-hud-cyan hover:bg-hud-cyan/20"
+          {(localMapPhase === 'handoff' || localMapPhase === 'ready') && (
+            <div
+              className={`local-map-handoff${localMapPhase === 'ready' ? ' local-map-handoff--out' : ''}`}
+              aria-hidden="true"
             >
-              <span>🌐</span> <span>VOLVER A VISTA GLOBAL 3D</span>
-            </button>
-          </div>
+              <span>2D</span>
+            </div>
+          )}
+          {localMapPhase === 'ready' && (
+            <div className="local-map-chrome" style={{ zIndex: 50 }}>
+              <button
+                onClick={handleCloseLocalMap}
+                className="hud-panel mx-auto flex items-center gap-2 border border-hud-cyan bg-black/90 px-6 py-2.5 font-display text-xs tracking-wider text-hud-cyan hover:bg-hud-cyan/20"
+              >
+                <span>🌐</span> <span>VOLVER A VISTA GLOBAL 3D</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
 
