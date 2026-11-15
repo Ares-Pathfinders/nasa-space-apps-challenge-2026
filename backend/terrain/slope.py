@@ -1,4 +1,4 @@
-from typing import Tuple, Dict, Any
+from typing import Tuple, Dict, Any, Optional
 import numpy as np
 from .grid import ElevationGrid
 
@@ -6,19 +6,39 @@ from .grid import ElevationGrid
 class SlopeAnalyzer:
     """
     Computes topographic slopes, gradient vectors, and hazard passability masks
-    from an ElevationGrid using standard planetary GIS algorithms (Horn's method).
+    from an ElevationGrid using Horn's method or a supplied slope raster.
     """
 
-    def __init__(self, grid: ElevationGrid, max_slope_deg: float = 15.0):
+    def __init__(
+        self,
+        grid: ElevationGrid,
+        max_slope_deg: float = 15.0,
+        slope_deg_matrix: Optional[np.ndarray] = None,
+    ):
         """
         :param grid: ElevationGrid instance containing elevation raster and georeferencing.
         :param max_slope_deg: Maximum allowable slope in degrees before a cell is considered
                               impassable for human EVA or rover transit (default: 15.0°).
+        :param slope_deg_matrix: Optional measured slope values in degrees; NaN cells are unknown.
         """
         self.grid = grid
         self.max_slope_deg = float(max_slope_deg)
-        self.slope_deg_matrix = self._compute_slope_matrix()
-        self.passable_mask = self.slope_deg_matrix <= self.max_slope_deg
+        self._uses_external_slope = slope_deg_matrix is not None
+        if slope_deg_matrix is None:
+            self.slope_deg_matrix = self._compute_slope_matrix()
+        else:
+            slope_values = np.asarray(slope_deg_matrix, dtype=np.float64)
+            if slope_values.shape != grid.shape:
+                raise ValueError(
+                    f"Slope matrix shape {slope_values.shape} does not match grid shape {grid.shape}."
+                )
+            if np.any(np.isfinite(slope_values) & ((slope_values < 0) | (slope_values > 90))):
+                raise ValueError("Finite slope values must be between 0 and 90 degrees.")
+            self.slope_deg_matrix = slope_values.copy()
+        self.passable_mask = (
+            np.isfinite(self.slope_deg_matrix)
+            & (self.slope_deg_matrix <= self.max_slope_deg)
+        )
 
     def _compute_slope_matrix(self) -> np.ndarray:
         """
@@ -67,9 +87,18 @@ class SlopeAnalyzer:
 
     def compute_edge_slope_deg(self, r1: int, c1: int, r2: int, c2: int) -> float:
         """
-        Calculates the directional slope angle in degrees between two adjacent cells.
-        Uses the exact physical distance and elevation difference.
+        Calculates the slope angle between adjacent cells from elevation or supplied data.
         """
+        if not (
+            self.grid.in_bounds(r1, c1)
+            and self.grid.in_bounds(r2, c2)
+        ):
+            raise IndexError("Edge cells must be within the elevation grid.")
+        if self._uses_external_slope:
+            return float(
+                max(self.slope_deg_matrix[r1, c1], self.slope_deg_matrix[r2, c2])
+            )
+
         z1 = self.grid.get_elevation(r1, c1)
         z2 = self.grid.get_elevation(r2, c2)
         distance_m = self.grid.get_distance_meters(r1, c1, r2, c2)
@@ -83,20 +112,30 @@ class SlopeAnalyzer:
     def get_statistics(self) -> Dict[str, Any]:
         """Returns statistical overview of the terrain slope and hazard coverage."""
         total_cells = self.grid.rows * self.grid.cols
+        valid_slopes = self.slope_deg_matrix[np.isfinite(self.slope_deg_matrix)]
         impassable_cells = int(np.sum(~self.passable_mask))
         passable_cells = total_cells - impassable_cells
         impassable_pct = (impassable_cells / total_cells) * 100.0
+        slope_statistics = {
+            "min_slope_deg": round(float(np.min(valid_slopes)), 2),
+            "max_slope_deg": round(float(np.max(valid_slopes)), 2),
+            "mean_slope_deg": round(float(np.mean(valid_slopes)), 2),
+            "median_slope_deg": round(float(np.median(valid_slopes)), 2),
+        } if valid_slopes.size else {
+            "min_slope_deg": None,
+            "max_slope_deg": None,
+            "mean_slope_deg": None,
+            "median_slope_deg": None,
+        }
 
         return {
             "total_cells": total_cells,
             "passable_cells": passable_cells,
             "impassable_cells": impassable_cells,
             "impassable_percentage": round(impassable_pct, 2),
+            "unknown_slope_cells": total_cells - int(valid_slopes.size),
             "max_slope_threshold_deg": self.max_slope_deg,
-            "min_slope_deg": round(float(np.min(self.slope_deg_matrix)), 2),
-            "max_slope_deg": round(float(np.max(self.slope_deg_matrix)), 2),
-            "mean_slope_deg": round(float(np.mean(self.slope_deg_matrix)), 2),
-            "median_slope_deg": round(float(np.median(self.slope_deg_matrix)), 2),
             "min_elevation_m": round(float(np.min(self.grid.elevation)), 2),
             "max_elevation_m": round(float(np.max(self.grid.elevation)), 2),
+            **slope_statistics,
         }

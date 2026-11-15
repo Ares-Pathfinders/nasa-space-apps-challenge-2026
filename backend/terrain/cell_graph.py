@@ -97,13 +97,17 @@ class CellGraphBuilder:
                     # Traversal cost: distance * (1 + slope_weight * (slope / max_slope)^2)
                     dist_m = self.grid.get_distance_meters(r, c, nr, nc)
                     slope_factor = (edge_slope / max(0.1, self.max_slope)) ** 2
-                    cost = dist_m * (1.0 + self.slope_weight * slope_factor)
+                    weighted_distance_m = dist_m * (1.0 + self.slope_weight * slope_factor)
 
                     elevation_change = (
                         self.grid.get_elevation(nr, nc) - self.grid.get_elevation(r, c)
                     )
-                    self._add_transition(u, v, dist_m, edge_slope, cost, elevation_change)
-                    self._add_transition(v, u, dist_m, edge_slope, cost, -elevation_change)
+                    self._add_transition(
+                        u, v, dist_m, edge_slope, weighted_distance_m, elevation_change
+                    )
+                    self._add_transition(
+                        v, u, dist_m, edge_slope, weighted_distance_m, -elevation_change
+                    )
 
     def _add_transition(
         self,
@@ -111,7 +115,7 @@ class CellGraphBuilder:
         end: Tuple[int, int],
         distance_m: float,
         slope_deg: float,
-        distance_cost: float,
+        weighted_distance_m: float,
         elevation_change_m: float,
     ) -> None:
         grade = elevation_change_m / max(distance_m, 0.1)
@@ -121,8 +125,8 @@ class CellGraphBuilder:
         self.graph.add_edge(
             start,
             end,
-            weight=distance_cost,
-            travel_time_s=distance_m / speed_mps,
+            weight=weighted_distance_m,
+            travel_time_s=weighted_distance_m / speed_mps,
             distance_m=distance_m,
             edge_slope_deg=round(slope_deg, 2),
             elevation_change_m=elevation_change_m,
@@ -211,6 +215,8 @@ class CellGraphBuilder:
                 continue
 
             slopes = [self.slope_analyzer.get_cell_slope(r, c) for r, c in cell_indices]
+            valid_slopes = np.asarray(slopes, dtype=float)
+            valid_slopes = valid_slopes[np.isfinite(valid_slopes)]
             coords = [self.grid.cell_to_geo(r, c) for r, c in cell_indices]
             lats = [c[0] for c in coords]
             lons = [c[1] for c in coords]
@@ -218,8 +224,12 @@ class CellGraphBuilder:
             hazard_clusters.append({
                 "cluster_id": int(feature_id),
                 "cell_count": len(cell_indices),
-                "max_slope_deg": round(float(np.max(slopes)), 2),
-                "mean_slope_deg": round(float(np.mean(slopes)), 2),
+                "max_slope_deg": (
+                    round(float(np.max(valid_slopes)), 2) if valid_slopes.size else None
+                ),
+                "mean_slope_deg": (
+                    round(float(np.mean(valid_slopes)), 2) if valid_slopes.size else None
+                ),
                 "bounding_box": {
                     "min_lat": round(min(lats), 5),
                     "max_lat": round(max(lats), 5),

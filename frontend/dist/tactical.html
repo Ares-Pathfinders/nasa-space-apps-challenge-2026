@@ -104,6 +104,13 @@
     .route-picker-hint[hidden] { display: none; }
     .route-controls { display: grid; gap: 6px; margin-top: 16px; }
     .route-status { margin-top: 7px; font-size: 9px; }
+    .route-summary { margin-top: 8px; border-color: rgba(69, 243, 255, 0.3); }
+    .route-summary h3 { margin: 0 0 8px; color: var(--cyan); font-size: 9px; letter-spacing: 0.12em; }
+    .route-summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .route-summary-grid div:last-child { grid-column: 1 / -1; }
+    .route-summary dt { color: #64748b; font-size: 8px; text-transform: uppercase; }
+    .route-summary dd { margin: 2px 0 0; color: #fff; font-size: 12px; font-weight: 700; }
+    .route-summary-note { margin: 8px 0 0; color: #64748b; font-size: 8px; }
     h2 {
       margin: 0 0 10px;
       padding-bottom: 5px;
@@ -391,6 +398,16 @@
       <button id="clearCustomRoute" class="nav-btn" type="button" style="justify-content:center;border-color:#94a3b8;color:#cbd5e1;background:rgba(148,163,184,.08);">BORRAR RUTA PERSONALIZADA</button>
     </div>
     <div id="routeStatus" class="info route-status" aria-live="polite">Elige dos puntos dentro del terreno para calcular una ruta segura.</div>
+    <section id="selectedRouteSummary" class="info route-summary" aria-live="polite" hidden>
+      <h3>RUTA SELECCIONADA</h3>
+      <dl class="route-summary-grid">
+        <div><dt>Longitud</dt><dd id="selectedRouteDistance">--</dd></div>
+        <div><dt>Tiempo a pie</dt><dd id="selectedRouteWalkingTime">--</dd></div>
+        <div><dt>Tiempo en vehículo</dt><dd id="selectedRouteVehicleTime">--</dd></div>
+        <div><dt>Desnivel acumulado · subida / bajada</dt><dd id="selectedRouteElevation">--</dd></div>
+      </dl>
+      <p class="route-summary-note">Estimaciones según las velocidades simuladas configuradas.</p>
+    </section>
 
     <button id="statusToggle" class="status-toggle" type="button" aria-expanded="false" aria-controls="statusNotebook">
       <span>ESTADO</span><span id="statusChevron" aria-hidden="true">▸</span>
@@ -483,7 +500,9 @@
       <div class="metric"><small>Waypoints</small><b id="waypoints">--</b></div>
       <div class="metric"><small>Pendiente media</small><b id="average">--</b></div>
       <div class="metric"><small>Pendiente máxima</small><b id="maximum">--</b></div>
-      <div class="metric"><small>Tiempo estimado EVA</small><b id="time">--</b></div>
+      <div class="metric"><small>Desnivel acumulado (↑ / ↓)</small><b id="elevationChange">--</b></div>
+      <div class="metric"><small>Tiempo estimado a pie</small><b id="walkingTime">--</b></div>
+      <div class="metric"><small>Tiempo estimado en vehículo</small><b id="vehicleTime">--</b></div>
       <div class="metric"><small>Consumo O2</small><b id="oxygen" style="color:var(--amber)">--</b></div>
     </div>
     <div id="routeReturnStatus" class="info" style="margin-top:10px;font-size:9px;" aria-live="polite">Esperando cálculo de ruta y recursos disponibles.</div>
@@ -497,9 +516,19 @@
   <script>
     // Conexión resiliente a API: busca en backend unificado o en puerto 8000 si se corre desde 5173
     const API_BASE = window.location.port === '5173' ? 'http://localhost:8000/api' : '/api';
-    
+    const requestedZone = new URLSearchParams(window.location.search).get('zone');
+    if (requestedZone === 'jezero' || requestedZone === 'gale') {
+      document.getElementById('zone').value = requestedZone;
+    }
+
     // Inicializar mapa Leaflet centrado en Marte
-    const map = L.map('map', { crs: L.CRS.EPSG4326, center: [-4.65, 137.43], zoom: 11, zoomControl: false });
+    const map = L.map('map', {
+      crs: L.CRS.EPSG4326,
+      center: [-4.65, 137.43],
+      zoom: 11,
+      zoomControl: false,
+      scrollWheelZoom: 'center'
+    });
     const terrainRenderer = L.canvas({ padding: 0.5 });
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
@@ -534,8 +563,16 @@
       return tile;
     };
 
-    function createMarsTmsTileLayer(urlTemplate, opacity = 1, className = '') {
-      const layer = L.gridLayer({ tileSize: 256, minZoom: 5, maxZoom: 12, noWrap: true, updateWhenIdle: true, className });
+    function createMarsTmsTileLayer(urlTemplate, opacity = 1, className = '', maxZoom = 12) {
+      const layer = L.gridLayer({
+        tileSize: 256,
+        minZoom: 5,
+        maxZoom,
+        noWrap: true,
+        updateWhenIdle: true,
+        className,
+        attribution: 'NASA / JPL-Caltech'
+      });
       layer.createTile = (coords, done) => {
         const tileSize = L.point(256, 256);
         const northWest = map.unproject(coords.scaleBy(tileSize), coords.z);
@@ -565,9 +602,12 @@
       createMarsTmsTileLayer('https://mars.nasa.gov/mmgis-maps/MSL/Layers/MSL_WebGIS_PlaceText/{z}/{x}/{y}.png', 0.96)
     ]);
     const jezeroImageryLayer = L.layerGroup([
-      createMarsTmsTileLayer('https://mars.nasa.gov/mmgis-maps/M20/Layers/HMC_13E10_co5_colorcorrect_rect/{z}/{x}/{y}.png'),
-      createMarsTmsTileLayer('https://mars.nasa.gov/mmgis-maps/M20/Layers/JEZ_hirise_soc_007_orthoMosaic_25cm_Ortho_blend120/{z}/{x}/{y}.png'),
-      createMarsTmsTileLayer('https://mars.nasa.gov/mmgis-maps/M20/Layers/M20_HiRISE_RGB_CTX_mosaic_25cm_v7_Merge_LERC_clip/{z}/{x}/{y}.png')
+      createMarsTmsTileLayer(
+        'https://mars.nasa.gov/mmgis-maps/M20/Layers/HMC_13E10_co5_colorcorrect_rect/{z}/{x}/{y}.png',
+        1,
+        '',
+        11
+      )
     ]);
 
     async function loadMineralDetections(bounds, zone) {
@@ -1005,6 +1045,7 @@
       const baseP = currentZoneAtmosphere ? currentZoneAtmosphere.surface_pressure_pa : 800.0;
       const localP = calcPressure(cell.elev, baseP);
       const suitDelta = (30.0 - (localP / 1000.0)).toFixed(2);
+      const slopeLabel = Number.isFinite(cell.slope) ? `${cell.slope}°` : 'SIN COBERTURA';
 
       document.getElementById('cellInfo').innerHTML = `
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:6px;">
@@ -1012,7 +1053,7 @@
           <div>Cota: <b>${cell.elev} m</b></div>
           <div>Lat: <b>${cell.lat}°</b></div>
           <div>Lon: <b>${cell.lon}°</b></div>
-          <div>Pendiente: <b style="color:${cell.passable ? '#22c55e' : '#ff3366'}">${cell.slope}°</b></div>
+          <div>Pendiente medida: <b style="color:${cell.passable ? '#22c55e' : '#ff3366'}">${slopeLabel}</b></div>
           <div>Estado: <b style="color:${cell.passable ? '#22c55e' : '#ff3366'}">${cell.passable ? 'TRANSITABLE' : 'INTRANSITABLE'}</b></div>
         </div>
         <div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:4px;color:#94a3b8;">
@@ -1099,12 +1140,37 @@
       document.getElementById('waypoints').textContent = metrics.waypoints;
       document.getElementById('average').textContent = metrics.averageSlope + '°';
       document.getElementById('maximum').textContent = metrics.maxSlope + '°';
-      const speedMetersPerMinute = document.querySelector('input[name="travelMode"]:checked').value === 'vehicle' ? 120 : 48;
-      const minutes = metrics.distanceMeters / speedMetersPerMinute;
-      document.getElementById('time').textContent = Math.ceil(minutes) + ' min';
+      document.getElementById('elevationChange').textContent =
+        `+${Math.round(metrics.elevationGainMeters)} m / −${Math.round(metrics.elevationLossMeters)} m`;
+      const walkingMinutes = metrics.distanceMeters / 48;
+      const vehicleMinutes = metrics.distanceMeters / 120;
+      document.getElementById('walkingTime').textContent = formatRouteDuration(walkingMinutes);
+      document.getElementById('vehicleTime').textContent = formatRouteDuration(vehicleMinutes);
+      const selectedSpeedMetersPerMinute =
+        document.querySelector('input[name="travelMode"]:checked').value === 'vehicle' ? 120 : 48;
+      const selectedModeMinutes = metrics.distanceMeters / selectedSpeedMetersPerMinute;
       const oxygenRate = Math.max(0, Number(document.getElementById('oxygenConsumption').value) || 0);
-      document.getElementById('oxygen').textContent = (minutes * oxygenRate / 60).toFixed(1) + ' L';
+      document.getElementById('oxygen').textContent = (selectedModeMinutes * oxygenRate / 60).toFixed(1) + ' L';
       updateReturnRoute();
+    }
+
+    function renderSelectedRouteSummary(distanceMeters, elevationGainMeters, elevationLossMeters) {
+      document.getElementById('selectedRouteDistance').textContent =
+        `${(distanceMeters / 1000).toFixed(2)} km`;
+      document.getElementById('selectedRouteWalkingTime').textContent =
+        formatRouteDuration(distanceMeters / 48);
+      document.getElementById('selectedRouteVehicleTime').textContent =
+        formatRouteDuration(distanceMeters / 120);
+      document.getElementById('selectedRouteElevation').textContent =
+        `+${Math.round(elevationGainMeters)} m / −${Math.round(elevationLossMeters)} m`;
+      document.getElementById('selectedRouteSummary').hidden = false;
+    }
+
+    function formatRouteDuration(minutes) {
+      const totalMinutes = Math.ceil(minutes);
+      const hours = Math.floor(totalMinutes / 60);
+      const remainingMinutes = totalMinutes % 60;
+      return hours ? `${hours} h ${remainingMinutes} min` : `${remainingMinutes} min`;
     }
 
     function setRouteStatus(message) {
@@ -1191,8 +1257,15 @@
           distanceMeters: result.total_distance_m,
           waypoints: result.waypoints.length,
           averageSlope: result.average_slope_deg,
-          maxSlope: result.max_slope_deg
+          maxSlope: result.max_slope_deg,
+          elevationGainMeters: result.total_elevation_gain_m,
+          elevationLossMeters: result.total_elevation_loss_m
         });
+        renderSelectedRouteSummary(
+          result.total_distance_m,
+          result.total_elevation_gain_m,
+          result.total_elevation_loss_m
+        );
         document.getElementById('startNavigation').disabled = false;
         document.getElementById('startNavigation').style.opacity = '1';
         const snapped = result.snapped_start || result.snapped_target;
@@ -1227,6 +1300,7 @@
       document.getElementById('startNavigation').style.opacity = '.45';
       layers.customRoute.clearLayers();
       map.getContainer().style.cursor = '';
+      document.getElementById('selectedRouteSummary').hidden = true;
       defaultRoute = null;
       defaultRouteMetrics = null;
       setRouteStatus('Elige dos puntos dentro del terreno para calcular una ruta segura.');
@@ -1306,7 +1380,9 @@
             distanceMeters: data.safe_route.total_distance_meters,
             waypoints: data.safe_route.num_waypoints,
             averageSlope: data.safe_route.mean_path_slope_deg,
-            maxSlope: data.safe_route.max_path_slope_deg
+            maxSlope: data.safe_route.max_path_slope_deg,
+            elevationGainMeters: data.safe_route.elevation_gain_m,
+            elevationLossMeters: data.safe_route.elevation_loss_m
           };
           renderRouteMetrics(defaultRouteMetrics);
         } else {
@@ -1330,6 +1406,7 @@
 
         document.getElementById('stats').innerHTML = `
           Total celdas: <b>${data.statistics.total_cells}</b> (${data.resolution[0]}x${data.resolution[1]})<br>
+          Fuente de pendientes: <b>${data.terrain_source.slope_data || 'Derivada del modelo de elevación.'}</b><br>
           <span style="color:#10b981">Seguras transitables: <b>${data.statistics.passable_cells}</b></span><br>
           <span style="color:#ff3366">Bloqueadas (> ${slope}°): <b>${data.statistics.impassable_cells} (${data.statistics.impassable_percentage}%)</b></span><br>
           Grupos de escarpes detectados: <b>${data.hazard_zones.length}</b>
@@ -1379,6 +1456,7 @@
     function beginRoutePlanning() {
       selectedRouteStart = null;
       customRouteWaypoints = [];
+      document.getElementById('selectedRouteSummary').hidden = true;
       customRouteRequestId += 1;
       isPickingRoute = true;
       document.body.classList.add('route-picking');
@@ -1450,6 +1528,7 @@
       customRouteWaypoints = [];
       layers.customRoute.clearLayers();
       latestRoute = defaultRoute;
+      document.getElementById('selectedRouteSummary').hidden = true;
       map.getContainer().style.cursor = '';
       document.getElementById('startNavigation').disabled = true;
       document.getElementById('startNavigation').style.opacity = '.45';

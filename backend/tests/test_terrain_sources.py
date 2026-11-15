@@ -7,6 +7,8 @@ import tifffile
 
 from backend.data import gale_crater_topography as gale
 from backend.data import jezero_crater_topography as jezero
+from backend.data.jezero_slope import resample_jezero_slope_to_grid
+from backend.terrain.grid import ElevationGrid
 
 
 def test_gale_grid_uses_float32_elevation_from_nasa_export():
@@ -77,6 +79,21 @@ def test_default_grids_cover_expanded_expedition_areas():
             25.0,
             abs_tol=1e-9,
         )
+
+
+def test_jezero_slope_tiff_resamples_measured_degrees_to_route_cells():
+    grid = jezero.generate_jezero_crater_elevation_grid(
+        resolution_rows=80,
+        resolution_cols=80,
+    )
+
+    slopes = resample_jezero_slope_to_grid(grid)
+
+    assert slopes.shape == grid.shape
+    assert np.isfinite(slopes).any()
+    assert np.isnan(slopes).any()
+    center_cell = grid.geo_to_cell(18.38, 77.55)
+    assert slopes[center_cell] >= 2.3
 
 
 def test_jezero_pds_range_decodes_little_endian_float_and_skips_nodata():

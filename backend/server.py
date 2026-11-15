@@ -34,6 +34,7 @@ from backend.data.jezero_crater_topography import (
     JEZERO_MIN_LON,
     generate_jezero_crater_elevation_grid,
 )
+from backend.data.jezero_slope import resample_jezero_slope_to_grid
 from backend.data.terrain_errors import TerrainDataError
 from backend.terrain.slope import SlopeAnalyzer
 from backend.terrain.cell_graph import CellGraphBuilder
@@ -229,7 +230,12 @@ class AresNavHandler(SimpleHTTPRequestHandler):
                     return
                 zone_title = "Jezero Crater Delta (Perseverance / Mars 2020)"
                 zone_center = [18.38, 77.55]
-                terrain_source = JEZERO_TERRAIN_SOURCE
+                terrain_source = {
+                    **JEZERO_TERRAIN_SOURCE,
+                    "slope_data": (
+                        "Measured 20.2 m HiRISE slope raster used for Jezero routes."
+                    ),
+                }
                 historical_wps = [
                     {"name": "Octavia E. Butler Landing", "lat": 18.4447, "lon": 77.4508, "type": "LANDING"},
                     {"name": "Kodiak Butte (Delta Remnant)", "lat": 18.412, "lon": 77.485, "type": "SCIENCE"},
@@ -257,17 +263,27 @@ class AresNavHandler(SimpleHTTPRequestHandler):
                 start_c = (int(res * 0.2), int(res * 0.8))
                 goal_c = (int(res * 0.8), int(res * 0.3))
 
-            analyzer = SlopeAnalyzer(grid, max_slope_deg=max_slope)
+            slope_deg_matrix = (
+                resample_jezero_slope_to_grid(grid) if zone == "jezero" else None
+            )
+            analyzer = SlopeAnalyzer(
+                grid,
+                max_slope_deg=max_slope,
+                slope_deg_matrix=slope_deg_matrix,
+            )
             builder = CellGraphBuilder(grid, analyzer, slope_penalty_weight=3.5)
             stats = analyzer.get_statistics()
             hazard_clusters = builder.get_impassable_hazard_zones(min_cluster_size=3)
 
-            if not analyzer.is_cell_passable(*start_c):
-                start_c = (max(0, start_c[0] - 1), start_c[1])
-            if not analyzer.is_cell_passable(*goal_c):
-                goal_c = (max(0, goal_c[0] - 1), goal_c[1])
-
-            route = builder.find_path_astar(start_c, goal_c)
+            start_cell = _nearest_passable_cell(grid, builder, start_c)
+            goal_cell = _nearest_passable_cell(grid, builder, goal_c)
+            route = (
+                builder.find_path_astar(start_cell, goal_cell)
+                if start_cell is not None
+                and goal_cell is not None
+                and start_cell != goal_cell
+                else None
+            )
 
             # Compile compact cell list for 2D map rendering
             cells_data = []
@@ -283,7 +299,7 @@ class AresNavHandler(SimpleHTTPRequestHandler):
                         "lat": round(lat, 5),
                         "lon": round(lon, 5),
                         "elev": round(elev, 1),
-                        "slope": round(slope, 1),
+                        "slope": round(slope, 1) if math.isfinite(slope) else None,
                         "passable": passable
                     })
 
@@ -358,14 +374,26 @@ class AresNavHandler(SimpleHTTPRequestHandler):
             try:
                 if zone == "jezero":
                     grid = generate_jezero_crater_elevation_grid(resolution_rows=resolution, resolution_cols=resolution)
-                    terrain_source = JEZERO_TERRAIN_SOURCE
+                    terrain_source = {
+                        **JEZERO_TERRAIN_SOURCE,
+                        "slope_data": (
+                            "Measured 20.2 m HiRISE slope raster; used only for route calculations."
+                        ),
+                    }
                 else:
                     grid = generate_gale_crater_elevation_grid(resolution_rows=resolution, resolution_cols=resolution)
                     terrain_source = GALE_TERRAIN_SOURCE
             except TerrainDataError as error:
                 self._send_json({"error": str(error)}, status=503)
                 return
-            analyzer = SlopeAnalyzer(grid, max_slope_deg=max_slope)
+            slope_deg_matrix = (
+                resample_jezero_slope_to_grid(grid) if zone == "jezero" else None
+            )
+            analyzer = SlopeAnalyzer(
+                grid,
+                max_slope_deg=max_slope,
+                slope_deg_matrix=slope_deg_matrix,
+            )
             builder = CellGraphBuilder(grid, analyzer, slope_penalty_weight=3.5)
         if zone == "gale" and resolution == 80 and max_slope == 15.0:
             terrain_source = GALE_TERRAIN_SOURCE
