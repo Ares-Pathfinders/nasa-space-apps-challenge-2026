@@ -1,12 +1,15 @@
 @echo off
-echo ========================================================
-echo    ARES-Nav // Arrancando Servidor Web y Motor de Celdas
-echo ========================================================
-echo.
-echo Abriendo en: http://localhost:8000
-echo Mapa 2D:    http://localhost:8000/tactical
-echo.
-
+rem ========================================================
+rem    ARES-Nav // Compila el frontend y arranca el servidor
+rem    (equivale a: python start.py)
+rem ========================================================
 cd /d "%~dp0"
-start http://localhost:8000/tactical
-python backend/server.py 8000
+
+where python >nul 2>nul
+if %errorlevel%==0 (
+    python start.py %*
+) else (
+    py -3 start.py %*
+)
+
+if errorlevel 1 pause
