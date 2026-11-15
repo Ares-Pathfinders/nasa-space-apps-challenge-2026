@@ -7,7 +7,8 @@ import {
   ZoneAtmosphericAnalysis
 } from '../types/mars';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+// Same-origin by default: works with the backend serving dist on any port and with the Vite dev proxy.
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export async function fetchHealth() {
   try {
@@ -87,7 +88,7 @@ export async function fetchSites(): Promise<ExplorationSite[]> {
 }
 
 export async function fetchRoverPhotos(rover = 'curiosity', sol = 1000, camera?: string): Promise<RoverPhotosResponse> {
-  const url = new URL(`${API_BASE_URL}/rover-photos`);
+  const url = new URL(`${API_BASE_URL}/rover-photos`, window.location.origin);
   url.searchParams.set('rover', rover);
   url.searchParams.set('sol', String(sol));
   if (camera) {

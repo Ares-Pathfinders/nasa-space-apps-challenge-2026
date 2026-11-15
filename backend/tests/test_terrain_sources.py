@@ -18,10 +18,10 @@ def test_gale_grid_covers_the_whole_3d_model_with_real_elevations():
 
     assert (grid.min_lat, grid.max_lat) == (gale.GALE_MIN_LAT, gale.GALE_MAX_LAT)
     assert (grid.min_lon, grid.max_lon) == (gale.GALE_MIN_LON, gale.GALE_MAX_LON)
-    # Suelo de Gale (~-4,6 km) y borde/tierras altas (~+1,4 km) según MOLA/HRSC.
+    # Gale floor (~-4.6 km) and rim/highlands (~+1.4 km) per MOLA/HRSC.
     assert -4800 < grid.elevation.min() < -4400
     assert 1000 < grid.elevation.max() < 1600
-    # El norte va arriba: Monte Sharp (sur) más alto que Bradbury Landing (norte).
+    # North is up: Mount Sharp (south) is higher than Bradbury Landing (north).
     bradbury = grid.get_elevation(*grid.geo_to_cell(-4.5895, 137.4417))
     mount_sharp = grid.get_elevation(*grid.geo_to_cell(-5.08, 137.85))
     assert -4700 < bradbury < -4300
@@ -74,10 +74,10 @@ def test_gale_slopes_come_from_the_native_3d_model():
 
     assert grid.slope_deg is not None
     np.testing.assert_array_equal(analyzer.slope_deg_matrix, grid.slope_deg)
-    assert analyzer.is_cell_passable(*grid.geo_to_cell(-4.5895, 137.4417))  # llanura de Bradbury
+    assert analyzer.is_cell_passable(*grid.geo_to_cell(-4.5895, 137.4417))  # Bradbury plain
     stats = analyzer.get_statistics()
     assert 2.0 < stats["impassable_percentage"] < 25.0
-    assert stats["max_slope_deg"] > 25.0  # paredes del cráter y del Monte Sharp
+    assert stats["max_slope_deg"] > 25.0  # crater walls and Mount Sharp
 
     builder = CellGraphBuilder(grid, analyzer, slope_penalty_weight=3.5)
     route = builder.find_path_astar(grid.geo_to_cell(-4.5895, 137.4417), grid.geo_to_cell(-4.90, 137.45))

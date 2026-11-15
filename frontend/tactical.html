@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ARES-Nav // Visor Táctico 2D & Espectrometría de Gases</title>
+  <title>ARES-Nav // 2D Tactical Viewer & Gas Spectrometry</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
@@ -23,8 +23,8 @@
     body { overflow: hidden; background: var(--bg); color: #e2e8f0; font: 11px 'JetBrains Mono', monospace; }
     #map { position: absolute; inset: 0; background: #70463d; }
     .ctx-tint { filter: sepia(.72) saturate(1.55) hue-rotate(326deg) brightness(.92); }
-    /* HiRISE de Gale: sólo aporta detalle (luminancia); el color lo pone el CTX teñido de debajo,
-       así no hay saltos entre quads en color, quads grises y el CTX. */
+    /* Gale HiRISE only adds detail (luminance); colour comes from the tinted CTX underneath,
+       so there are no jumps between colour quads, grey quads and CTX. */
     .hirise-luminance { mix-blend-mode: luminosity; }
     .panel {
       position: absolute;
@@ -314,7 +314,7 @@
       background: rgba(168, 85, 247, 0.35);
       color: #fff;
     }
-    /* Relieve 3D (src/tactical/terrain3d.ts): ocupa el lugar del mapa, bajo los paneles */
+    /* 3D relief (src/tactical/terrain3d.ts): takes the place of the map, below the panels */
     #terrain3d { position: absolute; inset: 0; z-index: 500; background: #1a1210; }
     #terrain3d[hidden] { display: none; }
     #terrain3d canvas { display: block; width: 100%; height: 100%; cursor: grab; }
@@ -352,29 +352,29 @@
 <body class="setup-incomplete">
   <div id="loading">
     <div class="spinner"></div>
-    <strong>CALCULANDO CUADRÍCULA Y DESCARGANDO GASES (ESA PSA)...</strong>
+    <strong>COMPUTING GRID AND DOWNLOADING GASES (ESA PSA)...</strong>
   </div>
   <div id="map"></div>
   <section id="missionSetup" class="mission-setup" aria-labelledby="missionSetupTitle">
     <div class="mission-card">
-      <p class="mission-eyebrow">ARES-NAV · PREPARACIÓN EVA</p>
-      <h2 id="missionSetupTitle" class="mission-title">Configura tu recorrido</h2>
-      <p class="mission-copy">Elige el modo de desplazamiento y marca el origen y el destino en el mapa. La consola táctica se abrirá al calcular la ruta segura.</p>
+      <p class="mission-eyebrow">ARES-NAV · EVA SETUP</p>
+      <h2 id="missionSetupTitle" class="mission-title">Plan your traverse</h2>
+      <p class="mission-copy">Choose how you will travel and mark the origin and destination on the map. The tactical console opens once the safe route is computed.</p>
       <fieldset class="setup-mode">
-        <legend>Vehículo / desplazamiento</legend>
-        <label><input type="radio" name="setupTravelMode" value="foot"> A pie</label>
-        <label><input type="radio" name="setupTravelMode" value="vehicle"> Vehículo</label>
+        <legend>Vehicle / travel mode</legend>
+        <label><input type="radio" name="setupTravelMode" value="foot"> On foot</label>
+        <label><input type="radio" name="setupTravelMode" value="vehicle"> Vehicle</label>
       </fieldset>
-      <p id="setupStatus" class="setup-status" aria-live="polite">Preparando la cuadrícula del terreno...</p>
-      <button id="beginSetupRoute" class="nav-btn" type="button" disabled>Elegir origen y destino</button>
+      <p id="setupStatus" class="setup-status" aria-live="polite">Preparing the terrain grid...</p>
+      <button id="beginSetupRoute" class="nav-btn" type="button" disabled>Choose origin and destination</button>
     </div>
   </section>
-  <!-- Relieve 3D del cráter Gale con las imágenes del mapa (src/tactical/terrain3d.ts) -->
+  <!-- 3D relief of Gale Crater draped with the map imagery (src/tactical/terrain3d.ts) -->
   <div id="terrain3d" hidden>
     <div id="terrain3dStatus" class="panel terrain3d-status" role="status" aria-live="polite" hidden></div>
     <div class="panel terrain3d-hud">
-      <label for="terrain3dExaggeration">Exageración vertical <input id="terrain3dExaggeration" type="range" min="1" max="6" step="0.1" value="2"> <b id="terrain3dExaggerationValue" style="color:var(--cyan)">2.0×</b></label>
-      <span class="terrain3d-hint">Arrastrar: desplazar · Clic derecho / Ctrl+arrastrar: girar e inclinar · Rueda: zoom · Esc: volver al 2D</span>
+      <label for="terrain3dExaggeration">Vertical exaggeration <input id="terrain3dExaggeration" type="range" min="1" max="6" step="0.1" value="2"> <b id="terrain3dExaggerationValue" style="color:var(--cyan)">2.0×</b></label>
+      <span class="terrain3d-hint">Drag: pan · Right-click / Ctrl+drag: rotate and tilt · Wheel: zoom · Esc: back to 2D</span>
     </div>
   </div>
 
@@ -382,180 +382,180 @@
     <div class="brand">
       <div class="mark">2D TACTICAL</div>
       <div>
-        <h1>ARES-NAV // CUADRÍCULA & GASES ATMOSFÉRICOS</h1>
-        <div class="sub">Telemetría MOLA & Espectrometría ESA Planetary Science Archive (PSA)</div>
+        <h1>ARES-NAV // TERRAIN GRID & ATMOSPHERIC GASES</h1>
+        <div class="sub">MOLA Telemetry & ESA Planetary Science Archive (PSA) Spectrometry</div>
       </div>
     </div>
     <div style="display:flex;gap:10px;align-items:center;">
-      <button id="terrain3dToggle" class="nav-btn" type="button" aria-pressed="false">🏔️ RELIEVE 3D</button>
+      <button id="terrain3dToggle" class="nav-btn" type="button" aria-pressed="false">🏔️ 3D RELIEF</button>
     </div>
   </header>
 
-  <!-- Panel Izquierdo: Configuración del terreno y cuadrícula -->
+  <!-- Left panel: terrain and grid settings -->
   <aside id="leftPanel" class="panel side left">
-    <h2><span>SELECCIÓN DE EXPEDICIÓN</span><button id="closeLeftPanel" class="panel-close" type="button" aria-label="Cerrar panel de expedición">×</button></h2>
-    <label for="basemap">Mapa base</label>
+    <h2><span>EXPEDITION SETUP</span><button id="closeLeftPanel" class="panel-close" type="button" aria-label="Close expedition panel">×</button></h2>
+    <label for="basemap">Base map</label>
     <select id="basemap">
-      <option value="default" selected>Predeterminado (según zona marciana)</option>
-      <option value="minerals">Mapa mineral colorimétrico</option>
-      <option value="mola">Relieve sombreado MOLA</option>
+      <option value="default" selected>Default (per Martian zone)</option>
+      <option value="minerals">Colour mineral map</option>
+      <option value="mola">MOLA shaded relief</option>
     </select>
 
-    <label for="zone">Zona Marciana</label>
+    <label for="zone">Martian zone</label>
     <select id="zone">
-      <option value="gale" selected>Cráter Gale - Monte Sharp (Curiosity / MSL)</option>
-      <option value="jezero">Cráter Jezero - Delta Lakebed (Perseverance / M2020)</option>
+      <option value="gale" selected>Gale Crater - Mount Sharp (Curiosity / MSL)</option>
+      <option value="jezero">Jezero Crater - Delta Lakebed (Perseverance / M2020)</option>
     </select>
 
     <fieldset class="mode-switch">
-      <legend>Desplazamiento</legend>
-      <label><input type="radio" name="travelMode" value="foot" checked> A pie</label>
-      <label><input type="radio" name="travelMode" value="vehicle"> Vehículo</label>
+      <legend>Travel mode</legend>
+      <label><input type="radio" name="travelMode" value="foot" checked> On foot</label>
+      <label><input type="radio" name="travelMode" value="vehicle"> Vehicle</label>
     </fieldset>
-    <p class="status-note">Velocidad simulada: 2,9 km/h a pie · 7,2 km/h en vehículo.</p>
+    <p class="status-note">Simulated speed: 2.9 km/h on foot · 7.2 km/h by vehicle.</p>
 
-    <label for="slope">Pendiente máxima segura: <b id="slopeValue" style="color:var(--cyan)">15.0°</b></label>
+    <label for="slope">Maximum safe slope: <b id="slopeValue" style="color:var(--cyan)">15.0°</b></label>
     <input id="slope" type="range" min="8" max="25" step="0.5" value="15">
 
-    <label for="resolution">Resolución de cuadrícula</label>
+    <label for="resolution">Grid resolution</label>
     <select id="resolution">
-      <option value="64">64 x 64 (Rápida · celdas ~3,5 km)</option>
-      <option value="128" selected>128 x 128 (Media · ~1,8 km)</option>
-      <option value="192">192 x 192 (Alta · ~1,2 km)</option>
-      <option value="256">256 x 256 (Máxima · ~0,9 km)</option>
+      <option value="64">64 x 64 (Fast · ~3.5 km cells)</option>
+      <option value="128" selected>128 x 128 (Medium · ~1.8 km)</option>
+      <option value="192">192 x 192 (High · ~1.2 km)</option>
+      <option value="256">256 x 256 (Maximum · ~0.9 km)</option>
     </select>
 
-    <h2 style="margin-top:16px">PLANIFICADOR DE RUTA</h2>
+    <h2 style="margin-top:16px">ROUTE PLANNER</h2>
     <div class="route-controls">
-      <button id="planRoute" class="nav-btn" type="button" style="justify-content:center;">🧭 ELEGIR ORIGEN Y DESTINO</button>
-      <button id="startNavigation" class="nav-btn" type="button" disabled style="justify-content:center;opacity:.45;">▶ INICIAR NAVEGACIÓN</button>
-      <button id="clearCustomRoute" class="nav-btn" type="button" style="justify-content:center;border-color:#94a3b8;color:#cbd5e1;background:rgba(148,163,184,.08);">BORRAR RUTA PERSONALIZADA</button>
+      <button id="planRoute" class="nav-btn" type="button" style="justify-content:center;">🧭 CHOOSE ORIGIN AND DESTINATION</button>
+      <button id="startNavigation" class="nav-btn" type="button" disabled style="justify-content:center;opacity:.45;">▶ START NAVIGATION</button>
+      <button id="clearCustomRoute" class="nav-btn" type="button" style="justify-content:center;border-color:#94a3b8;color:#cbd5e1;background:rgba(148,163,184,.08);">CLEAR CUSTOM ROUTE</button>
     </div>
-    <div id="routeStatus" class="info route-status" aria-live="polite">Elige dos puntos dentro del terreno para calcular una ruta segura.</div>
+    <div id="routeStatus" class="info route-status" aria-live="polite">Choose two points inside the terrain to compute a safe route.</div>
     <section id="selectedRouteSummary" class="info route-summary" aria-live="polite" hidden>
-      <h3>RUTA SELECCIONADA</h3>
+      <h3>SELECTED ROUTE</h3>
       <dl class="route-summary-grid">
-        <div><dt>Longitud</dt><dd id="selectedRouteDistance">--</dd></div>
-        <div><dt>Tiempo a pie</dt><dd id="selectedRouteWalkingTime">--</dd></div>
-        <div><dt>Tiempo en vehículo</dt><dd id="selectedRouteVehicleTime">--</dd></div>
-        <div><dt>Desnivel acumulado · subida / bajada</dt><dd id="selectedRouteElevation">--</dd></div>
+        <div><dt>Length</dt><dd id="selectedRouteDistance">--</dd></div>
+        <div><dt>Time on foot</dt><dd id="selectedRouteWalkingTime">--</dd></div>
+        <div><dt>Time by vehicle</dt><dd id="selectedRouteVehicleTime">--</dd></div>
+        <div><dt>Total elevation · ascent / descent</dt><dd id="selectedRouteElevation">--</dd></div>
       </dl>
-      <p class="route-summary-note">Estimaciones según las velocidades simuladas configuradas.</p>
+      <p class="route-summary-note">Estimates based on the configured simulated speeds.</p>
     </section>
 
     <button id="statusToggle" class="status-toggle" type="button" aria-expanded="false" aria-controls="statusNotebook">
-      <span>ESTADO</span><span id="statusChevron" aria-hidden="true">▸</span>
+      <span>STATUS</span><span id="statusChevron" aria-hidden="true">▸</span>
     </button>
-    <section id="statusNotebook" class="status-notebook" aria-label="Cuaderno de estado del astronauta" hidden>
-      <p class="status-note">CUADERNO EVA · Estimaciones hipotéticas y datos editables, no telemetría real.</p>
+    <section id="statusNotebook" class="status-notebook" aria-label="Astronaut status notebook" hidden>
+      <p class="status-note">EVA NOTEBOOK · Hypothetical estimates and editable data, not real telemetry.</p>
       <div class="status-estimate" aria-live="polite">
-        <small>Tiempo estimado hasta agotar O₂</small>
+        <small>Estimated time until O₂ runs out</small>
         <strong id="oxygenTimeRemaining">20 h 0 min</strong>
-        <span id="oxygenLevelSummary">100% · 1000 L disponibles</span>
+        <span id="oxygenLevelSummary">100% · 1000 L available</span>
       </div>
       <div class="status-grid">
-        <label for="oxygenRemaining">O₂ disponible (L)<input id="oxygenRemaining" type="number" min="0" step="1" value="1000"></label>
-        <label for="oxygenCapacity">Capacidad (L)<input id="oxygenCapacity" type="number" min="1" step="1" value="1000"></label>
-        <label for="oxygenConsumption">Consumo hipotético (L/h)<input id="oxygenConsumption" type="number" min="0" step="1" value="50"></label>
-        <label for="foodRations">Comida (raciones)<input id="foodRations" type="number" min="0" step="1" value="7"></label>
-        <label for="waterRemaining">Agua (L)<input id="waterRemaining" type="number" min="0" step="0.1" value="5"></label>
-        <label for="tabletBattery">Batería tablet (%)<input id="tabletBattery" type="number" min="0" max="100" step="1" value="100"></label>
-        <label for="flashlightBattery">Batería linterna (%)<input id="flashlightBattery" type="number" min="0" max="100" step="1" value="100"></label>
+        <label for="oxygenRemaining">O₂ available (L)<input id="oxygenRemaining" type="number" min="0" step="1" value="1000"></label>
+        <label for="oxygenCapacity">Capacity (L)<input id="oxygenCapacity" type="number" min="1" step="1" value="1000"></label>
+        <label for="oxygenConsumption">Hypothetical consumption (L/h)<input id="oxygenConsumption" type="number" min="0" step="1" value="50"></label>
+        <label for="foodRations">Food (rations)<input id="foodRations" type="number" min="0" step="1" value="7"></label>
+        <label for="waterRemaining">Water (L)<input id="waterRemaining" type="number" min="0" step="0.1" value="5"></label>
+        <label for="tabletBattery">Tablet battery (%)<input id="tabletBattery" type="number" min="0" max="100" step="1" value="100"></label>
+        <label for="flashlightBattery">Flashlight battery (%)<input id="flashlightBattery" type="number" min="0" max="100" step="1" value="100"></label>
       </div>
-      <label class="connection-control"><input id="baseConnection" type="checkbox"><span>Conexión con la base</span><strong id="connectionState" class="connection-state">NO ACTIVADA</strong></label>
+      <label class="connection-control"><input id="baseConnection" type="checkbox"><span>Base connection</span><strong id="connectionState" class="connection-state">INACTIVE</strong></label>
       <div id="fuelFields" class="fuel-fields" hidden>
         <div class="status-estimate fuel-estimate">
-          <small>Tiempo estimado de combustible</small>
+          <small>Estimated fuel time</small>
           <strong id="fuelTimeRemaining">6 h 15 min</strong>
-          <span id="fuelLevelSummary">50 L disponibles</span>
+          <span id="fuelLevelSummary">50 L available</span>
         </div>
         <div class="status-grid">
-          <label for="fuelRemaining">Combustible restante (L)<input id="fuelRemaining" type="number" min="0" step="1" value="50"></label>
-          <label for="fuelConsumption">Consumo hipotético (L/h)<input id="fuelConsumption" type="number" min="0" step="0.1" value="8"></label>
+          <label for="fuelRemaining">Fuel remaining (L)<input id="fuelRemaining" type="number" min="0" step="1" value="50"></label>
+          <label for="fuelConsumption">Hypothetical consumption (L/h)<input id="fuelConsumption" type="number" min="0" step="0.1" value="8"></label>
         </div>
       </div>
-      <label for="equipmentName">Equipo o sistema</label>
-      <input id="equipmentName" type="text" placeholder="Traje EVA, radio, rover...">
-      <label for="equipmentNote">Estado / observación</label>
-      <textarea id="equipmentNote" placeholder="Anota el estado actual del equipo"></textarea>
-      <button id="addStatusEntry" class="status-action" type="button">＋ Registrar estado del equipo</button>
+      <label for="equipmentName">Equipment or system</label>
+      <input id="equipmentName" type="text" placeholder="EVA suit, radio, rover...">
+      <label for="equipmentNote">Status / observation</label>
+      <textarea id="equipmentNote" placeholder="Note the current equipment status"></textarea>
+      <button id="addStatusEntry" class="status-action" type="button">＋ Log equipment status</button>
       <div id="statusLog" class="status-log" aria-live="polite"></div>
     </section>
 
-    <h2 style="margin-top:16px">CAPAS VISIBLES</h2>
+    <h2 style="margin-top:16px">VISIBLE LAYERS</h2>
     <div class="checks">
-      <label><input id="cells" type="checkbox" checked> ▦ Cuadrícula topográfica</label>
-      <label><input id="hazards" type="checkbox" checked> ⛔ Celdas intransitables (Escarpadas)</label>
-      <label><input id="route" type="checkbox" checked> ⚡ Ruta segura A* optimizada</label>
-      <label><input id="wps" type="checkbox" checked> 📍 Hitos de expedición rover</label>
-      <label><input id="gasesLayer" type="checkbox" checked> 🪐 Auras y balizas de gases (ESA PSA)</label>
+      <label><input id="cells" type="checkbox" checked> ▦ Topographic grid</label>
+      <label><input id="hazards" type="checkbox" checked> ⛔ Impassable cells (steep)</label>
+      <label><input id="route" type="checkbox" checked> ⚡ Optimised A* safe route</label>
+      <label><input id="wps" type="checkbox" checked> 📍 Rover expedition waypoints</label>
+      <label><input id="gasesLayer" type="checkbox" checked> 🪐 Gas auras and beacons (ESA PSA)</label>
     </div>
 
-    <h2 style="margin-top:16px">LEYENDA</h2>
+    <h2 style="margin-top:16px">LEGEND</h2>
     <div class="legend">
-      <div><span style="background:#22c55e;border-color:#22c55e"></span>Transitable (&lt; 10°)</div>
-      <div><span style="background:#eab308;border-color:#eab308"></span>Precaución (10° - 15°)</div>
-      <div><span style="background:#ff3366;border-color:#ff3366"></span>Intransitable (&gt; 15°)</div>
-      <div><span style="background:var(--cyan);border-color:var(--cyan);height:3px"></span>Ruta A* con menor coste</div>
-      <div><span style="background:#ffb703;border-color:#ffb703;height:3px"></span>Retorno automático</div>
-      <div><span style="background:#a855f7;border-color:#a855f7"></span>Espectrometría ESA (NOMAD/ACS)</div>
+      <div><span style="background:#22c55e;border-color:#22c55e"></span>Passable (&lt; 10°)</div>
+      <div><span style="background:#eab308;border-color:#eab308"></span>Caution (10° - 15°)</div>
+      <div><span style="background:#ff3366;border-color:#ff3366"></span>Impassable (&gt; 15°)</div>
+      <div><span style="background:var(--cyan);border-color:var(--cyan);height:3px"></span>Lowest-cost A* route</div>
+      <div><span style="background:#ffb703;border-color:#ffb703;height:3px"></span>Automatic return</div>
+      <div><span style="background:#a855f7;border-color:#a855f7"></span>ESA spectrometry (NOMAD/ACS)</div>
     </div>
 
-    <h2 style="margin-top:16px">ESTADÍSTICAS DEL TERRENO</h2>
-    <div id="stats" class="info">Calculando celdas...</div>
+    <h2 style="margin-top:16px">TERRAIN STATISTICS</h2>
+    <div id="stats" class="info">Computing cells...</div>
   </aside>
 
-  <!-- Panel Derecho: Gases de la ESA PSA e Inspector de Celdas -->
+  <!-- Right panel: ESA PSA gases and cell inspector -->
   <aside id="rightPanel" class="panel side right">
-    <h2><span id="rightDataTitle">🪐 GASES POR ZONA // ESA PSA</span><button id="closeRightPanel" class="panel-close" type="button" aria-label="Cerrar panel de datos">×</button></h2>
+    <h2><span id="rightDataTitle">🪐 GASES BY ZONE // ESA PSA</span><button id="closeRightPanel" class="panel-close" type="button" aria-label="Close data panel">×</button></h2>
     <div id="gasesPanel" class="info" style="font-size:10px;">
-      <div style="color:#94a3b8">Consultando espectrometría ExoMars TGO & Mars Express...</div>
+      <div style="color:#94a3b8">Querying ExoMars TGO & Mars Express spectrometry...</div>
     </div>
     <div id="mineralPanel" class="info" style="font-size:10px;display:none;">
-      <div style="color:#94a3b8;margin-bottom:8px;">Distribución de minerales acuosos · Mars Trek</div>
-      <div id="mineralStatus" style="color:#45f3ff;margin-bottom:8px;">Cargando detecciones minerales cercanas...</div>
-      <div class="gas-row"><span style="display:flex;align-items:center;gap:7px;"><span style="width:12px;height:12px;background:#67f04a;"></span>Carbonato</span></div>
-      <div class="gas-row"><span style="display:flex;align-items:center;gap:7px;"><span style="width:12px;height:12px;background:#f7fb43;"></span>Cloruro</span></div>
-      <div class="gas-row"><span style="display:flex;align-items:center;gap:7px;"><span style="width:12px;height:12px;background:#49a8d7;"></span>Filosilicato</span></div>
-      <div class="gas-row"><span style="display:flex;align-items:center;gap:7px;"><span style="width:12px;height:12px;background:#982bd8;"></span>Silicato / sílice</span></div>
-      <div class="gas-row"><span style="display:flex;align-items:center;gap:7px;"><span style="width:12px;height:12px;background:#ef8181;"></span>Sulfato</span></div>
-      <p style="margin:8px 0 0;color:#94a3b8;line-height:1.5;">Los colores identifican detecciones de Mars Trek; algunos puntos están fuera de la cuadrícula topográfica. No representan porcentajes ni concentraciones.</p>
-      <a href="https://trek.nasa.gov/mars/" target="_blank" class="psa-link">Ver ficha y leyenda en Mars Trek</a>
+      <div style="color:#94a3b8;margin-bottom:8px;">Aqueous mineral distribution · Mars Trek</div>
+      <div id="mineralStatus" style="color:#45f3ff;margin-bottom:8px;">Loading nearby mineral detections...</div>
+      <div class="gas-row"><span style="display:flex;align-items:center;gap:7px;"><span style="width:12px;height:12px;background:#67f04a;"></span>Carbonate</span></div>
+      <div class="gas-row"><span style="display:flex;align-items:center;gap:7px;"><span style="width:12px;height:12px;background:#f7fb43;"></span>Chloride</span></div>
+      <div class="gas-row"><span style="display:flex;align-items:center;gap:7px;"><span style="width:12px;height:12px;background:#49a8d7;"></span>Phyllosilicate</span></div>
+      <div class="gas-row"><span style="display:flex;align-items:center;gap:7px;"><span style="width:12px;height:12px;background:#982bd8;"></span>Silicate / silica</span></div>
+      <div class="gas-row"><span style="display:flex;align-items:center;gap:7px;"><span style="width:12px;height:12px;background:#ef8181;"></span>Sulfate</span></div>
+      <p style="margin:8px 0 0;color:#94a3b8;line-height:1.5;">Colours identify Mars Trek detections; some points lie outside the topographic grid. They do not represent percentages or concentrations.</p>
+      <a href="https://trek.nasa.gov/mars/" target="_blank" class="psa-link">View details and legend on Mars Trek</a>
     </div>
 
-    <h2 style="margin-top:16px">🔍 INSPECTOR DE CELDA</h2>
+    <h2 style="margin-top:16px">🔍 CELL INSPECTOR</h2>
     <div id="cellInfo" class="info">
-      Pasa el cursor o haz clic en cualquier celda de la cuadrícula para ver su elevación, pendiente y presión barométrica local.
+      Hover over or click any grid cell to see its elevation, slope and local barometric pressure.
     </div>
 
-    <h2 style="margin-top:16px">MÉTRICAS DE RUTA A*</h2>
+    <h2 style="margin-top:16px">A* ROUTE METRICS</h2>
     <div class="metrics">
-      <div class="metric"><small>Distancia total</small><b id="distance" style="color:var(--cyan)">--</b></div>
+      <div class="metric"><small>Total distance</small><b id="distance" style="color:var(--cyan)">--</b></div>
       <div class="metric"><small>Waypoints</small><b id="waypoints">--</b></div>
-      <div class="metric"><small>Pendiente media</small><b id="average">--</b></div>
-      <div class="metric"><small>Pendiente máxima</small><b id="maximum">--</b></div>
-      <div class="metric"><small>Desnivel acumulado (↑ / ↓)</small><b id="elevationChange">--</b></div>
-      <div class="metric"><small>Tiempo estimado a pie</small><b id="walkingTime">--</b></div>
-      <div class="metric"><small>Tiempo estimado en vehículo</small><b id="vehicleTime">--</b></div>
-      <div class="metric"><small>Consumo O2</small><b id="oxygen" style="color:var(--amber)">--</b></div>
+      <div class="metric"><small>Mean slope</small><b id="average">--</b></div>
+      <div class="metric"><small>Maximum slope</small><b id="maximum">--</b></div>
+      <div class="metric"><small>Total elevation (↑ / ↓)</small><b id="elevationChange">--</b></div>
+      <div class="metric"><small>Estimated time on foot</small><b id="walkingTime">--</b></div>
+      <div class="metric"><small>Estimated time by vehicle</small><b id="vehicleTime">--</b></div>
+      <div class="metric"><small>O2 consumption</small><b id="oxygen" style="color:var(--amber)">--</b></div>
     </div>
-    <div id="routeReturnStatus" class="info" style="margin-top:10px;font-size:9px;" aria-live="polite">Esperando cálculo de ruta y recursos disponibles.</div>
+    <div id="routeReturnStatus" class="info" style="margin-top:10px;font-size:9px;" aria-live="polite">Waiting for route calculation and available resources.</div>
 
   </aside>
-  <button id="reopenLeftPanel" class="panel-reopen" type="button" aria-controls="leftPanel" aria-expanded="true">MOSTRAR EXPEDICIÓN</button>
-  <button id="reopenRightPanel" class="panel-reopen" type="button" aria-controls="rightPanel" aria-expanded="true">MOSTRAR DATOS</button>
+  <button id="reopenLeftPanel" class="panel-reopen" type="button" aria-controls="leftPanel" aria-expanded="true">SHOW EXPEDITION</button>
+  <button id="reopenRightPanel" class="panel-reopen" type="button" aria-controls="rightPanel" aria-expanded="true">SHOW DATA</button>
   <div id="routePickerHint" class="route-picker-hint" role="status" aria-live="polite" hidden></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    // Conexión resiliente a API: busca en backend unificado o en puerto 8000 si se corre desde 5173
+    // Resilient API connection: use the unified backend, or port 8000 when running from 5173
     const API_BASE = window.location.port === '5173' ? 'http://localhost:8000/api' : '/api';
     const requestedZone = new URLSearchParams(window.location.search).get('zone');
     if (requestedZone === 'jezero' || requestedZone === 'gale') {
       document.getElementById('zone').value = requestedZone;
     }
 
-    // Inicializar mapa Leaflet centrado en Marte
+    // Initialise the Leaflet map centred on Mars
     const map = L.map('map', {
       crs: L.CRS.EPSG4326,
       center: [-4.65, 137.43],
@@ -675,11 +675,11 @@
 
         mineralDetectionsLayer.clearLayers();
         const styles = {
-          carbonate: { label: 'Carbonato', color: '#67f04a' },
-          chloride: { label: 'Cloruro', color: '#f7fb43' },
-          phyllosilicate: { label: 'Filosilicato', color: '#49a8d7' },
-          silica: { label: 'Silicato / sílice', color: '#982bd8' },
-          sulfate: { label: 'Sulfato', color: '#ef8181' }
+          carbonate: { label: 'Carbonate', color: '#67f04a' },
+          chloride: { label: 'Chloride', color: '#f7fb43' },
+          phyllosilicate: { label: 'Phyllosilicate', color: '#49a8d7' },
+          silica: { label: 'Silicate / silica', color: '#982bd8' },
+          sulfate: { label: 'Sulfate', color: '#ef8181' }
         };
         const seen = new Set();
         const displayBounds = L.latLngBounds(
@@ -715,11 +715,11 @@
           map.fitBounds(displayBounds, { padding: [40, 40] });
         }
         status.textContent = detectionCount
-          ? `${detectionCount} detecciones minerales cercanas de Mars Trek.`
-          : 'Sin detecciones cercanas en Mars Trek para esta zona.';
+          ? `${detectionCount} nearby mineral detections from Mars Trek.`
+          : 'No nearby Mars Trek detections for this zone.';
       } catch (error) {
         if (queryId !== mineralQueryId) return;
-        status.textContent = 'No se pudieron cargar las detecciones minerales de Mars Trek.';
+        status.textContent = 'Could not load Mars Trek mineral detections.';
         console.warn('Error fetching mineral detections:', error);
       }
     }
@@ -750,8 +750,8 @@
         }
       }
       document.getElementById('rightDataTitle').textContent = showMinerals
-        ? 'IDENTIFICACIÓN MINERAL // COLORIMETRÍA'
-        : '🪐 GASES POR ZONA // ESA PSA';
+        ? 'MINERAL IDENTIFICATION // COLORIMETRY'
+        : '🪐 GASES BY ZONE // ESA PSA';
       document.getElementById('gasesPanel').style.display = showMinerals ? 'none' : 'block';
       document.getElementById('mineralPanel').style.display = showMinerals ? 'block' : 'none';
     }
@@ -846,7 +846,7 @@
         timeElement.textContent = '0 h 0 min';
         timeElement.style.color = 'var(--red)';
       } else if (consumption === 0) {
-        timeElement.textContent = 'Sin consumo estimado';
+        timeElement.textContent = 'No estimated consumption';
         timeElement.style.color = '#fff';
       } else {
         const totalMinutes = Math.ceil(remaining / consumption * 60);
@@ -856,11 +856,11 @@
         timeElement.style.color = totalMinutes <= 60 ? 'var(--amber)' : '#fff';
       }
 
-      levelElement.textContent = `${percentage.toFixed(0)}% · ${remaining} L disponibles`;
+      levelElement.textContent = `${percentage.toFixed(0)}% · ${remaining} L available`;
     }
 
     function formatRemainingTime(minutes) {
-      if (!Number.isFinite(minutes)) return 'Sin límite estimado';
+      if (!Number.isFinite(minutes)) return 'No estimated limit';
       const totalMinutes = Math.max(0, Math.ceil(minutes));
       return `${Math.floor(totalMinutes / 60)} h ${totalMinutes % 60} min`;
     }
@@ -876,7 +876,7 @@
       if (document.querySelector('input[name="travelMode"]:checked').value === 'vehicle') {
         const fuelRemaining = Math.max(0, Number(document.getElementById('fuelRemaining').value) || 0);
         const fuelRate = Math.max(0, Number(document.getElementById('fuelConsumption').value) || 0);
-        resources.push({ name: 'combustible', minutes: fuelRate ? fuelRemaining / fuelRate * 60 : Infinity });
+        resources.push({ name: 'fuel', minutes: fuelRate ? fuelRemaining / fuelRate * 60 : Infinity });
       }
 
       return resources.reduce((limiting, resource) => resource.minutes < limiting.minutes ? resource : limiting);
@@ -888,14 +888,14 @@
       const remaining = Math.max(0, Number(document.getElementById('fuelRemaining').value) || 0);
       const consumption = Math.max(0, Number(document.getElementById('fuelConsumption').value) || 0);
       document.getElementById('fuelTimeRemaining').textContent = formatRemainingTime(consumption ? remaining / consumption * 60 : Infinity);
-      document.getElementById('fuelLevelSummary').textContent = `${remaining} L disponibles`;
+      document.getElementById('fuelLevelSummary').textContent = `${remaining} L available`;
     }
 
     function updateReturnRoute() {
       const status = document.getElementById('routeReturnStatus');
       layers.returnRoute.clearLayers();
       if (!latestRoute) {
-        status.textContent = 'Esperando cálculo de ruta y recursos disponibles.';
+        status.textContent = 'Waiting for route calculation and available resources.';
         return;
       }
 
@@ -924,11 +924,11 @@
         }));
         if (document.getElementById('route').checked) map.addLayer(layers.returnRoute);
         status.style.color = 'var(--amber)';
-        status.textContent = `Retorno automático activado: vuelta estimada ${formatRemainingTime(returnMinutes)}; ${limitingResource.name} restante tras la ida: ${formatRemainingTime(timeAfterOutbound)}.`;
+        status.textContent = `Automatic return enabled: estimated return ${formatRemainingTime(returnMinutes)}; ${limitingResource.name} left after the outbound leg: ${formatRemainingTime(timeAfterOutbound)}.`;
       } else {
         map.removeLayer(layers.returnRoute);
         status.style.color = '#94a3b8';
-        status.textContent = `Retorno no activado · vuelta estimada ${formatRemainingTime(returnMinutes)}; recurso limitante (${limitingResource.name}): ${formatRemainingTime(limitingResource.minutes)}.`;
+        status.textContent = `Return not enabled · estimated return ${formatRemainingTime(returnMinutes)}; limiting resource (${limitingResource.name}): ${formatRemainingTime(limitingResource.minutes)}.`;
       }
     }
 
@@ -959,7 +959,7 @@
       if (!statusEntries.length) {
         const empty = document.createElement('div');
         empty.className = 'status-empty';
-        empty.textContent = 'Aún no hay registros de equipo.';
+        empty.textContent = 'No equipment entries yet.';
         log.appendChild(empty);
         return;
       }
@@ -970,12 +970,12 @@
         const header = document.createElement('div');
         header.className = 'status-entry-head';
         const title = document.createElement('span');
-        title.textContent = 'REGISTRO DE EQUIPO';
+        title.textContent = 'EQUIPMENT LOG';
         const remove = document.createElement('button');
         remove.className = 'status-delete';
         remove.type = 'button';
-        remove.textContent = 'Eliminar';
-        remove.setAttribute('aria-label', 'Eliminar registro de equipo');
+        remove.textContent = 'Delete';
+        remove.setAttribute('aria-label', 'Delete equipment entry');
         remove.addEventListener('click', () => {
           statusEntries = statusEntries.filter(item => item.id !== entry.id);
           saveStatusNotebook();
@@ -989,19 +989,19 @@
           const details = [
             `O₂ ${entry.snapshot.oxygenRemaining} L`,
             `tablet ${entry.snapshot.tabletBattery}%`,
-            `linterna ${entry.snapshot.flashlightBattery}%`,
-            `comida ${entry.snapshot.foodRations}`,
-            `agua ${entry.snapshot.waterRemaining} L`,
-            `base ${entry.snapshot.baseConnection ? 'activa' : 'inactiva'}`
+            `flashlight ${entry.snapshot.flashlightBattery}%`,
+            `food ${entry.snapshot.foodRations}`,
+            `water ${entry.snapshot.waterRemaining} L`,
+            `base ${entry.snapshot.baseConnection ? 'active' : 'inactive'}`
           ];
-          if (entry.snapshot.fuelRemaining !== null) details.push(`combustible ${entry.snapshot.fuelRemaining} L`);
-          snapshot.textContent = `Estado capturado (${entry.snapshot.travelMode === 'vehicle' ? 'vehículo' : 'a pie'}): ${details.join(' · ')}`;
+          if (entry.snapshot.fuelRemaining !== null) details.push(`fuel ${entry.snapshot.fuelRemaining} L`);
+          snapshot.textContent = `Captured status (${entry.snapshot.travelMode === 'vehicle' ? 'vehicle' : 'on foot'}): ${details.join(' · ')}`;
           card.append(snapshot);
         }
         card.append(
-          createEntryField(entry, 'time', 'Fecha y hora', 'datetime-local'),
-          createEntryField(entry, 'equipment', 'Equipo o sistema', 'text'),
-          createEntryField(entry, 'note', 'Estado / observación', 'textarea')
+          createEntryField(entry, 'time', 'Date and time', 'datetime-local'),
+          createEntryField(entry, 'equipment', 'Equipment or system', 'text'),
+          createEntryField(entry, 'note', 'Status / observation', 'textarea')
         );
         log.appendChild(card);
       });
@@ -1025,7 +1025,7 @@
       });
     });
     document.getElementById('baseConnection').addEventListener('change', event => {
-      document.getElementById('connectionState').textContent = event.target.checked ? 'ACTIVADA' : 'NO ACTIVADA';
+      document.getElementById('connectionState').textContent = event.target.checked ? 'ACTIVE' : 'INACTIVE';
       saveStatusNotebook();
     });
     document.querySelectorAll('input[name="travelMode"]').forEach(input => {
@@ -1041,7 +1041,7 @@
       statusEntries.push({
         id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
         time: localDateTimeValue(),
-        equipment: equipment.value.trim() || 'Equipo EVA',
+        equipment: equipment.value.trim() || 'EVA equipment',
         note: note.value.trim(),
         snapshot: {
           oxygenRemaining: Number(document.getElementById('oxygenRemaining').value) || 0,
@@ -1062,13 +1062,13 @@
       renderStatusEntries();
     });
     updateOxygenEstimate();
-    document.getElementById('connectionState').textContent = savedStatus.baseConnection ? 'ACTIVADA' : 'NO ACTIVADA';
+    document.getElementById('connectionState').textContent = savedStatus.baseConnection ? 'ACTIVE' : 'INACTIVE';
     updateFuelEstimate();
     renderStatusEntries();
 
     let currentZoneAtmosphere = null;
 
-    // Calcular presión barométrica local según cota altimétrica de la celda
+    // Compute local barometric pressure from the cell elevation
     function calcPressure(elevM, basePressurePa) {
       // Mars atmospheric scale height ~ 11.1 km
       const scaleHeight = 11100;
@@ -1079,20 +1079,20 @@
       const baseP = currentZoneAtmosphere ? currentZoneAtmosphere.surface_pressure_pa : 800.0;
       const localP = calcPressure(cell.elev, baseP);
       const suitDelta = (30.0 - (localP / 1000.0)).toFixed(2);
-      const slopeLabel = Number.isFinite(cell.slope) ? `${cell.slope}°` : 'SIN COBERTURA';
+      const slopeLabel = Number.isFinite(cell.slope) ? `${cell.slope}°` : 'NO COVERAGE';
 
       document.getElementById('cellInfo').innerHTML = `
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:6px;">
-          <div>Celda: <b style="color:var(--cyan)">[${cell.r}, ${cell.c}]</b></div>
-          <div>Cota: <b>${cell.elev} m</b></div>
+          <div>Cell: <b style="color:var(--cyan)">[${cell.r}, ${cell.c}]</b></div>
+          <div>Elevation: <b>${cell.elev} m</b></div>
           <div>Lat: <b>${cell.lat}°</b></div>
           <div>Lon: <b>${cell.lon}°</b></div>
-          <div>Pendiente medida: <b style="color:${cell.passable ? '#22c55e' : '#ff3366'}">${slopeLabel}</b></div>
-          <div>Estado: <b style="color:${cell.passable ? '#22c55e' : '#ff3366'}">${cell.passable ? 'TRANSITABLE' : 'INTRANSITABLE'}</b></div>
+          <div>Measured slope: <b style="color:${cell.passable ? '#22c55e' : '#ff3366'}">${slopeLabel}</b></div>
+          <div>Status: <b style="color:${cell.passable ? '#22c55e' : '#ff3366'}">${cell.passable ? 'PASSABLE' : 'IMPASSABLE'}</b></div>
         </div>
         <div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:4px;color:#94a3b8;">
-          Presión barométrica local: <b style="color:#fff">${localP} Pa</b> (0.00% O2)<br>
-          Delta presión escafandra EVA: <b style="color:var(--amber)">${suitDelta} kPa</b>
+          Local barometric pressure: <b style="color:#fff">${localP} Pa</b> (0.00% O2)<br>
+          EVA suit pressure delta: <b style="color:var(--amber)">${suitDelta} kPa</b>
         </div>
       `;
     }
@@ -1110,27 +1110,27 @@
         let gasesHtml = `
           <div style="margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.15);">
             <div style="display:flex;justify-content:space-between;">
-              <span style="color:#94a3b8">Zona:</span> <b style="color:var(--cyan)">${data.zone_name}</b>
+              <span style="color:#94a3b8">Zone:</span> <b style="color:var(--cyan)">${data.zone_name}</b>
             </div>
             <div style="display:flex;justify-content:space-between;margin-top:2px;">
-              <span style="color:#94a3b8">Presión media:</span> <b>${data.surface_pressure_pa} Pa</b>
+              <span style="color:#94a3b8">Mean pressure:</span> <b>${data.surface_pressure_pa} Pa</b>
               <span style="color:#94a3b8">Temp:</span> <b>${data.mean_surface_temp_c}°C</b>
             </div>
             <div style="display:flex;justify-content:space-between;margin-top:2px;">
-              <span style="color:#94a3b8">Dominante:</span> <b style="color:#10b981">${data.dominant_gas}</b>
+              <span style="color:#94a3b8">Dominant:</span> <b style="color:#10b981">${data.dominant_gas}</b>
             </div>
           </div>
-          <div style="font-weight:700;color:#c084fc;margin-bottom:4px;">GASES DETECTADOS (NOMAD / ACS / PFS):</div>
+          <div style="font-weight:700;color:#c084fc;margin-bottom:4px;">DETECTED GASES (NOMAD / ACS / PFS):</div>
         `;
 
         data.gases.forEach(g => {
           const isCritical = g.formula === 'CH4' || g.formula === 'HCl' || g.formula === 'H2O' || g.formula === 'O3';
-          const badgeColor = g.status === 'DETECTADO' ? '#10b981' : g.status === 'PLUMA LOCAL' ? '#f59e0b' : '#a855f7';
+          const badgeColor = g.status === 'DETECTED' ? '#10b981' : g.status === 'LOCAL PLUME' ? '#f59e0b' : '#a855f7';
           gasesHtml += `
             <div class="gas-row">
               <div>
                 <b style="color:${isCritical ? '#45f3ff' : '#e2e8f0'}">${g.formula}</b> 
-                <span style="color:#94a3b8">${g.name.split(' ')[0]}</span>
+                <span style="color:#94a3b8">${g.name.split(' (')[0]}</span>
                 <span class="gas-badge" style="background:${badgeColor}22;color:${badgeColor};border:1px solid ${badgeColor}66">${g.status}</span>
               </div>
               <div style="text-align:right">
@@ -1150,7 +1150,7 @@
 
         panel.innerHTML = gasesHtml;
 
-        // Agregar balizas de gases en el mapa
+        // Add gas beacons to the map
         layers.gases.clearLayers();
         if (data.coordinates) {
           const gasBeacon = L.circleMarker([data.coordinates.latitude, data.coordinates.longitude], {
@@ -1159,13 +1159,13 @@
             fillColor: '#c084fc',
             fillOpacity: 0.35,
             weight: 2
-          }).bindPopup(`<b>Estación Espectrométrica ESA PSA</b><br>Zona: ${data.zone_name}<br>CH4: <b style="color:#45f3ff">Monitorizado</b><br>HCl: <b style="color:#f59e0b">Sensor TGO ACS</b>`);
+          }).bindPopup(`<b>ESA PSA Spectrometry Station</b><br>Zone: ${data.zone_name}<br>CH4: <b style="color:#45f3ff">Monitored</b><br>HCl: <b style="color:#f59e0b">Sensor TGO ACS</b>`);
           layers.gases.addLayer(gasBeacon);
         }
 
       } catch (err) {
         console.warn('Error fetching atmosphere:', err);
-        panel.innerHTML = `<span style="color:var(--amber)">Datos atmosféricos cargados en modo de contingencia local.</span>`;
+        panel.innerHTML = `<span style="color:var(--amber)">Atmospheric data loaded in local fallback mode.</span>`;
       }
     }
 
@@ -1230,7 +1230,7 @@
       if (!currentTerrainBounds ||
           latlng.lat < currentTerrainBounds.min_lat || latlng.lat > currentTerrainBounds.max_lat ||
           latlng.lng < currentTerrainBounds.min_lon || latlng.lng > currentTerrainBounds.max_lon) {
-        setRouteStatus('Elige puntos dentro de los límites del terreno cargado.');
+        setRouteStatus('Choose points inside the loaded terrain bounds.');
         return;
       }
 
@@ -1240,8 +1240,8 @@
         layers.customRoute.clearLayers();
         layers.customRoute.addLayer(L.circleMarker([point.latitude, point.longitude], {
           radius: 8, color: '#fff', weight: 2, fillColor: '#22c55e', fillOpacity: 1
-        }).bindTooltip('ORIGEN', { permanent: true, direction: 'top' }));
-        setRouteStatus('Origen fijado. Haz clic en el destino.');
+        }).bindTooltip('ORIGIN', { permanent: true, direction: 'top' }));
+        setRouteStatus('Origin set. Click the destination.');
         return;
       }
 
@@ -1251,13 +1251,13 @@
       else restorePanelsAfterRoute();
       layers.customRoute.addLayer(L.circleMarker([point.latitude, point.longitude], {
         radius: 8, color: '#fff', weight: 2, fillColor: '#ffb703', fillOpacity: 1
-      }).bindTooltip('DESTINO', { permanent: true, direction: 'top' }));
+      }).bindTooltip('DESTINATION', { permanent: true, direction: 'top' }));
       calculateCustomRoute(selectedRouteStart, point);
     }
 
     async function calculateCustomRoute(start, target) {
       const requestId = ++customRouteRequestId;
-      setRouteStatus('Calculando una ruta segura sobre la cuadrícula topográfica...');
+      setRouteStatus('Computing a safe route over the topographic grid...');
       document.getElementById('startNavigation').disabled = true;
       document.getElementById('startNavigation').style.opacity = '.45';
       try {
@@ -1309,17 +1309,17 @@
           document.getElementById('routePickerHint').hidden = true;
           map.invalidateSize({ pan: false });
         }
-        setRouteStatus(`Ruta segura calculada${snapped ? ' (extremos ajustados a celdas transitables)' : ''}: ${(result.total_distance_m / 1000).toFixed(2)} km.`);
+        setRouteStatus(`Safe route computed${snapped ? ' (endpoints snapped to passable cells)' : ''}: ${(result.total_distance_m / 1000).toFixed(2)} km.`);
       } catch (error) {
         if (requestId !== customRouteRequestId) return;
         if (initialSetupPending) {
           isPickingRoute = true;
           document.body.classList.add('route-picking');
           map.getContainer().style.cursor = 'crosshair';
-          setRouteStatus(`No se pudo calcular la ruta: ${error.message}. Elige otro destino.`);
+          setRouteStatus(`Could not compute the route: ${error.message}. Choose another destination.`);
           return;
         }
-        setRouteStatus(`No se pudo calcular la ruta: ${error.message}`);
+        setRouteStatus(`Could not compute the route: ${error.message}`);
       }
     }
 
@@ -1337,7 +1337,7 @@
       document.getElementById('selectedRouteSummary').hidden = true;
       defaultRoute = null;
       defaultRouteMetrics = null;
-      setRouteStatus('Elige dos puntos dentro del terreno para calcular una ruta segura.');
+      setRouteStatus('Choose two points inside the terrain to compute a safe route.');
       loading.style.display = 'grid';
 
       const zone = document.getElementById('zone').value;
@@ -1347,10 +1347,10 @@
       mineralDetectionsLayer.clearLayers();
 
       try {
-        // Cargar gases de la ESA para esta zona en paralelo
+        // Load ESA gases for this zone in parallel
         loadGases(zone);
 
-        // Consultar API de terreno para la cuadrícula
+        // Query the terrain API for the grid
         const response = await fetch(`${API_BASE}/terrain?zone=${zone}&resolution=${resolution}&max_slope=${slope}`);
         if (!response.ok) throw new Error(`API terrain HTTP error ${response.status}`);
         const data = await response.json();
@@ -1376,7 +1376,7 @@
         const dlat = (data.bounds.max_lat - data.bounds.min_lat) / (data.resolution[0] - 1);
         const dlon = (data.bounds.max_lon - data.bounds.min_lon) / (data.resolution[1] - 1);
 
-        // Renderizar cuadrícula de celdas topográficas
+        // Render the topographic cell grid
         data.cells.forEach(cell => {
           const color = !cell.passable ? '#ff3366' : cell.slope > 10 ? '#eab308' : '#22c55e';
           const rect = L.rectangle([
@@ -1420,11 +1420,11 @@
           };
           renderRouteMetrics(defaultRouteMetrics);
         } else {
-          document.getElementById('routeReturnStatus').textContent = 'No se encontró una ruta segura para calcular el retorno.';
+          document.getElementById('routeReturnStatus').textContent = 'No safe route was found to compute the return.';
         }
         updateReturnRoute();
 
-        // Hitos históricos de rovers
+        // Historical rover waypoints
         if (data.historical_waypoints) {
           data.historical_waypoints.forEach(wp => {
             const marker = L.circleMarker([wp.lat, wp.lon], {
@@ -1433,17 +1433,17 @@
               fillColor: '#050608',
               fillOpacity: 1,
               weight: 2
-            }).bindPopup(`<b>${wp.name}</b><br>Tipo: ${wp.type}`);
+            }).bindPopup(`<b>${wp.name}</b><br>Type: ${wp.type}`);
             layers.wps.addLayer(marker);
           });
         }
 
         document.getElementById('stats').innerHTML = `
-          Total celdas: <b>${data.statistics.total_cells}</b> (${data.resolution[0]}x${data.resolution[1]})<br>
-          Fuente de pendientes: <b>${data.terrain_source.slope_data || 'Derivada del modelo de elevación.'}</b><br>
-          <span style="color:#10b981">Seguras transitables: <b>${data.statistics.passable_cells}</b></span><br>
-          <span style="color:#ff3366">Bloqueadas (> ${slope}°): <b>${data.statistics.impassable_cells} (${data.statistics.impassable_percentage}%)</b></span><br>
-          Grupos de escarpes detectados: <b>${data.hazard_zones.length}</b>
+          Total cells: <b>${data.statistics.total_cells}</b> (${data.resolution[0]}x${data.resolution[1]})<br>
+          Slope source: <b>${data.terrain_source.slope_data || 'Derived from the elevation model.'}</b><br>
+          <span style="color:#10b981">Safe and passable: <b>${data.statistics.passable_cells}</b></span><br>
+          <span style="color:#ff3366">Blocked (> ${slope}°): <b>${data.statistics.impassable_cells} (${data.statistics.impassable_percentage}%)</b></span><br>
+          Detected scarp clusters: <b>${data.hazard_zones.length}</b>
         `;
 
         if (document.getElementById('basemap').value === 'minerals') {
@@ -1451,14 +1451,14 @@
         }
 
       } catch (error) {
-        document.getElementById('stats').innerHTML = `<span style="color:#ff3366">Error conectando con la API de terreno (${error.message}). Comprueba que el servidor está corriendo en el puerto 8000.</span>`;
-        document.getElementById('setupStatus').textContent = `No se pudo preparar el terreno: ${error.message}`;
-        console.error('Error cargando terreno:', error);
+        document.getElementById('stats').innerHTML = `<span style="color:#ff3366">Error connecting to the terrain API (${error.message}). Check that the server is running.</span>`;
+        document.getElementById('setupStatus').textContent = `Could not prepare the terrain: ${error.message}`;
+        console.error('Error loading terrain:', error);
       } finally {
         loading.style.display = 'none';
         const selectedMode = document.querySelector('input[name="setupTravelMode"]:checked');
         document.getElementById('beginSetupRoute').disabled = !currentTerrainBounds || !selectedMode;
-        if (currentTerrainBounds) document.getElementById('setupStatus').textContent = 'Terreno listo. Selecciona cómo vas a desplazarte.';
+        if (currentTerrainBounds) document.getElementById('setupStatus').textContent = 'Terrain ready. Select how you will travel.';
         if (window.parent !== window) {
           window.parent.postMessage('tactical-ready', window.location.origin);
         }
@@ -1520,7 +1520,7 @@
         ], { padding: [40, 40] });
       }
       map.getContainer().style.cursor = 'crosshair';
-      setRouteStatus('Haz clic en el origen del recorrido.');
+      setRouteStatus('Click the origin of the traverse.');
     }
 
     document.querySelectorAll('input[name="setupTravelMode"]').forEach(input => {
@@ -1531,8 +1531,8 @@
         saveStatusNotebook();
         document.getElementById('beginSetupRoute').disabled = !currentTerrainBounds;
         document.getElementById('setupStatus').textContent = currentTerrainBounds
-          ? 'Modo seleccionado. Ya puedes elegir el origen y el destino.'
-          : 'Preparando la cuadrícula del terreno...';
+          ? 'Mode selected. You can now choose the origin and destination.'
+          : 'Preparing the terrain grid...';
       });
     });
 
@@ -1550,7 +1550,7 @@
       map.fitBounds(points, { padding: [70, 70] });
       const next = customRouteWaypoints[1];
       setRouteStatus(
-        `Navegación iniciada · siguiente waypoint ${next.index}, ${Math.round(next.cumulative_distance_m)} m desde el origen. Sin telemetría de posición en tiempo real.`
+        `Navigation started · next waypoint ${next.index}, ${Math.round(next.cumulative_distance_m)} m from the origin. No real-time position telemetry.`
       );
     };
 
@@ -1566,7 +1566,7 @@
       map.getContainer().style.cursor = '';
       document.getElementById('startNavigation').disabled = true;
       document.getElementById('startNavigation').style.opacity = '.45';
-      setRouteStatus('Ruta personalizada borrada.');
+      setRouteStatus('Custom route cleared.');
       if (defaultRouteMetrics) renderRouteMetrics(defaultRouteMetrics);
       else updateReturnRoute();
     };
@@ -1580,7 +1580,7 @@
     document.getElementById('slope').oninput = e => document.getElementById('slopeValue').textContent = Number(e.target.value).toFixed(1) + '°';
     document.getElementById('slope').onchange = load;
 
-    // Toggle de capas
+    // Layer toggles
     document.getElementById('cells').onchange = e => e.target.checked ? map.addLayer(layers.cells) : map.removeLayer(layers.cells);
     document.getElementById('hazards').onchange = e => e.target.checked ? map.addLayer(layers.hazards) : map.removeLayer(layers.hazards);
     document.getElementById('route').onchange = e => {
@@ -1597,7 +1597,7 @@
     document.getElementById('wps').onchange = e => e.target.checked ? map.addLayer(layers.wps) : map.removeLayer(layers.wps);
     document.getElementById('gasesLayer').onchange = e => e.target.checked ? map.addLayer(layers.gases) : map.removeLayer(layers.gases);
 
-    // Cargar mapa y gases al iniciar
+    // Load map and gases on startup
     load();
   </script>
   <script type="module" src="/src/tactical/terrain3d.ts"></script>

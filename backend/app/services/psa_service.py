@@ -40,7 +40,7 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
         total_detected_gases=8,
         gases=[
             GasMeasurement(
-                name="Dióxido de Carbono",
+                name="Carbon Dioxide",
                 formula="CO2",
                 concentration="95.12%",
                 concentration_value=95.12,
@@ -49,12 +49,12 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 instrument="NOMAD LNO / ACS MIR",
                 mission="ExoMars 2016 Trace Gas Orbiter (TGO)",
                 observation_technique="Nadir Infrared Spectroscopy",
-                variability="Estacional - Fluctuación por condensación en casquetes polares",
-                status="DETECTADO",
-                scientific_significance="Componente dominante de la atmósfera marciana; sufre un ciclo global de congelación invernal."
+                variability="Seasonal - fluctuation from condensation on the polar caps",
+                status="DETECTED",
+                scientific_significance="Dominant component of the Martian atmosphere; undergoes a global winter freezing cycle."
             ),
             GasMeasurement(
-                name="Nitrógeno Molecular",
+                name="Molecular Nitrogen",
                 formula="N2",
                 concentration="2.68%",
                 concentration_value=2.68,
@@ -63,12 +63,12 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 instrument="PFS / SPICAM",
                 mission="Mars Express (MEX)",
                 observation_technique="Thermal Infrared Fourier Transform",
-                variability="Inerte / Estable",
-                status="DETECTADO",
-                scientific_significance="Gas no condensable; su fracción molar aumenta durante el invierno polar cuando el CO2 precipita."
+                variability="Inert / Stable",
+                status="DETECTED",
+                scientific_significance="Non-condensable gas; its mole fraction rises during polar winter when CO2 precipitates."
             ),
             GasMeasurement(
-                name="Argón",
+                name="Argon",
                 formula="Ar",
                 concentration="1.91%",
                 concentration_value=1.91,
@@ -77,12 +77,12 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 instrument="PFS (MEX) & NOMAD",
                 mission="Mars Express / ExoMars TGO",
                 observation_technique="Direct Radiative Transfer Modeling",
-                variability="Inerte / Estable",
-                status="DETECTADO",
-                scientific_significance="Trazador dinámico de la circulación atmosférica global marciana."
+                variability="Inert / Stable",
+                status="DETECTED",
+                scientific_significance="Dynamic tracer of global Martian atmospheric circulation."
             ),
             GasMeasurement(
-                name="Monóxido de Carbono",
+                name="Carbon Monoxide",
                 formula="CO",
                 concentration="750 ppm",
                 concentration_value=750.0,
@@ -91,12 +91,12 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 instrument="NOMAD (LNO Channel)",
                 mission="ExoMars 2016 Trace Gas Orbiter (TGO)",
                 observation_technique="High-resolution Limb Sounding",
-                variability="Moderada - Fotólisis de CO2 inducida por radiación UV solar",
-                status="DETECTADO",
-                scientific_significance="Producto de la fotólisis solar del CO2; indicador de la química oxidativa de la atmósfera media."
+                variability="Moderate - CO2 photolysis induced by solar UV radiation",
+                status="DETECTED",
+                scientific_significance="Product of solar CO2 photolysis; indicator of middle-atmosphere oxidative chemistry."
             ),
             GasMeasurement(
-                name="Vapor de Agua",
+                name="Water Vapour",
                 formula="H2O",
                 concentration="165 ppm",
                 concentration_value=165.0,
@@ -105,12 +105,12 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 instrument="NOMAD (SO & LNO) / ACS",
                 mission="ExoMars 2016 Trace Gas Orbiter (TGO)",
                 observation_technique="Solar Occultation & Nadir Mapping",
-                variability="Alta variabilidad estacional (máximo en Ls ~ 90°-120°)",
-                status="VARIACIÓN ESTACIONAL",
-                scientific_significance="Ciclo hidrológico marciano activo; transporte vertical de vapor observado a cotas superiores a 60 km."
+                variability="High seasonal variability (maximum at Ls ~ 90°-120°)",
+                status="SEASONAL VARIATION",
+                scientific_significance="Active Martian hydrological cycle; vertical vapour transport observed above 60 km altitude."
             ),
             GasMeasurement(
-                name="Oxígeno Molecular",
+                name="Molecular Oxygen",
                 formula="O2",
                 concentration="0.14%",
                 concentration_value=0.14,
@@ -119,12 +119,12 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 instrument="SPICAM UV / ACS",
                 mission="Mars Express / ExoMars TGO",
                 observation_technique="UV Nightglow & Occultation",
-                variability="Variación estacional anómala registrada en latitudes medias",
-                status="DETECTADO",
-                scientific_significance="Variaciones estacionales inesperadas que sugieren mecanismos rápidos de liberación y absorción en el regolito."
+                variability="Anomalous seasonal variation recorded at mid-latitudes",
+                status="DETECTED",
+                scientific_significance="Unexpected seasonal variations suggesting fast release and uptake mechanisms in the regolith."
             ),
             GasMeasurement(
-                name="Ozono",
+                name="Ozone",
                 formula="O3",
                 concentration="22 ppb",
                 concentration_value=22.0,
@@ -133,48 +133,48 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 instrument="NOMAD (UVIS Channel)",
                 mission="ExoMars 2016 Trace Gas Orbiter (TGO)",
                 observation_technique="Ultraviolet-Visible Limb & Nadir Spectrometry",
-                variability="Anticorrelación estricta con el vapor de agua (química de radicales HOx)",
-                status="TRAZA",
-                scientific_significance="Destruido catalíticamente por fotólisis de vapor de agua; actúa como trazador del blindaje solar UV."
+                variability="Strict anticorrelation with water vapour (HOx radical chemistry)",
+                status="TRACE",
+                scientific_significance="Catalytically destroyed by water vapour photolysis; acts as a tracer of solar UV shielding."
             ),
             GasMeasurement(
-                name="Metano",
+                name="Methane",
                 formula="CH4",
-                concentration="< 0.045 ppb (Límite de detección TGO) / Picos locales de 8.2 ppb",
+                concentration="< 0.045 ppb (TGO detection limit) / local peaks of 8.2 ppb",
                 concentration_value=0.045,
                 concentration_unit="ppb",
                 percentage=0.0000000045,
                 instrument="NOMAD SO / ACS MIR",
                 mission="ExoMars 2016 Trace Gas Orbiter (TGO)",
                 observation_technique="Ultra-sensitive Solar Occultation (1-20 ppb threshold)",
-                variability="Enigmática: Concentración de fondo nula con eventos esporádicos de liberación",
-                status="PLUMA LOCAL",
-                scientific_significance="Prioridad astrobiológica máxima: posible origen hidrotermal subsuperficial (serpentinización) o biogénico."
+                variability="Enigmatic: zero background concentration with sporadic release events",
+                status="LOCAL PLUME",
+                scientific_significance="Top astrobiology priority: possible subsurface hydrothermal (serpentinisation) or biogenic origin."
             )
         ],
         isotopic_ratios=[
             IsotopicRatio(
-                ratio="D/H (Deuterio / Hidrógeno en H2O)",
-                value="5.4 ± 0.6 veces el estándar terrestre (VSMOW)",
-                significance="Prueba irrefutable de que Marte perdió la mayor parte de su inventario primordial de agua líquida al espacio.",
+                ratio="D/H (deuterium / hydrogen in H2O)",
+                value="5.4 ± 0.6 times the terrestrial standard (VSMOW)",
+                significance="Irrefutable evidence that Mars lost most of its primordial liquid water inventory to space.",
                 instrument="NOMAD SO (ExoMars TGO)"
             ),
             IsotopicRatio(
-                ratio="13C / 12C en CO2",
+                ratio="13C / 12C in CO2",
                 value="δ13C = +48 ‰ relativo a PDB terrestre",
-                significance="Enriquecimiento en isótopos pesados debido al escape atmosférico impulsado por el viento solar.",
+                significance="Heavy-isotope enrichment caused by solar-wind-driven atmospheric escape.",
                 instrument="ACS MIR (ExoMars TGO)"
             )
         ],
         eva_assessment=EVAAtmosphericAssessment(
-            breathability="INHABITABLE - Asfixiante y letal para el ser humano sin soporte vital",
-            asphyxiation_hazard="La presión parcial de O2 es menor a 1 Pa (humano requiere min. 16 kPa). Concentración de CO2 (>95%) causa narcosis y parada respiratoria inmediata.",
+            breathability="UNINHABITABLE - Asphyxiating and lethal to humans without life support",
+            asphyxiation_hazard="The O2 partial pressure is below 1 Pa (humans need at least 16 kPa). CO2 concentration (>95%) causes narcosis and immediate respiratory arrest.",
             suit_pressure_delta_kpa=29.28,
-            isru_potential="Excelente: Alta densidad de CO2 en el lecho del cráter para electrólisis de oxígeno (tecnología MOXIE) y reacción Sabatier para propelente metano.",
+            isru_potential="Excellent: high CO2 density on the crater floor for oxygen electrolysis (MOXIE technology) and the Sabatier reaction for methane propellant.",
             toxicity_warnings=[
-                "Nivel letal de CO2 (asfixia por desplazamiento)",
-                "Presencia de radicales peróxidos y oxidantes en suspensión de polvo",
-                "Falta total de amortiguación barométrica contra embolias (requiere traje estanco a 30-34 kPa)"
+                "Lethal CO2 level (asphyxia by displacement)",
+                "Peroxide radicals and oxidants present in suspended dust",
+                "No barometric protection against embolism (requires a sealed suit at 30-34 kPa)"
             ]
         ),
         psa_search_url=f"{ESA_PSA_PORTAL_URL}?mission=ExoMars2016&instrument=NOMAD,ACS&target=Mars&lat=18.38&lon=77.58",
@@ -191,7 +191,7 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
         total_detected_gases=9,
         gases=[
             GasMeasurement(
-                name="Dióxido de Carbono",
+                name="Carbon Dioxide",
                 formula="CO2",
                 concentration="95.40%",
                 concentration_value=95.40,
@@ -200,12 +200,12 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 instrument="NOMAD / ACS & MEX PFS",
                 mission="ExoMars 2016 TGO & Mars Express",
                 observation_technique="Nadir Spectroscopy & Limb Profiling",
-                variability="Ciclo barométrico anual de 115 Pa debido al congelamiento del casquete austral",
-                status="DETECTADO",
-                scientific_significance="Presión atmosférica máxima local en el fondo del cráter Gale (-4.4 km MOLA)."
+                variability="115 Pa annual barometric cycle caused by the southern polar cap freezing",
+                status="DETECTED",
+                scientific_significance="Local maximum atmospheric pressure on the Gale Crater floor (-4.4 km MOLA)."
             ),
             GasMeasurement(
-                name="Nitrógeno Molecular",
+                name="Molecular Nitrogen",
                 formula="N2",
                 concentration="2.55%",
                 concentration_value=2.55,
@@ -214,12 +214,12 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 instrument="PFS / SPICAM",
                 mission="Mars Express",
                 observation_technique="Infrared Spectroscopy",
-                variability="Inerte",
-                status="DETECTADO",
-                scientific_significance="Atmósfera residual estable."
+                variability="Inert",
+                status="DETECTED",
+                scientific_significance="Stable residual atmosphere."
             ),
             GasMeasurement(
-                name="Argón",
+                name="Argon",
                 formula="Ar",
                 concentration="1.85%",
                 concentration_value=1.85,
@@ -228,12 +228,12 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 instrument="NOMAD / PFS",
                 mission="ExoMars TGO & MEX",
                 observation_technique="Thermal Spectral Inversion",
-                variability="Estable",
-                status="DETECTADO",
-                scientific_significance="Gas noble no reactivo."
+                variability="Stable",
+                status="DETECTED",
+                scientific_significance="Non-reactive noble gas."
             ),
             GasMeasurement(
-                name="Vapor de Agua",
+                name="Water Vapour",
                 formula="H2O",
                 concentration="140 ppm",
                 concentration_value=140.0,
@@ -242,12 +242,12 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 instrument="NOMAD (SO) / ACS",
                 mission="ExoMars 2016 Trace Gas Orbiter (TGO)",
                 observation_technique="Solar Occultation Profiling",
-                variability="Fluctuaciones diurnas por desorción del regolito caliente diurno",
-                status="VARIACIÓN ESTACIONAL",
-                scientific_significance="Humedad relativa que alcanza el 70% durante las gélidas noches de invierno en el fondo del cráter."
+                variability="Diurnal fluctuations from desorption of the warm daytime regolith",
+                status="SEASONAL VARIATION",
+                scientific_significance="Relative humidity reaches 70% during freezing winter nights on the crater floor."
             ),
             GasMeasurement(
-                name="Monóxido de Carbono",
+                name="Carbon Monoxide",
                 formula="CO",
                 concentration="820 ppm",
                 concentration_value=820.0,
@@ -256,40 +256,40 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 instrument="NOMAD LNO Channel",
                 mission="ExoMars 2016 Trace Gas Orbiter (TGO)",
                 observation_technique="Limb Mapping",
-                variability="Estacional",
-                status="DETECTADO",
-                scientific_significance="Subproducto de la disociación solar de CO2."
+                variability="Seasonal",
+                status="DETECTED",
+                scientific_significance="By-product of solar CO2 dissociation."
             ),
             GasMeasurement(
-                name="Metano (Picos de emisión Gale)",
+                name="Methane (Gale emission peaks)",
                 formula="CH4",
-                concentration="0.41 ppb base (con picos episódicos de hasta 21.0 ppb)",
+                concentration="0.41 ppb baseline (with episodic peaks up to 21.0 ppb)",
                 concentration_value=0.41,
                 concentration_unit="ppb",
                 percentage=0.000000041,
                 instrument="ACS MIR / NOMAD SO & MSL TLS Cross-check",
                 mission="ExoMars 2016 TGO / NASA MSL",
                 observation_technique="High-resolution absorption spectroscopy at 3.3 µm",
-                variability="Episódica: Detecciones esporádicas nocturnas reportadas en el corredor Gale",
-                status="PLUMA LOCAL",
-                scientific_significance="Enigma clave del archivo ESA/NASA: liberación estacional rítmica correlacionada con la temperatura superficial del regolito."
+                variability="Episodic: sporadic night-time detections reported in the Gale corridor",
+                status="LOCAL PLUME",
+                scientific_significance="Key ESA/NASA archive enigma: rhythmic seasonal release correlated with regolith surface temperature."
             ),
             GasMeasurement(
-                name="Cloruro de Hidrógeno",
+                name="Hydrogen Chloride",
                 formula="HCl",
-                concentration="1.8 - 4.0 ppb (detectado durante tormentas globales de polvo)",
+                concentration="1.8 - 4.0 ppb (detected during global dust storms)",
                 concentration_value=2.4,
                 concentration_unit="ppb",
                 percentage=0.00000024,
                 instrument="ACS MIR (Atmospheric Chemistry Suite)",
                 mission="ExoMars 2016 Trace Gas Orbiter (TGO)",
                 observation_technique="Solar Occultation infrared absorption",
-                variability="Exclusivamente activo durante tormentas globales de polvo",
-                status="DETECTADO",
-                scientific_significance="Descubrimiento histórico de ExoMars en PSA: primera molécula halógena en Marte, activada por la interacción de sales cloradas y polvo arrastrado por el viento."
+                variability="Active only during global dust storms",
+                status="DETECTED",
+                scientific_significance="Historic ExoMars discovery in the PSA: the first halogen molecule on Mars, activated by the interaction of chlorinated salts and wind-blown dust."
             ),
             GasMeasurement(
-                name="Ozono",
+                name="Ozone",
                 formula="O3",
                 concentration="18 ppb",
                 concentration_value=18.0,
@@ -298,12 +298,12 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 instrument="NOMAD UVIS",
                 mission="ExoMars 2016 Trace Gas Orbiter (TGO)",
                 observation_technique="UV Limb Sounder",
-                variability="Disminución drástica durante el verano austral",
-                status="TRAZA",
-                scientific_significance="Fotoquímica regulada por la radiación solar y aerosoles de hielo de agua."
+                variability="Sharp decrease during southern summer",
+                status="TRACE",
+                scientific_significance="Photochemistry regulated by solar radiation and water-ice aerosols."
             ),
             GasMeasurement(
-                name="Oxígeno Molecular",
+                name="Molecular Oxygen",
                 formula="O2",
                 concentration="0.16%",
                 concentration_value=0.16,
@@ -312,27 +312,27 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 instrument="SPICAM / NOMAD",
                 mission="Mars Express / ExoMars TGO",
                 observation_technique="Airglow spectroscopy",
-                variability="Subidas de hasta 30% en primavera marciana no explicadas por fotoquímica estándar",
-                status="DETECTADO",
-                scientific_significance="Comportamiento estacional no conservativo que desconcierta a la comunidad astrofísica internacional."
+                variability="Rises of up to 30% in Martian spring not explained by standard photochemistry",
+                status="DETECTED",
+                scientific_significance="Non-conservative seasonal behaviour that puzzles the international astrophysics community."
             )
         ],
         isotopic_ratios=[
             IsotopicRatio(
-                ratio="D/H en vapor de agua en Gale",
+                ratio="D/H in water vapour at Gale",
                 value="5.8 ± 0.4 VSMOW",
-                significance="Severa desvolatilización de agua histórica en el paleolago de Gale.",
+                significance="Severe historical water devolatilisation in the Gale palaeolake.",
                 instrument="NOMAD SO (ExoMars TGO)"
             )
         ],
         eva_assessment=EVAAtmosphericAssessment(
-            breathability="INHABITABLE - Requiere soporte vital EVA de circuito cerrado",
-            asphyxiation_hazard="Presión atmosférica de 840 Pa insuficiente para retener agua corporal líquida a 37°C (límite de Armstrong ~6.3 kPa). Traje EVA presurizado obligatorio.",
+            breathability="UNINHABITABLE - Requires closed-loop EVA life support",
+            asphyxiation_hazard="An atmospheric pressure of 840 Pa is not enough to keep body water liquid at 37°C (Armstrong limit ~6.3 kPa). A pressurised EVA suit is mandatory.",
             suit_pressure_delta_kpa=29.16,
-            isru_potential="Óptimo: Mayor densidad barométrica de la región ecuatorial, reduciendo la energía del compresor criogénico de CO2 para plantas de carburante ISRU.",
+            isru_potential="Optimal: the highest barometric density in the equatorial region, reducing cryogenic CO2 compressor energy for ISRU propellant plants.",
             toxicity_warnings=[
-                "Picos de HCl durante tormentas de polvo (gas ácido corrosivo)",
-                "Asfixia hipercapnica instantánea sin escafandra sellada"
+                "HCl peaks during dust storms (corrosive acid gas)",
+                "Instant hypercapnic asphyxia without a sealed suit"
             ]
         ),
         psa_search_url=f"{ESA_PSA_PORTAL_URL}?mission=ExoMars2016&instrument=NOMAD,ACS&target=Mars&lat=-4.589&lon=137.441",
@@ -349,7 +349,7 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
         total_detected_gases=7,
         gases=[
             GasMeasurement(
-                name="Dióxido de Carbono",
+                name="Carbon Dioxide",
                 formula="CO2",
                 concentration="95.60%",
                 concentration_value=95.60,
@@ -358,12 +358,12 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 instrument="PFS / NOMAD",
                 mission="Mars Express / ExoMars TGO",
                 observation_technique="Nadir IR Sounding",
-                variability="Columna atmosférica más densa de Marte",
-                status="DETECTADO",
-                scientific_significance="Presión barométrica superior a 1.05 kPa, la más elevada del planeta."
+                variability="Densest atmospheric column on Mars",
+                status="DETECTED",
+                scientific_significance="Barometric pressure above 1.05 kPa, the highest on the planet."
             ),
             GasMeasurement(
-                name="Vapor de Agua (Nieblas de cañón)",
+                name="Water Vapour (canyon fogs)",
                 formula="H2O",
                 concentration="320 ppm",
                 concentration_value=320.0,
@@ -372,12 +372,12 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 instrument="NOMAD LNO / ACS NIR",
                 mission="ExoMars 2016 Trace Gas Orbiter (TGO)",
                 observation_technique="High-resolution canyon limb profile",
-                variability="Nieblas matutinas condensadas en los valles profundos",
-                status="VARIACIÓN ESTACIONAL",
-                scientific_significance="TGO registró extensos bancos de nubes y nieblas de cristales de hielo de agua atrapadas en el fondo del cañón al amanecer."
+                variability="Morning fogs condensed in the deep valleys",
+                status="SEASONAL VARIATION",
+                scientific_significance="TGO recorded extensive cloud banks and water-ice crystal fogs trapped on the canyon floor at dawn."
             ),
             GasMeasurement(
-                name="Monóxido de Carbono",
+                name="Carbon Monoxide",
                 formula="CO",
                 concentration="680 ppm",
                 concentration_value=680.0,
@@ -386,12 +386,12 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 instrument="NOMAD LNO",
                 mission="ExoMars 2016 Trace Gas Orbiter (TGO)",
                 observation_technique="Limb Absorption",
-                variability="Moderada",
-                status="DETECTADO",
-                scientific_significance="Dinámica de mezcla vertical forzada por la topografía de fosa tectónica de 7 km de profundidad."
+                variability="Moderate",
+                status="DETECTED",
+                scientific_significance="Vertical mixing dynamics forced by the 7 km deep tectonic trough topography."
             ),
             GasMeasurement(
-                name="Nitrógeno Molecular",
+                name="Molecular Nitrogen",
                 formula="N2",
                 concentration="2.40%",
                 concentration_value=2.40,
@@ -400,12 +400,12 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 instrument="PFS",
                 mission="Mars Express",
                 observation_technique="Infrared Spectroscopy",
-                variability="Estable",
-                status="DETECTADO",
-                scientific_significance="Fondo atmosférico."
+                variability="Stable",
+                status="DETECTED",
+                scientific_significance="Atmospheric background."
             ),
             GasMeasurement(
-                name="Argón",
+                name="Argon",
                 formula="Ar",
                 concentration="1.80%",
                 concentration_value=1.80,
@@ -414,12 +414,12 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 instrument="PFS / NOMAD",
                 mission="Mars Express / ExoMars TGO",
                 observation_technique="Spectral Inversion",
-                variability="Estable",
-                status="DETECTADO",
-                scientific_significance="Gas inerte de referencia."
+                variability="Stable",
+                status="DETECTED",
+                scientific_significance="Reference inert gas."
             ),
             GasMeasurement(
-                name="Ozono",
+                name="Ozone",
                 formula="O3",
                 concentration="8 ppb",
                 concentration_value=8.0,
@@ -428,12 +428,12 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 instrument="NOMAD UVIS",
                 mission="ExoMars 2016 Trace Gas Orbiter (TGO)",
                 observation_technique="UV Limb",
-                variability="Muy deprimido debido a la alta concentración de radicales HOx procedentes del agua",
-                status="TRAZA",
-                scientific_significance="Demostración directa de la inhibición del ozono por humedad en microclimas de cañón."
+                variability="Strongly depleted due to the high concentration of water-derived HOx radicals",
+                status="TRACE",
+                scientific_significance="Direct demonstration of ozone inhibition by humidity in canyon microclimates."
             ),
             GasMeasurement(
-                name="Metano",
+                name="Methane",
                 formula="CH4",
                 concentration="< 0.05 ppb",
                 concentration_value=0.05,
@@ -442,27 +442,27 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 instrument="NOMAD SO / ACS MIR",
                 mission="ExoMars 2016 Trace Gas Orbiter (TGO)",
                 observation_technique="Solar Occultation",
-                variability="Por debajo del límite de detección instrumental de TGO",
-                status="LÍMITE SUPERIOR",
-                scientific_significance="Sin evidencia de filtraciones masivas de gas metano a lo largo de las grandes fallas tectónicas."
+                variability="Below the TGO instrument detection limit",
+                status="UPPER LIMIT",
+                scientific_significance="No evidence of massive methane seepage along the large tectonic faults."
             )
         ],
         isotopic_ratios=[
             IsotopicRatio(
-                ratio="18O / 16O en H2O",
+                ratio="18O / 16O in H2O",
                 value="δ18O = +35 ‰",
-                significance="Fraccionamiento isotópico por condensación cíclica de nieblas matutinas.",
+                significance="Isotopic fractionation from cyclic condensation of morning fogs.",
                 instrument="ACS MIR (ExoMars TGO)"
             )
         ],
         eva_assessment=EVAAtmosphericAssessment(
-            breathability="INHABITABLE - Atmósfera anóxica y asfixiante",
-            asphyxiation_hazard="Aunque la presión de 1.08 kPa es la más alta de Marte, sigue representando menos del 1.1% de la presión terrestre.",
+            breathability="UNINHABITABLE - Anoxic, asphyxiating atmosphere",
+            asphyxiation_hazard="Although 1.08 kPa is the highest pressure on Mars, it is still less than 1.1% of Earth's pressure.",
             suit_pressure_delta_kpa=28.92,
-            isru_potential="Excepcional: Mayor presión barométrica de Marte, ideal para tomas de aire atmosférico y condensación de agua a partir de las nieblas de hielo matinales.",
+            isru_potential="Exceptional: the highest barometric pressure on Mars, ideal for atmospheric air intakes and condensing water from morning ice fogs.",
             toxicity_warnings=[
-                "Riesgo de desorientación por nieblas densas matinales de hielo de agua",
-                "Gradiente térmico extremo entre el fondo del cañón y el borde superior"
+                "Risk of disorientation from dense morning water-ice fogs",
+                "Extreme thermal gradient between the canyon floor and the upper rim"
             ]
         ),
         psa_search_url=f"{ESA_PSA_PORTAL_URL}?mission=ExoMars2016&instrument=NOMAD,ACS&target=Mars&lat=-13.90&lon=300.80",
@@ -479,7 +479,7 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
         total_detected_gases=6,
         gases=[
             GasMeasurement(
-                name="Dióxido de Carbono",
+                name="Carbon Dioxide",
                 formula="CO2",
                 concentration="94.80%",
                 concentration_value=94.80,
@@ -488,40 +488,40 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 instrument="NOMAD SO / SPICAM",
                 mission="ExoMars 2016 TGO / Mars Express",
                 observation_technique="Solar Occultation Tangent Altitude Profile",
-                variability="Presión superficial extremadamente baja (<0.1 kPa)",
-                status="DETECTADO",
-                scientific_significance="Vacío casi absoluto a 21.3 km de altitud; condiciones similares a la estratosfera terrestre a 35 km."
+                variability="Extremely low surface pressure (<0.1 kPa)",
+                status="DETECTED",
+                scientific_significance="Near-absolute vacuum at 21.3 km altitude; conditions similar to Earth's stratosphere at 35 km."
             ),
             GasMeasurement(
-                name="Ozono (Capa de ozono de alta cota)",
+                name="Ozone (high-altitude ozone layer)",
                 formula="O3",
-                concentration="180 ppb (Capa nocturna concentrada)",
+                concentration="180 ppb (concentrated night-time layer)",
                 concentration_value=180.0,
                 concentration_unit="ppb",
                 percentage=0.000018,
                 instrument="NOMAD UVIS / SPICAM UV",
                 mission="ExoMars 2016 TGO / Mars Express",
                 observation_technique="UV Stellar and Solar Occultation",
-                variability="Fuerte acumulación nocturna sobre la cumbre volcánica",
-                status="DETECTADO",
-                scientific_significance="Descubrimiento de la capa de ozono de alta altitud en cumbres volcánicas protegidas del vapor de agua."
+                variability="Strong night-time build-up over the volcanic summit",
+                status="DETECTED",
+                scientific_significance="Discovery of a high-altitude ozone layer over volcanic summits shielded from water vapour."
             ),
             GasMeasurement(
-                name="Vapor de Agua",
+                name="Water Vapour",
                 formula="H2O",
-                concentration="< 15 ppm (Muy seco)",
+                concentration="< 15 ppm (very dry)",
                 concentration_value=15.0,
                 concentration_unit="ppm",
                 percentage=0.0015,
                 instrument="ACS MIR / NOMAD SO",
                 mission="ExoMars 2016 Trace Gas Orbiter (TGO)",
                 observation_technique="Solar Occultation",
-                variability="Desecación extrema; escarcha matinal de escasa duración observada por TGO",
-                status="TRAZA",
-                scientific_significance="La cima volcánica sobresale por encima de la capa de inversión de nubes de agua de Marte."
+                variability="Extreme desiccation; short-lived morning frost observed by TGO",
+                status="TRACE",
+                scientific_significance="The volcanic summit rises above the Martian water-cloud inversion layer."
             ),
             GasMeasurement(
-                name="Monóxido de Carbono",
+                name="Carbon Monoxide",
                 formula="CO",
                 concentration="1100 ppm",
                 concentration_value=1100.0,
@@ -530,12 +530,12 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 instrument="NOMAD LNO / ACS",
                 mission="ExoMars 2016 Trace Gas Orbiter (TGO)",
                 observation_technique="Solar Occultation",
-                variability="Enriquecido a gran altitud por intensa fotólisis solar UV",
-                status="DETECTADO",
-                scientific_significance="Alto índice de fotólisis directa de CO2 por radiación solar ultravioleta sin filtro atmosférico."
+                variability="Enriched at high altitude by intense solar UV photolysis",
+                status="DETECTED",
+                scientific_significance="High rate of direct CO2 photolysis by unfiltered solar ultraviolet radiation."
             ),
             GasMeasurement(
-                name="Nitrógeno Molecular",
+                name="Molecular Nitrogen",
                 formula="N2",
                 concentration="2.80%",
                 concentration_value=2.80,
@@ -544,12 +544,12 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 instrument="SPICAM",
                 mission="Mars Express",
                 observation_technique="Airglow",
-                variability="Estable",
-                status="DETECTADO",
-                scientific_significance="Fracción enriquecida en la alta atmósfera."
+                variability="Stable",
+                status="DETECTED",
+                scientific_significance="Enriched fraction in the upper atmosphere."
             ),
             GasMeasurement(
-                name="Argón",
+                name="Argon",
                 formula="Ar",
                 concentration="2.10%",
                 concentration_value=2.10,
@@ -558,28 +558,28 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 instrument="NOMAD SO",
                 mission="ExoMars 2016 Trace Gas Orbiter (TGO)",
                 observation_technique="Occultation",
-                variability="Estable",
-                status="DETECTADO",
-                scientific_significance="Perfil vertical de gas inerte."
+                variability="Stable",
+                status="DETECTED",
+                scientific_significance="Inert gas vertical profile."
             )
         ],
         isotopic_ratios=[
             IsotopicRatio(
-                ratio="13C / 12C a 21 km de altitud",
+                ratio="13C / 12C at 21 km altitude",
                 value="δ13C = +62 ‰",
-                significance="Máximo enriquecimiento isotópico por escape atómico al espacio cercano.",
+                significance="Maximum isotopic enrichment from atomic escape to near space.",
                 instrument="NOMAD SO (ExoMars TGO)"
             )
         ],
         eva_assessment=EVAAtmosphericAssessment(
-            breathability="INHABITABLE - Condiciones casi equivalentes al vacío espacial",
-            asphyxiation_hazard="Presión ambiente de apenas 72 Pa. Cualquier pérdida de presión en el traje EVA causaría ebullición instantánea de fluidos corporales (ebullismo).",
+            breathability="UNINHABITABLE - Conditions close to the vacuum of space",
+            asphyxiation_hazard="Ambient pressure of only 72 Pa. Any EVA suit pressure loss would cause instant boiling of body fluids (ebullism).",
             suit_pressure_delta_kpa=29.93,
-            isru_potential="Muy Bajo: La extrema delgadez del aire requiere compresores masivos de varias etapas para captar suficiente CO2.",
+            isru_potential="Very low: the extremely thin air requires massive multi-stage compressors to capture enough CO2.",
             toxicity_warnings=[
-                "Vacío crítico: fallo de traje letal en segundos",
-                "Radiación UV letal y sin filtrado (ozono no ofrece apantallamiento diurno)",
-                "Temperatura superficial gélida con radiación cósmica sin amortiguación barométrica"
+                "Critical vacuum: suit failure is lethal within seconds",
+                "Lethal, unfiltered UV radiation (ozone provides no daytime shielding)",
+                "Freezing surface temperature with cosmic radiation and no barometric shielding"
             ]
         ),
         psa_search_url=f"{ESA_PSA_PORTAL_URL}?mission=ExoMars2016&instrument=NOMAD,ACS&target=Mars&lat=18.65&lon=226.20",
@@ -592,53 +592,53 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
         coordinates=Coordinates(latitude=84.50, longitude=0.0, elevation_m=-4000.0),
         surface_pressure_pa=780.0,
         mean_surface_temp_c=-95.0,
-        dominant_gas="CO2 / H2O estacional",
+        dominant_gas="Seasonal CO2 / H2O",
         total_detected_gases=7,
         gases=[
             GasMeasurement(
-                name="Dióxido de Carbono",
+                name="Carbon Dioxide",
                 formula="CO2",
-                concentration="93.80% (Verano) a 96.20% (Invierno)",
+                concentration="93.80% (summer) to 96.20% (winter)",
                 concentration_value=93.80,
                 concentration_unit="%",
                 percentage=93.80,
                 instrument="PFS (MEX) & NOMAD",
                 mission="Mars Express / ExoMars TGO",
                 observation_technique="Nadir & Occultation Spectroscopy",
-                variability="Ciclo masivo de sublimación/deposición que controla el 25% de la masa atmosférica del planeta",
-                status="DETECTADO",
-                scientific_significance="Motor termodinámico principal del sistema climático marciano."
+                variability="Massive sublimation/deposition cycle controlling 25% of the planet's atmospheric mass",
+                status="DETECTED",
+                scientific_significance="Main thermodynamic engine of the Martian climate system."
             ),
             GasMeasurement(
-                name="Vapor de Agua",
+                name="Water Vapour",
                 formula="H2O",
-                concentration="420 ppm (Pico estacional durante sublimación veraniega)",
+                concentration="420 ppm (seasonal peak during summer sublimation)",
                 concentration_value=420.0,
                 concentration_unit="ppm",
                 percentage=0.042,
                 instrument="SPICAM / NOMAD (SO) / ACS NIR",
                 mission="Mars Express & ExoMars TGO",
                 observation_technique="Solar Occultation & Nadir Mapping",
-                variability="Máximo global planetario de vapor de agua en el solsticio de verano boreal (Ls = 90°-130°)",
-                status="VARIACIÓN ESTACIONAL",
-                scientific_significance="El casquete polar boreal residual está compuesto de hielo de agua puro que alimenta la humedad del hemisferio norte."
+                variability="Planet-wide water vapour maximum at the northern summer solstice (Ls = 90°-130°)",
+                status="SEASONAL VARIATION",
+                scientific_significance="The residual north polar cap is made of pure water ice that feeds northern-hemisphere humidity."
             ),
             GasMeasurement(
-                name="Ozono",
+                name="Ozone",
                 formula="O3",
-                concentration="260 ppb (Máximo de noche polar invernal)",
+                concentration="260 ppb (winter polar night maximum)",
                 concentration_value=260.0,
                 concentration_unit="ppb",
                 percentage=0.000026,
                 instrument="SPICAM UV / NOMAD UVIS",
                 mission="Mars Express / ExoMars TGO",
                 observation_technique="UV Stellar Occultation in Polar Night",
-                variability="Capa masiva de ozono invernal que desaparece abruptamente en primavera con la radiación solar",
-                status="DETECTADO",
-                scientific_significance="Máxima columna de ozono detectada en todo Marte, acumulada durante la larga y fría noche polar."
+                variability="Massive winter ozone layer that vanishes abruptly in spring with solar radiation",
+                status="DETECTED",
+                scientific_significance="The largest ozone column detected on Mars, built up during the long, cold polar night."
             ),
             GasMeasurement(
-                name="Nitrógeno Molecular",
+                name="Molecular Nitrogen",
                 formula="N2",
                 concentration="3.20%",
                 concentration_value=3.20,
@@ -647,12 +647,12 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 instrument="PFS",
                 mission="Mars Express",
                 observation_technique="Thermal IR",
-                variability="Enriquecido durante el invierno polar cuando el CO2 se congela en el suelo",
-                status="DETECTADO",
-                scientific_significance="Enriquecimiento relativo por condensación de gases mayores."
+                variability="Enriched during polar winter when CO2 freezes onto the ground",
+                status="DETECTED",
+                scientific_significance="Relative enrichment from condensation of major gases."
             ),
             GasMeasurement(
-                name="Argón",
+                name="Argon",
                 formula="Ar",
                 concentration="2.40%",
                 concentration_value=2.40,
@@ -661,12 +661,12 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 instrument="NOMAD / PFS",
                 mission="ExoMars TGO / MEX",
                 observation_technique="Atmospheric Inversion",
-                variability="Enriquecimiento invernal",
-                status="DETECTADO",
-                scientific_significance="Trazador dinámico de vórtice polar marciano."
+                variability="Winter enrichment",
+                status="DETECTED",
+                scientific_significance="Dynamic tracer of the Martian polar vortex."
             ),
             GasMeasurement(
-                name="Monóxido de Carbono",
+                name="Carbon Monoxide",
                 formula="CO",
                 concentration="450 ppm",
                 concentration_value=450.0,
@@ -675,41 +675,41 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 instrument="NOMAD LNO",
                 mission="ExoMars 2016 Trace Gas Orbiter (TGO)",
                 observation_technique="Limb sounding",
-                variability="Deprimido en la columna polar",
-                status="DETECTADO",
-                scientific_significance="Circulación Hadley meridional descendente sobre el polo."
+                variability="Depleted in the polar column",
+                status="DETECTED",
+                scientific_significance="Descending meridional Hadley circulation over the pole."
             ),
             GasMeasurement(
-                name="Metano",
+                name="Methane",
                 formula="CH4",
-                concentration="< 0.035 ppb (Sin detección)",
+                concentration="< 0.035 ppb (not detected)",
                 concentration_value=0.035,
                 concentration_unit="ppb",
                 percentage=0.0000000035,
                 instrument="ACS MIR / NOMAD SO",
                 mission="ExoMars 2016 Trace Gas Orbiter (TGO)",
                 observation_technique="Solar Occultation through Polar Atmosphere",
-                variability="Nivel no detectable",
-                status="LÍMITE SUPERIOR",
-                scientific_significance="Confirma ausencia de emisión o atrapamiento biogénico masivo en el hielo polar perenne."
+                variability="Undetectable level",
+                status="UPPER LIMIT",
+                scientific_significance="Confirms the absence of massive biogenic emission or trapping in the perennial polar ice."
             )
         ],
         isotopic_ratios=[
             IsotopicRatio(
-                ratio="D/H en hielo polar sublimado",
+                ratio="D/H in sublimated polar ice",
                 value="5.0 ± 0.3 VSMOW",
-                significance="Firma isotópica del reservorio de agua más masivo y joven de la superficie marciana.",
+                significance="Isotopic signature of the largest and youngest water reservoir on the Martian surface.",
                 instrument="NOMAD SO (ExoMars TGO)"
             )
         ],
         eva_assessment=EVAAtmosphericAssessment(
-            breathability="INHABITABLE - Temperaturas criogénicas y atmósfera anóxica",
-            asphyxiation_hazard="Temperaturas de hasta -125°C en invierno con deposición activa de escarcha de hielo seco (CO2 sólido). Riesgo crítico de congelación del sistema de soporte vital de la escafandra.",
+            breathability="UNINHABITABLE - Cryogenic temperatures and an anoxic atmosphere",
+            asphyxiation_hazard="Winter temperatures down to -125°C with active dry-ice frost deposition (solid CO2). Critical risk of the suit life-support system freezing.",
             suit_pressure_delta_kpa=29.22,
-            isru_potential="Extraordinario: Disponibilidad directa tanto de hielo de agua superficial masivo para electrolizadores como de CO2 abundante.",
+            isru_potential="Extraordinary: direct access to both massive surface water ice for electrolysers and abundant CO2.",
             toxicity_warnings=[
-                "Frío extremo capaz de despresurizar juntas y sellos de trajes EVA por contracción térmica",
-                "Sublimación estacional súbita de gas que genera chorros locales y géiseres de CO2"
+                "Extreme cold able to depressurise EVA suit joints and seals through thermal contraction",
+                "Sudden seasonal gas sublimation producing local jets and CO2 geysers"
             ]
         ),
         psa_search_url=f"{ESA_PSA_PORTAL_URL}?mission=ExoMars2016&instrument=NOMAD,ACS&target=Mars&lat=84.50&lon=0.0",
@@ -726,7 +726,7 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
         total_detected_gases=8,
         gases=[
             GasMeasurement(
-                name="Dióxido de Carbono",
+                name="Carbon Dioxide",
                 formula="CO2",
                 concentration="95.75%",
                 concentration_value=95.75,
@@ -735,26 +735,26 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 instrument="PFS (MEX) & ACS",
                 mission="Mars Express & ExoMars TGO",
                 observation_technique="Nadir Thermal Sounding",
-                variability="Máxima presión de superficie registrada en todo el planeta (>1.16 kPa)",
-                status="DETECTADO",
-                scientific_significance="Depresión colosal de más de 7 km de profundidad; único punto en Marte donde la presión supera el punto triple del agua (611.65 Pa) de forma constante."
+                variability="Highest surface pressure recorded on the whole planet (>1.16 kPa)",
+                status="DETECTED",
+                scientific_significance="A colossal depression more than 7 km deep; the only place on Mars where pressure constantly exceeds the triple point of water (611.65 Pa)."
             ),
             GasMeasurement(
-                name="Cloruro de Hidrógeno (HCl)",
+                name="Hydrogen Chloride (HCl)",
                 formula="HCl",
-                concentration="3.2 - 4.8 ppb (Pico detectado por TGO)",
+                concentration="3.2 - 4.8 ppb (peak detected by TGO)",
                 concentration_value=3.8,
                 concentration_unit="ppb",
                 percentage=0.00000038,
                 instrument="ACS MIR (Atmospheric Chemistry Suite)",
                 mission="ExoMars 2016 Trace Gas Orbiter (TGO)",
                 observation_technique="Solar Occultation",
-                variability="Altamente correlacionado con el inicio de tormentas de polvo en la cuenca de Hellas",
-                status="DETECTADO",
-                scientific_significance="Hellas es la principal cuna y semillero de tormentas de polvo marcianas; la fricción electrostática de sales cloradas descompone vapor de agua y genera HCl gaseoso."
+                variability="Highly correlated with the onset of dust storms in the Hellas basin",
+                status="DETECTED",
+                scientific_significance="Hellas is the main birthplace and breeding ground of Martian dust storms; electrostatic friction of chlorinated salts breaks down water vapour and produces gaseous HCl."
             ),
             GasMeasurement(
-                name="Vapor de Agua",
+                name="Water Vapour",
                 formula="H2O",
                 concentration="190 ppm",
                 concentration_value=190.0,
@@ -763,12 +763,12 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 instrument="NOMAD LNO / ACS",
                 mission="ExoMars 2016 Trace Gas Orbiter (TGO)",
                 observation_technique="Nadir Column Abundance",
-                variability="Moderada-Alta con formación frecuente de nubes de baja cota",
-                status="VARIACIÓN ESTACIONAL",
-                scientific_significance="Bancos de niebla y nubes orográficas en las laderas escarpadas de la cuenca."
+                variability="Moderate-high with frequent low-altitude cloud formation",
+                status="SEASONAL VARIATION",
+                scientific_significance="Fog banks and orographic clouds on the steep slopes of the basin."
             ),
             GasMeasurement(
-                name="Monóxido de Carbono",
+                name="Carbon Monoxide",
                 formula="CO",
                 concentration="620 ppm",
                 concentration_value=620.0,
@@ -777,12 +777,12 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 instrument="NOMAD LNO",
                 mission="ExoMars 2016 Trace Gas Orbiter (TGO)",
                 observation_technique="Nadir IR",
-                variability="Deprimido por circulación descendente de aire frío",
-                status="DETECTADO",
-                scientific_significance="Inversiones térmicas frecuentes en el interior de la cuenca."
+                variability="Depleted by descending cold-air circulation",
+                status="DETECTED",
+                scientific_significance="Frequent thermal inversions inside the basin."
             ),
             GasMeasurement(
-                name="Nitrógeno Molecular",
+                name="Molecular Nitrogen",
                 formula="N2",
                 concentration="2.35%",
                 concentration_value=2.35,
@@ -791,12 +791,12 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 instrument="PFS",
                 mission="Mars Express",
                 observation_technique="Infrared Spectroscopy",
-                variability="Estable",
-                status="DETECTADO",
-                scientific_significance="Fondo molecular."
+                variability="Stable",
+                status="DETECTED",
+                scientific_significance="Molecular background."
             ),
             GasMeasurement(
-                name="Argón",
+                name="Argon",
                 formula="Ar",
                 concentration="1.75%",
                 concentration_value=1.75,
@@ -805,12 +805,12 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 instrument="PFS / NOMAD",
                 mission="Mars Express / ExoMars TGO",
                 observation_technique="Spectral Retrieval",
-                variability="Estable",
-                status="DETECTADO",
-                scientific_significance="Gas inerte."
+                variability="Stable",
+                status="DETECTED",
+                scientific_significance="Inert gas."
             ),
             GasMeasurement(
-                name="Ozono",
+                name="Ozone",
                 formula="O3",
                 concentration="14 ppb",
                 concentration_value=14.0,
@@ -819,12 +819,12 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 instrument="NOMAD UVIS",
                 mission="ExoMars 2016 Trace Gas Orbiter (TGO)",
                 observation_technique="UV Limb",
-                variability="Baja",
-                status="TRAZA",
-                scientific_significance="Fotoquímica moderada."
+                variability="Low",
+                status="TRACE",
+                scientific_significance="Moderate photochemistry."
             ),
             GasMeasurement(
-                name="Metano",
+                name="Methane",
                 formula="CH4",
                 concentration="< 0.05 ppb",
                 concentration_value=0.05,
@@ -834,26 +834,26 @@ MARTIAN_ATMOSPHERIC_ZONES: List[ZoneAtmosphericAnalysis] = [
                 mission="ExoMars 2016 Trace Gas Orbiter (TGO)",
                 observation_technique="Solar Occultation",
                 variability="No detectable",
-                status="LÍMITE SUPERIOR",
-                scientific_significance="Límite superior riguroso establecido por el archivo PSA de ESA."
+                status="UPPER LIMIT",
+                scientific_significance="Strict upper limit established by the ESA PSA archive."
             )
         ],
         isotopic_ratios=[
             IsotopicRatio(
-                ratio="D/H en cuenca profunda",
+                ratio="D/H in the deep basin",
                 value="5.6 ± 0.5 VSMOW",
-                significance="Acumulación de aire denso con ratio D/H representativo del promedio planetario actual.",
+                significance="Dense air accumulation with a D/H ratio representative of the current planetary average.",
                 instrument="NOMAD SO (ExoMars TGO)"
             )
         ],
         eva_assessment=EVAAtmosphericAssessment(
-            breathability="INHABITABLE - Asfixia letal inmediata",
-            asphyxiation_hazard="La presión barométrica más alta de Marte (1.16 kPa) reduce el estrés de despresurización respecto a mesetas, pero sigue siendo un vacío biológico letal.",
+            breathability="UNINHABITABLE - Immediate lethal asphyxia",
+            asphyxiation_hazard="The highest barometric pressure on Mars (1.16 kPa) reduces decompression stress compared with plateaus, but it is still a lethal biological vacuum.",
             suit_pressure_delta_kpa=28.84,
-            isru_potential="Excelente: Máximo rendimiento termodinámico para plantas compresoras de CO2 y mayor facilidad para condensación de vapor de agua.",
+            isru_potential="Excellent: maximum thermodynamic efficiency for CO2 compressor plants and easier water vapour condensation.",
             toxicity_warnings=[
-                "Tormentas de polvo cataclísmicas que se generan en esta cuenca con emisión de gas ácido HCl",
-                "Visibilidad degradada a cero por polvo denso en suspensión durante el perihelio austral"
+                "Cataclysmic dust storms form in this basin, releasing acidic HCl gas",
+                "Visibility drops to zero due to dense suspended dust during southern perihelion"
             ]
         ),
         psa_search_url=f"{ESA_PSA_PORTAL_URL}?mission=ExoMars2016&instrument=NOMAD,ACS&target=Mars&lat=-42.70&lon=70.0",
@@ -913,7 +913,7 @@ class PSAService:
                         "NOMAD (Nadir and Occultation for MArs Discovery)",
                         "ACS (Atmospheric Chemistry Suite)"
                     ],
-                    "focus": "Detección ultra-sensible de gases traza (CH4, H2O, O3, HCl, isotopólogos)"
+                    "focus": "Ultra-sensitive trace-gas detection (CH4, H2O, O3, HCl, isotopologues)"
                 },
                 {
                     "name": "Mars Express (MEX)",
@@ -921,21 +921,21 @@ class PSAService:
                         "PFS (Planetary Fourier Spectrometer)",
                         "SPICAM (Spectroscopy for Investigation of Characteristics of the Atmosphere of Mars)"
                     ],
-                    "focus": "Estructura térmica vertical y balance global de CO2, N2, O2 y O3"
+                    "focus": "Vertical thermal structure and global balance of CO2, N2, O2 and O3"
                 }
             ],
             "global_composition": [
-                {"gas": "Dióxido de Carbono (CO2)", "formula": "CO2", "fraction": "95.32%", "type": "Componente principal"},
-                {"gas": "Nitrógeno Molecular (N2)", "formula": "N2", "fraction": "2.60%", "type": "Inerte"},
-                {"gas": "Argón (Ar)", "formula": "Ar", "fraction": "1.90%", "type": "Inerte"},
-                {"gas": "Oxígeno Molecular (O2)", "formula": "O2", "fraction": "0.16%", "type": "Variabilidad estacional anómala"},
-                {"gas": "Monóxido de Carbono (CO)", "formula": "CO", "fraction": "~700-800 ppm", "type": "Fotólisis solar"},
-                {"gas": "Vapor de Agua (H2O)", "formula": "H2O", "fraction": "10 - 450 ppm", "type": "Ciclo hidrológico altamente estacional"},
-                {"gas": "Ozono (O3)", "formula": "O3", "fraction": "10 - 300 ppb", "type": "Anticorrelación con H2O, capa nocturna polar"},
-                {"gas": "Metano (CH4)", "formula": "CH4", "fraction": "<0.05 ppb (fondo) / picos de ~10-20 ppb", "type": "Enigma astrobiológico prioritario"},
-                {"gas": "Cloruro de Hidrógeno (HCl)", "formula": "HCl", "fraction": "1 - 4 ppb", "type": "Activado estacionalmente por tormentas globales de polvo"}
+                {"gas": "Carbon Dioxide (CO2)", "formula": "CO2", "fraction": "95.32%", "type": "Main component"},
+                {"gas": "Molecular Nitrogen (N2)", "formula": "N2", "fraction": "2.60%", "type": "Inert"},
+                {"gas": "Argon (Ar)", "formula": "Ar", "fraction": "1.90%", "type": "Inert"},
+                {"gas": "Molecular Oxygen (O2)", "formula": "O2", "fraction": "0.16%", "type": "Anomalous seasonal variability"},
+                {"gas": "Carbon Monoxide (CO)", "formula": "CO", "fraction": "~700-800 ppm", "type": "Solar photolysis"},
+                {"gas": "Water Vapour (H2O)", "formula": "H2O", "fraction": "10 - 450 ppm", "type": "Highly seasonal hydrological cycle"},
+                {"gas": "Ozone (O3)", "formula": "O3", "fraction": "10 - 300 ppb", "type": "Anticorrelated with H2O, polar night layer"},
+                {"gas": "Methane (CH4)", "formula": "CH4", "fraction": "<0.05 ppb (background) / peaks of ~10-20 ppb", "type": "Priority astrobiology enigma"},
+                {"gas": "Hydrogen Chloride (HCl)", "formula": "HCl", "fraction": "1 - 4 ppb", "type": "Seasonally activated by global dust storms"}
             ],
-            "human_survivability_note": "La atmósfera marciana es totalmente asfixiante e inhabitable. Requiere soporte vital EVA autónomo, trajes con contrapresión constante y sistemas cerrados de reciclaje de O2."
+            "human_survivability_note": "The Martian atmosphere is fully asphyxiating and uninhabitable. It requires autonomous EVA life support, constant counter-pressure suits and closed-loop O2 recycling systems."
         }
 
     @staticmethod

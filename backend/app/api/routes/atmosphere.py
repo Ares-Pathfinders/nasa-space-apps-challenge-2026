@@ -15,8 +15,8 @@ router = APIRouter(prefix="/atmosphere", tags=["Martian Atmospheric Gases (ESA P
 @router.get(
     "/zones",
     response_model=PSAAtmosphericResponse,
-    summary="Obtener análisis de gases atmosféricos por zonas (ESA Planetary Science Archive)",
-    description="Retorna la composición de gases atmosféricos detectados en distintas zonas de Marte a partir de datos del Planetary Science Archive (PSA) de la ESA (ExoMars TGO NOMAD/ACS y Mars Express PFS/SPICAM)."
+    summary="Get atmospheric gas analysis by zone (ESA Planetary Science Archive)",
+    description="Returns the atmospheric gas composition detected in different Mars zones from ESA Planetary Science Archive (PSA) data (ExoMars TGO NOMAD/ACS and Mars Express PFS/SPICAM)."
 )
 def get_all_atmospheric_zones():
     return PSAService.get_all_zones()
@@ -24,26 +24,26 @@ def get_all_atmospheric_zones():
 @router.get(
     "/zones/{zone_id}",
     response_model=ZoneAtmosphericAnalysis,
-    summary="Obtener gases atmosféricos de una zona específica",
-    description="Retorna el detalle espectroscópico de gases, ratios isotópicos y evaluación para astronautas de una zona marciana específica."
+    summary="Get the atmospheric gases of a specific zone",
+    description="Returns the spectroscopic gas detail, isotopic ratios and astronaut assessment for a specific Martian zone."
 )
 def get_zone_by_id(zone_id: str):
     zone = PSAService.get_zone_by_id(zone_id)
     if not zone:
         raise HTTPException(
             status_code=404,
-            detail=f"Zona '{zone_id}' no encontrada. Zonas disponibles: jezero-crater-delta, mount-sharp-gale-crater, valles-marineris-canyon, olympus-mons-caldera, planum-boreum-north-polar, hellas-planitia-basin"
+            detail=f"Zone '{zone_id}' not found. Available zones: jezero-crater-delta, mount-sharp-gale-crater, valles-marineris-canyon, olympus-mons-caldera, planum-boreum-north-polar, hellas-planitia-basin"
         )
     return zone
 
 @router.get(
     "/query",
-    summary="Buscar gases en la zona más próxima a unas coordenadas marcianas",
-    description="A partir de una latitud y longitud en Marte, localiza la zona espectrométrica analizada más cercana y reporta la composición atmosférica y los gases presentes."
+    summary="Find gases in the zone closest to Martian coordinates",
+    description="Given a latitude and longitude on Mars, finds the closest analysed spectrometry zone and reports its atmospheric composition and gases."
 )
 def query_atmosphere_by_coordinates(
-    latitude: float = Query(..., ge=-90.0, le=90.0, description="Latitud marciana (-90 a +90)"),
-    longitude: float = Query(..., ge=-180.0, le=360.0, description="Longitud marciana (-180 a +360)")
+    latitude: float = Query(..., ge=-90.0, le=90.0, description="Martian latitude (-90 to +90)"),
+    longitude: float = Query(..., ge=-180.0, le=360.0, description="Martian longitude (-180 to +360)")
 ):
     # Normalize longitude to [-180, 180] if provided in [0, 360]
     norm_lon = longitude
@@ -53,22 +53,22 @@ def query_atmosphere_by_coordinates(
 
 @router.get(
     "/summary",
-    summary="Resumen global de gases en Marte e impacto para astronautas",
-    description="Proporciona un balance global de las especies químicas en la atmósfera marciana, misiones de la ESA involucradas y consideraciones para soporte vital EVA."
+    summary="Global summary of Martian gases and impact on astronauts",
+    description="Provides a global balance of chemical species in the Martian atmosphere, the ESA missions involved and EVA life-support considerations."
 )
 def get_gas_summary():
     return PSAService.get_gas_summary()
 
 @router.get(
     "/portal-link",
-    summary="Generar enlace de búsqueda directa al Planetary Science Archive (PSA)",
-    description="Genera la URL con parámetros de búsqueda para inspeccionar los conjuntos de datos en la interfaz web oficial de la ESA PSA."
+    summary="Generate a direct search link to the Planetary Science Archive (PSA)",
+    description="Builds the URL with search parameters to inspect the datasets in the official ESA PSA web interface."
 )
 def get_psa_portal_link(
-    mission: str = Query(default="ExoMars2016", description="Misión (ExoMars2016, MarsExpress)"),
-    instrument: str = Query(default="NOMAD,ACS", description="Instrumentos (NOMAD, ACS, PFS, SPICAM)"),
-    target: str = Query(default="Mars", description="Cuerpo celeste de destino"),
-    zone_id: Optional[str] = Query(default=None, description="Identificador opcional de zona para filtrar por coordenadas")
+    mission: str = Query(default="ExoMars2016", description="Mission (ExoMars2016, MarsExpress)"),
+    instrument: str = Query(default="NOMAD,ACS", description="Instruments (NOMAD, ACS, PFS, SPICAM)"),
+    target: str = Query(default="Mars", description="Target body"),
+    zone_id: Optional[str] = Query(default=None, description="Optional zone identifier to filter by coordinates")
 ):
     base_url = f"{ESA_PSA_PORTAL_URL}?mission={mission}&instrument={instrument}&target={target}"
     if zone_id:
@@ -83,13 +83,13 @@ def get_psa_portal_link(
 
 @router.get(
     "/tap-query",
-    summary="Ejecutar consulta ADQL vía Table Access Protocol (TAP) de la ESA",
-    description="Envía una consulta en lenguaje ADQL al protocolo TAP del archivo PSA de la ESA (o retorna el estado si se opera offline)."
+    summary="Run an ADQL query via the ESA Table Access Protocol (TAP)",
+    description="Sends an ADQL query to the ESA PSA archive TAP endpoint (or returns the status when running offline)."
 )
 async def run_tap_query(
     adql: str = Query(
         default="SELECT TOP 5 obs_id, instrument_name, target_name FROM psa.epn_core WHERE instrument_name LIKE '%NOMAD%'",
-        description="Sentencia ADQL para la tabla psa.epn_core de la ESA"
+        description="ADQL statement for the ESA psa.epn_core table"
     )
 ):
     return await PSAService.query_esa_psa_tap(adql_query=adql)

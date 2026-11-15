@@ -43,20 +43,20 @@ from backend.terrain.cell_graph import CellGraphBuilder
 FRONTEND_DIST_DIR = os.path.join(REPO_ROOT, "frontend", "dist")
 TERRAIN_CACHE_FILE = os.path.join(os.path.dirname(__file__), "terrain_analysis_output.json")
 GALE_TERRAIN_SOURCE = {
-    "name": "Modelo 3D (STL) del cráter Gale georreferenciado con MOLA/HRSC",
+    "name": "Gale Crater 3D model (STL) georeferenced against MOLA/HRSC",
     "url": "https://astrogeology.usgs.gov/search/map/mars_mgs_mola_mex_hrsc_blended_dem_global_200m",
     "method": (
-        "Relieve del STL (513x513, ~400-530 m) ajustado al DEM MOLA/HRSC blend de 200 m; "
-        "pendiente de celda = percentil 75 de la pendiente real dentro de la celda."
+        "STL relief (513x513, ~400-530 m) fitted to the 200 m MOLA/HRSC blended DEM; "
+        "cell slope = 75th percentile of the real slope inside the cell."
     ),
 }
 GALE_MAX_RESOLUTION = 256
-# Ruta por defecto en Gale: de Bradbury Landing a las laderas del Monte Sharp.
+# Default Gale route: from Bradbury Landing to the slopes of Mount Sharp.
 GALE_DEFAULT_ROUTE = ((-4.5895, 137.4417), (-4.90, 137.45))
 JEZERO_TERRAIN_SOURCE = {
-    "name": "Modelo sintético de terreno de Jezero (no DEM medido)",
+    "name": "Synthetic Jezero terrain model (not a measured DEM)",
     "url": "https://mars.nasa.gov/",
-    "method": "Topografía procedural demostrativa; no representa mediciones orbitales.",
+    "method": "Procedural demonstration topography; does not represent orbital measurements.",
 }
 
 
@@ -81,7 +81,7 @@ def _nearest_passable_cell(grid, builder, cell, max_radius=2):
 
 @lru_cache(maxsize=6)
 def _gale_terrain(resolution: int, max_slope: float):
-    """Retícula, pendientes y grafo de Gale (desde el STL), cacheados por parámetros."""
+    """Gale grid, slopes and graph (from the STL), cached per parameters."""
     grid = generate_gale_crater_elevation_grid(resolution_rows=resolution, resolution_cols=resolution)
     analyzer = SlopeAnalyzer(grid, max_slope_deg=max_slope)
     builder = CellGraphBuilder(grid, analyzer, slope_penalty_weight=3.5)
@@ -371,7 +371,7 @@ class AresNavHandler(SimpleHTTPRequestHandler):
             return
 
         if zone == "jezero":
-            resolution = min(resolution, 100)  # la retícula de Jezero llega a 100x100
+            resolution = min(resolution, 100)  # the Jezero grid goes up to 100x100
         max_resolution = GALE_MAX_RESOLUTION if zone == "gale" else 100
         if not 20 <= resolution <= max_resolution:
             self._send_json({"error": f"resolution must be between 20 and {max_resolution}."}, status=400)

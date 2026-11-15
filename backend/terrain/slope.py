@@ -24,7 +24,7 @@ class SlopeAnalyzer:
         self.grid = grid
         self.max_slope_deg = float(max_slope_deg)
         if slope_deg_matrix is None:
-            # Pendiente precalculada por la propia retícula (p. ej. Gale desde el STL 3D).
+            # Slope precomputed by the grid itself (e.g. Gale from the 3D STL).
             slope_deg_matrix = getattr(grid, "slope_deg", None)
         self._uses_external_slope = slope_deg_matrix is not None
         if slope_deg_matrix is None:

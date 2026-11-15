@@ -1,7 +1,7 @@
 @echo off
 rem ========================================================
-rem    ARES-Nav // Compila el frontend y arranca el servidor
-rem    (equivale a: python start.py)
+rem    ARES-Nav // Build the frontend and start the server
+rem    (same as: python start.py)
 rem ========================================================
 cd /d "%~dp0"
 

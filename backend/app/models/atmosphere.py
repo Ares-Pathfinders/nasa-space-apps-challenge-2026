@@ -13,7 +13,7 @@ class GasMeasurement(BaseModel):
     mission: str = Field(..., description="ESA mission (e.g., ExoMars 2016 TGO, Mars Express)")
     observation_technique: str = Field(..., description="Technique: Solar Occultation, Nadir Spectroscopy, Limb Sounding")
     variability: str = Field(..., description="Temporal/seasonal variability pattern")
-    status: str = Field(..., description="Detection status: 'DETECTADO', 'TRAZA', 'VARIACIÓN ESTACIONAL', 'PLUMA LOCAL', 'LÍMITE SUPERIOR'")
+    status: str = Field(..., description="Detection status: 'DETECTED', 'TRACE', 'SEASONAL VARIATION', 'LOCAL PLUME', 'UPPER LIMIT'")
     scientific_significance: str = Field(..., description="Scientific, astrobiological or geochemical context")
 
 class IsotopicRatio(BaseModel):
@@ -36,7 +36,7 @@ class ZoneAtmosphericAnalysis(BaseModel):
     coordinates: Coordinates = Field(..., description="Latitude, longitude and MOLA elevation")
     surface_pressure_pa: float = Field(..., description="Average surface atmospheric pressure in Pascals")
     mean_surface_temp_c: float = Field(..., description="Average ambient temperature in Celsius")
-    dominant_gas: str = Field(default="CO2 (Dióxido de Carbono)", description="Primary atmospheric constituent")
+    dominant_gas: str = Field(default="CO2 (Carbon Dioxide)", description="Primary atmospheric constituent")
     total_detected_gases: int = Field(..., description="Total count of monitored chemical species")
     gases: List[GasMeasurement] = Field(..., description="Detailed breakdown of detected and trace gases")
     isotopic_ratios: List[IsotopicRatio] = Field(default_factory=list, description="Isotopic ratio telemetry")

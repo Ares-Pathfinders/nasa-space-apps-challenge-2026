@@ -10,18 +10,18 @@ from ..terrain.grid import ElevationGrid
 from ..terrain.slope import SlopeAnalyzer
 from .terrain_errors import TerrainDataError
 
-# Relieve real del cráter Gale: el mismo modelo STL que usa la vista 3D del visor
-# táctico (frontend/src/tactical/terrain3d.ts). El STL no trae coordenadas; se
-# georreferenció ajustándolo al DEM MOLA/HRSC blend de 200 m (correlación 0,9998).
-# Es una rejilla de 513x513 alturas con el norte hacia +Y y
-# z_stl = GALE_STL_ELEV_SCALE * elevación_m + GALE_STL_ELEV_OFFSET.
+# Real Gale Crater relief: the same STL model used by the tactical viewer's 3D view
+# (frontend/src/tactical/terrain3d.ts). The STL has no coordinates; it was
+# georeferenced by fitting it to the 200 m MOLA/HRSC blended DEM (correlation 0.9998).
+# It is a 513x513 height grid with north towards +Y and
+# z_stl = GALE_STL_ELEV_SCALE * elevation_m + GALE_STL_ELEV_OFFSET.
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 GALE_STL_PATH = os.path.join(REPO_ROOT, "frontend", "public", "models", "gale_crater.stl")
 GALE_STL_GRID = 513
-GALE_STL_ELEV_SCALE = 0.00147483  # unidades STL por metro
+GALE_STL_ELEV_SCALE = 0.00147483  # STL units per metre
 GALE_STL_ELEV_OFFSET = 8.426
 
-# La retícula cubre todo el modelo 3D (cráter Gale completo, ~210 x 275 km).
+# The grid covers the whole 3D model (all of Gale Crater, ~210 x 275 km).
 GALE_MIN_LAT = -7.84402
 GALE_MAX_LAT = -3.21708
 GALE_MIN_LON = 135.97957
@@ -62,9 +62,9 @@ def fetch_or_cache_curiosity_waypoints(cache_dir: Optional[str] = None) -> list:
 @lru_cache(maxsize=1)
 def _load_gale_stl_terrain() -> Tuple[np.ndarray, np.ndarray]:
     """
-    Lee el STL binario y devuelve (elevación_m, pendiente_deg) a resolución nativa
-    (513x513, fila 0 = norte). La pendiente se calcula con el método de Horn sobre
-    las alturas reales (sin exageración vertical).
+    Reads the binary STL and returns (elevation_m, slope_deg) at native resolution
+    (513x513, row 0 = north). Slope is computed with Horn's method on the real
+    heights (no vertical exaggeration).
     """
     try:
         with open(GALE_STL_PATH, "rb") as stl_file:
@@ -75,12 +75,12 @@ def _load_gale_stl_terrain() -> Tuple[np.ndarray, np.ndarray]:
                 dtype=np.dtype([("normal", "<f4", 3), ("vertices", "<f4", (3, 3)), ("attr", "<u2")]),
             )
     except (OSError, IndexError, ValueError) as error:
-        raise TerrainDataError(f"No se pudo leer el modelo STL de Gale ({GALE_STL_PATH}): {error}") from error
+        raise TerrainDataError(f"Could not read the Gale STL model ({GALE_STL_PATH}): {error}") from error
 
     vertices = triangles["vertices"].reshape(-1, 3).astype(np.float64)
-    surface = vertices[vertices[:, 2] > 0]  # descarta la base plana del sólido
+    surface = vertices[vertices[:, 2] > 0]  # drop the flat base of the solid
     if surface.size == 0:
-        raise TerrainDataError("El modelo STL de Gale no contiene superficie de relieve.")
+        raise TerrainDataError("The Gale STL model contains no relief surface.")
 
     n = GALE_STL_GRID
     x, y, z = surface[:, 0], surface[:, 1], surface[:, 2]
@@ -89,7 +89,7 @@ def _load_gale_stl_terrain() -> Tuple[np.ndarray, np.ndarray]:
     stl_height = np.full((n, n), np.nan)
     stl_height[(n - 1) - rows_from_south, cols] = z
     if np.isnan(stl_height).any():
-        raise TerrainDataError("El modelo STL de Gale no es una rejilla regular de 513x513 alturas.")
+        raise TerrainDataError("The Gale STL model is not a regular 513x513 height grid.")
 
     elevation = (stl_height - GALE_STL_ELEV_OFFSET) / GALE_STL_ELEV_SCALE
     native_grid = ElevationGrid(
@@ -105,7 +105,7 @@ def _load_gale_stl_terrain() -> Tuple[np.ndarray, np.ndarray]:
 
 @lru_cache(maxsize=8)
 def _footprint_slope(window_rows: int, window_cols: int) -> np.ndarray:
-    """Percentil 75 de la pendiente nativa en una ventana del tamaño de la celda."""
+    """75th percentile of the native slope in a cell-sized window."""
     _, slope = _load_gale_stl_terrain()
     return percentile_filter(slope, 75, size=(window_rows, window_cols), mode="nearest")
 
@@ -119,27 +119,27 @@ def generate_gale_crater_elevation_grid(
     max_lon: float = GALE_MAX_LON,
 ) -> ElevationGrid:
     """
-    Retícula de elevación del cráter Gale a partir del modelo 3D (STL) georreferenciado.
+    Gale Crater elevation grid built from the georeferenced 3D model (STL).
 
-    - La elevación de cada celda se interpola bilinealmente en el relieve del STL.
-    - La pendiente de cada celda es el percentil 75 de las pendientes reales del STL
-      dentro de la huella de la celda: una celda gruesa no "suaviza" una pared
-      escarpada, pero un único píxel ruidoso tampoco la bloquea. Va en
-      ``ElevationGrid.slope_deg`` y la usa SlopeAnalyzer.
+    - Each cell's elevation is bilinearly interpolated from the STL relief.
+    - Each cell's slope is the 75th percentile of the real STL slopes inside the
+      cell footprint: a coarse cell does not "smooth away" a steep wall, but a single
+      noisy pixel does not block it either. It is stored in
+      ``ElevationGrid.slope_deg`` and used by SlopeAnalyzer.
     """
     if resolution_rows < 2 or resolution_cols < 2:
-        raise ValueError("La retícula necesita al menos 2x2 celdas.")
+        raise ValueError("The grid needs at least 2x2 cells.")
     elevation, slope = _load_gale_stl_terrain()
     n = GALE_STL_GRID
 
-    lats = np.linspace(max_lat, min_lat, resolution_rows)  # fila 0 = norte
-    lons = np.linspace(min_lon, max_lon, resolution_cols)  # columna 0 = oeste
+    lats = np.linspace(max_lat, min_lat, resolution_rows)  # row 0 = north
+    lons = np.linspace(min_lon, max_lon, resolution_cols)  # column 0 = west
     native_rows = (GALE_MAX_LAT - lats) / (GALE_MAX_LAT - GALE_MIN_LAT) * (n - 1)
     native_cols = (lons - GALE_MIN_LON) / (GALE_MAX_LON - GALE_MIN_LON) * (n - 1)
     row_grid, col_grid = np.meshgrid(native_rows, native_cols, indexing="ij")
     cell_elevation = map_coordinates(elevation, [row_grid, col_grid], order=1, mode="nearest")
 
-    # Huella de una celda en píxeles nativos (semiancho redondeado hacia arriba).
+    # Cell footprint in native pixels (half-width rounded up).
     half_rows = int(np.ceil(abs(native_rows[1] - native_rows[0]) / 2))
     half_cols = int(np.ceil(abs(native_cols[1] - native_cols[0]) / 2))
     footprint_slope = _footprint_slope(2 * half_rows + 1, 2 * half_cols + 1)

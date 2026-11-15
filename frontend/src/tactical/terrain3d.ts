@@ -1,22 +1,22 @@
 /**
- * Vista "Relieve 3D" del visor táctico (tactical.html), estilo Google Earth.
+ * "3D relief" view of the tactical viewer (tactical.html), Google Earth style.
  *
- * Usa el modelo public/models/gale_crater.stl como relieve y le superpone las
- * imágenes MMGIS de Gale: el color sale del CTX 6 m con el tinte del mapa 2D y,
- * en el corredor de Curiosity, el detalle de CTX/HiRISE se aplica sólo como
- * luminancia para que no haya cambios bruscos de color. Encima van las rutas y
- * los hitos que haya en el mapa.
+ * Uses public/models/gale_crater.stl as terrain and drapes the Gale MMGIS
+ * imagery over it: colour comes from the 6 m CTX mosaic with the 2D map tint and,
+ * over the Curiosity corridor, CTX/HiRISE detail is applied as luminance only so
+ * there are no abrupt colour changes. Routes and waypoints from the map are drawn
+ * on top.
  *
- * El STL no trae coordenadas. Su posición se obtuvo ajustándolo al DEM
- * MOLA/HRSC blend de 200 m (correlación 0,9998): es una rejilla de 513×513 alturas,
- * con el norte hacia +Y, que cubre la caja STL_BOUNDS. Su Z sigue
- * z = ELEV_SCALE · elevación(m) + ELEV_OFFSET (≈2,9× de exageración de fábrica).
+ * The STL has no coordinates. Its position was obtained by fitting it to the
+ * 200 m MOLA/HRSC blended DEM (correlation 0.9998): it is a 513×513 height grid,
+ * north towards +Y, covering the STL_BOUNDS box. Its Z follows
+ * z = ELEV_SCALE · elevation(m) + ELEV_OFFSET (≈2.9× built-in vertical exaggeration).
  */
 import * as THREE from 'three';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-// ---- Globales del script clásico de tactical.html (Leaflet) ----------------
+// ---- Globals from the classic tactical.html script (Leaflet) ---------------
 type LatLng = { lat: number; lng: number };
 type LeafletLayer = {
   getLatLngs?: () => LatLng[] | LatLng[][];
@@ -35,10 +35,10 @@ type LeafletMap = {
 declare const map: LeafletMap;
 declare const layers: Record<'route' | 'customRoute' | 'returnRoute' | 'wps', LeafletLayer>;
 
-// ---- Georreferenciación del STL --------------------------------------------
+// ---- STL georeferencing -----------------------------------------------------
 const MODEL_URL = `${import.meta.env.BASE_URL}models/gale_crater.stl`;
 const STL_BOUNDS = { west: 135.97957, east: 139.49492, south: -7.84402, north: -3.21708 };
-const ELEV_SCALE = 0.00147483; // unidades STL por metro
+const ELEV_SCALE = 0.00147483; // STL units per metre
 const ELEV_OFFSET = 8.426;
 const GRID = 513;
 
@@ -48,10 +48,10 @@ const CENTER_LAT = (STL_BOUNDS.north + STL_BOUNDS.south) / 2;
 const CENTER_LON = (STL_BOUNDS.west + STL_BOUNDS.east) / 2;
 const COS_LAT = Math.cos((CENTER_LAT * Math.PI) / 180);
 
-// Zona de alta resolución (corredor de Curiosity / cuadrícula táctica).
+// High-resolution area (Curiosity corridor / tactical grid).
 const DETAIL_BOUNDS = { west: 137.25, east: 137.61, south: -4.84, north: -4.47 };
-const OVERVIEW_ZOOM = 10; // ≈80 m/px sobre todo el STL
-const DETAIL_ZOOM = 13; // ≈10 m/px en el corredor
+const OVERVIEW_ZOOM = 10; // ≈80 m/px over the whole STL
+const DETAIL_ZOOM = 13; // ≈10 m/px over the corridor
 
 const GALE_LAYERS = {
   ctx: 'https://mars.nasa.gov/mmgis-maps/MSL/Layers/MSL_CTX_ortho_mosaic_6m/{z}/{x}/{y}.png',
@@ -69,7 +69,7 @@ function sceneToLonLat(x: number, z: number): [number, number] {
 // ---- DOM ------------------------------------------------------------------
 function $(id: string): HTMLElement {
   const el = document.getElementById(id);
-  if (!el) throw new Error(`[terrain3d] Falta el elemento #${id}`);
+  if (!el) throw new Error(`[terrain3d] Missing element #${id}`);
   return el;
 }
 
@@ -82,13 +82,13 @@ const zoneSelect = $('zone') as HTMLSelectElement;
 const basemapSelect = $('basemap') as HTMLSelectElement;
 const mapElement = $('map');
 
-// ---- Estado ---------------------------------------------------------------
+// ---- State ----------------------------------------------------------------
 let renderer: THREE.WebGLRenderer | null = null;
 let scene: THREE.Scene;
 let camera: THREE.PerspectiveCamera;
 let controls: OrbitControls;
 let terrain: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial> | null = null;
-let heights: Float32Array | null = null; // elevación en km, fila 0 = norte
+let heights: Float32Array | null = null; // elevation in km, row 0 = north
 let overlayGroup = new THREE.Group();
 let overlaySignature = '';
 let active = false;
@@ -106,18 +106,18 @@ function setStatus(text: string) {
   status.hidden = !text;
 }
 
-// ---- Relieve desde el STL --------------------------------------------------
+// ---- Terrain from the STL --------------------------------------------------
 async function loadHeights(): Promise<Float32Array> {
-  setStatus('Descargando modelo de relieve del cráter Gale…');
+  setStatus('Downloading Gale Crater terrain model…');
   const geometry = await new STLLoader().loadAsync(MODEL_URL, (event) => {
     if (event.lengthComputable) {
-      setStatus(`Descargando modelo de relieve del cráter Gale… ${Math.round((event.loaded / event.total) * 100)}%`);
+      setStatus(`Downloading Gale Crater terrain model… ${Math.round((event.loaded / event.total) * 100)}%`);
     }
   });
   const pos = geometry.getAttribute('position');
   let xMin = Infinity, xMax = -Infinity, yMin = Infinity, yMax = -Infinity;
   for (let i = 0; i < pos.count; i += 1) {
-    if (pos.getZ(i) <= 0) continue; // base del sólido
+    if (pos.getZ(i) <= 0) continue; // base of the solid
     const x = pos.getX(i), y = pos.getY(i);
     if (x < xMin) xMin = x;
     if (x > xMax) xMax = x;
@@ -136,7 +136,7 @@ async function loadHeights(): Promise<Float32Array> {
   return grid;
 }
 
-/** Elevación (km) en una coordenada, interpolada bilinealmente. */
+/** Elevation (km) at a coordinate, bilinearly interpolated. */
 function elevationAt(lon: number, lat: number): number {
   if (!heights) return 0;
   const fx = Math.min(GRID - 1, Math.max(0, ((lon - STL_BOUNDS.west) / (STL_BOUNDS.east - STL_BOUNDS.west)) * (GRID - 1)));
@@ -181,7 +181,7 @@ function buildTerrainGeometry(grid: Float32Array): THREE.BufferGeometry {
   return geometry;
 }
 
-// ---- Imágenes: tiles MMGIS (TMS Mercator) compuestos en un canvas -----------
+// ---- Imagery: MMGIS tiles (TMS Mercator) composited on a canvas ------------
 type Bounds = { west: number; east: number; south: number; north: number };
 
 function loadImage(url: string): Promise<HTMLImageElement | null> {
@@ -208,13 +208,13 @@ const rowToLat = (row: number, n: number) => (Math.atan(Math.sinh(Math.PI * (1 -
 
 type ImageryLayer = { url: string; alpha: number; filter: string };
 
-// Color: CTX con el mismo tinte que el mapa 2D (ver galeImageryLayer en tactical.html).
-// Sin HiRISE ni rótulos, para que todo el cráter tenga un tono uniforme y realista.
+// Colour: CTX with the same tint as the 2D map (see galeImageryLayer in tactical.html).
+// No HiRISE or labels, so the whole crater has a uniform, realistic tone.
 const OVERVIEW_STACK: ImageryLayer[] = [
   { url: GALE_LAYERS.ctx, alpha: 0.72, filter: 'sepia(.72) saturate(1.55) hue-rotate(326deg) brightness(.92)' },
 ];
-// Detalle: sólo aporta luces y sombras (luminancia). El color lo pone la textura general,
-// así las franjas grises y los quads en color de HiRISE no producen saltos de tono.
+// Detail: only contributes light and shade (luminance). Colour comes from the overview
+// texture, so HiRISE grey strips and colour quads do not cause tone jumps.
 const DETAIL_STACK: ImageryLayer[] = [
   { url: GALE_LAYERS.ctx, alpha: 1, filter: 'grayscale(1)' },
   { url: GALE_LAYERS.hirise, alpha: 1, filter: 'grayscale(1)' },
@@ -232,7 +232,7 @@ async function composeImagery(
   canvas.width = Math.ceil((bounds.east - bounds.west) / degPerPx);
   canvas.height = Math.ceil((bounds.north - bounds.south) / degPerPx);
   const ctx = canvas.getContext('2d')!;
-  ctx.fillStyle = '#70463d'; // mismo fondo que #map
+  ctx.fillStyle = '#70463d'; // same background as #map
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   const colStart = Math.floor(((bounds.west + 180) / 360) * n);
@@ -278,7 +278,7 @@ function canvasTexture(canvas: HTMLCanvasElement): THREE.Texture {
   return texture;
 }
 
-// ---- Escena ---------------------------------------------------------------
+// ---- Scene ----------------------------------------------------------------
 function initScene() {
   renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -294,16 +294,16 @@ function initScene() {
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
-  controls.screenSpacePanning = false; // desplazar sobre el plano, como Google Earth
+  controls.screenSpacePanning = false; // pan along the ground plane, like Google Earth
   controls.maxPolarAngle = Math.PI * 0.47;
   controls.minDistance = 0.4;
   controls.maxDistance = 700;
   controls.zoomSpeed = 1.4;
-  // Como Google Earth: arrastrar desplaza; clic derecho (o Ctrl+arrastrar) gira e inclina.
+  // Like Google Earth: drag pans; right-click (or Ctrl+drag) rotates and tilts.
   controls.mouseButtons = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
   controls.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE };
 
-  // Las imágenes ya traen sombreado: luz ambiente alta y un sol suave.
+  // The imagery already has shading: strong ambient light and a soft sun.
   scene.add(new THREE.HemisphereLight('#fff4e6', '#4a2a1a', 1.7));
   const sun = new THREE.DirectionalLight('#fff1dc', 1.1);
   sun.position.set(-300, 400, -200);
@@ -338,10 +338,10 @@ function createTerrainMaterial(): THREE.MeshStandardMaterial {
         #ifdef USE_MAP
         vec2 detailUv = (vMapUv - detailRect.xy) / (detailRect.zw - detailRect.xy);
         if (detailReady > 0.5 && all(greaterThanEqual(detailUv, vec2(0.0))) && all(lessThanEqual(detailUv, vec2(1.0)))) {
-          // Funde el borde del parche de detalle con la textura general.
+          // Blend the edge of the detail patch into the overview texture.
           vec2 edge = smoothstep(vec2(0.0), vec2(0.15), detailUv) * smoothstep(vec2(0.0), vec2(0.15), 1.0 - detailUv);
-          // Transferencia de detalle: color de la textura general × (luminancia local del
-          // detalle / su media en ~300 m, leída de un mipmap borroso).
+          // Detail transfer: overview colour × (local detail luminance /
+          // its ~300 m mean, read from a blurred mipmap).
           const vec3 LUMA = vec3(0.2126, 0.7152, 0.0722);
           float detailLuma = dot(texture2D(detailMap, detailUv).rgb, LUMA);
           float detailMean = max(dot(texture2D(detailMap, detailUv, 5.0).rgb, LUMA), 0.002);
@@ -356,7 +356,7 @@ function createTerrainMaterial(): THREE.MeshStandardMaterial {
 
 async function loadEverything() {
   heights = await loadHeights();
-  setStatus('Construyendo relieve…');
+  setStatus('Building terrain…');
   const material = createTerrainMaterial();
   terrain = new THREE.Mesh(buildTerrainGeometry(heights), material);
   applyExaggeration();
@@ -365,15 +365,15 @@ async function loadEverything() {
   flyToMapView();
 
   const overview = await composeImagery(STL_BOUNDS, OVERVIEW_ZOOM, OVERVIEW_STACK, (d, t) =>
-    setStatus(`Proyectando imágenes CTX/HiRISE sobre el relieve… ${Math.round((d / t) * 100)}%`),
+    setStatus(`Draping CTX/HiRISE imagery over the terrain… ${Math.round((d / t) * 100)}%`),
   );
   material.map = canvasTexture(overview);
   material.color.set('#ffffff');
   material.needsUpdate = true;
-  setStatus('Cargando detalle del corredor de Curiosity…');
+  setStatus('Loading Curiosity corridor detail…');
 
   const detail = await composeImagery(DETAIL_BOUNDS, DETAIL_ZOOM, DETAIL_STACK, (d, t) =>
-    setStatus(`Cargando detalle del corredor de Curiosity… ${Math.round((d / t) * 100)}%`),
+    setStatus(`Loading Curiosity corridor detail… ${Math.round((d / t) * 100)}%`),
   );
   const lonSpan = STL_BOUNDS.east - STL_BOUNDS.west, latSpan = STL_BOUNDS.north - STL_BOUNDS.south;
   detailUniforms.detailMap.value = canvasTexture(detail);
@@ -394,7 +394,7 @@ function applyExaggeration() {
   overlayGroup.scale.y = factor;
 }
 
-// ---- Rutas e hitos del mapa 2D sobre el relieve -------------------------------
+// ---- 2D map routes and waypoints on the terrain -----------------------------
 function collect(layer: LeafletLayer, out: LeafletLayer[]) {
   if (layer.eachLayer) layer.eachLayer((child) => collect(child, out));
   else out.push(layer);
@@ -425,14 +425,14 @@ function refreshOverlays(force = false) {
   });
   overlayGroup.clear();
 
-  // Altura sobre el terreno en km (pre-exageración) para que no se hundan.
+  // Height above the terrain in km (before exaggeration) so they do not sink.
   const lift = 0.025;
   for (const layer of sources) {
     const color = new THREE.Color(layer.options?.color ?? '#45f3ff');
     if (layer.getLatLngs) {
       const flat = (layer.getLatLngs() as Array<LatLng | LatLng[]>).flat() as LatLng[];
       if (flat.length < 2) continue;
-      // Ignora los halos anchos semitransparentes; el trazo principal basta en 3D.
+      // Skip the wide semi-transparent halos; the main stroke is enough in 3D.
       if ((layer.options?.opacity ?? 1) < 0.5) continue;
       const points = flat.map(({ lat, lng }) => {
         const [x, z] = lonLatToScene(lng, lat);
@@ -454,18 +454,18 @@ function refreshOverlays(force = false) {
   }
 }
 
-// ---- Cámara sincronizada con el mapa 2D -----------------------------------
+// ---- Camera synced with the 2D map -----------------------------------------
 function flyToMapView() {
   const center = map.getCenter();
   const lon = Math.min(STL_BOUNDS.east, Math.max(STL_BOUNDS.west, center.lng));
   const lat = Math.min(STL_BOUNDS.north, Math.max(STL_BOUNDS.south, center.lat));
-  // Ancho visible del mapa EPSG:4326 de Leaflet: 256·2^z px cada 180°.
+  // Visible width of the Leaflet EPSG:4326 map: 256·2^z px per 180°.
   const widthKm = ((map.getSize().x * 180) / (256 * 2 ** map.getZoom())) * KM_PER_DEG * COS_LAT;
   const distance = Math.min(600, Math.max(1.5, widthKm / (2 * Math.tan((camera.fov * Math.PI) / 360) * camera.aspect)));
   const [x, z] = lonLatToScene(lon, lat);
   const y = elevationAt(lon, lat) * Number(exaggeration.value);
   controls.target.set(x, y, z);
-  const tilt = (50 * Math.PI) / 180; // inclinación inicial desde la vertical
+  const tilt = (50 * Math.PI) / 180; // initial tilt from vertical
   camera.position.set(x, y + distance * Math.cos(tilt), z + distance * Math.sin(tilt));
   controls.update();
 }
@@ -475,7 +475,7 @@ function syncMapToCamera() {
   map.setView([lat, lon], map.getZoom(), { animate: false });
 }
 
-// ---- Bucle y activación ---------------------------------------------------
+// ---- Render loop and activation --------------------------------------------
 let lastOverlayCheck = 0;
 function animate(time: number) {
   animationId = requestAnimationFrame(animate);
@@ -491,7 +491,7 @@ function setActive(next: boolean) {
   active = next;
   container.hidden = !next;
   mapElement.style.visibility = next ? 'hidden' : '';
-  toggleButton.textContent = next ? '🗺️ MAPA 2D' : '🏔️ RELIEVE 3D';
+  toggleButton.textContent = next ? '🗺️ 2D MAP' : '🏔️ 3D RELIEF';
   toggleButton.setAttribute('aria-pressed', String(next));
   cancelAnimationFrame(animationId);
   if (next) {
@@ -500,7 +500,7 @@ function setActive(next: boolean) {
     if (!loadPromise) {
       loadPromise = loadEverything().catch((error) => {
         console.error('[terrain3d]', error);
-        setStatus('No se pudo cargar el relieve 3D. Vuelve a pulsar «Relieve 3D» para reintentar.');
+        setStatus('Could not load the 3D relief. Press "3D relief" again to retry.');
         loadPromise = null;
       });
     } else if (terrain) {
@@ -515,10 +515,10 @@ function setActive(next: boolean) {
 }
 
 function syncAvailability() {
-  // El relieve sólo existe para Gale y usa las imágenes del mapa predeterminado.
+  // The relief only exists for Gale and uses the default map imagery.
   const available = zoneSelect.value === 'gale';
   toggleButton.disabled = !available;
-  toggleButton.title = available ? 'Ver el cráter Gale en 3D con las imágenes del satélite' : 'Relieve 3D disponible sólo para el cráter Gale';
+  toggleButton.title = available ? 'View Gale Crater in 3D with satellite imagery' : '3D relief is only available for Gale Crater';
   toggleButton.style.opacity = available ? '' : '0.45';
   if (!available && active) setActive(false);
 }

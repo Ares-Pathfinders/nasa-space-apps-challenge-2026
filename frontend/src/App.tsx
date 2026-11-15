@@ -86,7 +86,7 @@ function App() {
         </div>
         <div className="hidden items-center gap-6 md:flex">
           <div className="text-right"><p className="text-[9px] uppercase tracking-widest text-slate-500">Mission clock</p><p className="font-display text-xs text-hud-cyan">SOL 1000 / 14:32 LMST</p></div>
-          <div className="flex items-center gap-2 border-l border-slate-700 pl-5 text-[10px] uppercase tracking-widest text-slate-400"><Wifi size={14} className={apiOnline ? 'text-hud-green' : 'text-amber-400'} /> {apiOnline ? 'Conexión con la central' : 'Sin conexión con la central'}</div>
+          <div className="flex items-center gap-2 border-l border-slate-700 pl-5 text-[10px] uppercase tracking-widest text-slate-400"><Wifi size={14} className={apiOnline ? 'text-hud-green' : 'text-amber-400'} /> {apiOnline ? 'Connected to mission control' : 'No connection to mission control'}</div>
         </div>
       </header>
 
@@ -97,7 +97,7 @@ function App() {
               src={`/tactical.html?zone=${selectedRover === 'perseverance' ? 'jezero' : 'gale'}`}
               className="w-full h-full border-0"
               allow="fullscreen"
-              title="Mapa táctica de Marte"
+              title="Mars tactical map"
             />
           </div>
           {(localMapPhase === 'handoff' || localMapPhase === 'ready') && (
@@ -114,7 +114,7 @@ function App() {
                 onClick={handleCloseLocalMap}
                 className="hud-panel mx-auto flex items-center gap-2 border border-hud-cyan bg-black/90 px-6 py-2.5 font-display text-xs tracking-wider text-hud-cyan hover:bg-hud-cyan/20"
               >
-                <span>🌐</span> <span>VOLVER A VISTA GLOBAL 3D</span>
+                <span>🌐</span> <span>BACK TO 3D GLOBE VIEW</span>
               </button>
             </div>
           )}
@@ -122,8 +122,8 @@ function App() {
       )}
 
       {localMapPhase === 'global' && (
-        <section aria-label="Seleccionar rover" className="hud-panel absolute bottom-6 left-6 z-20 w-64 p-3">
-          <p className="mb-2 font-display text-[9px] uppercase tracking-[0.18em] text-slate-400">Seleccionar rover</p>
+        <section aria-label="Select rover" className="hud-panel absolute bottom-6 left-6 z-20 w-64 p-3">
+          <p className="mb-2 font-display text-[9px] uppercase tracking-[0.18em] text-slate-400">Select rover</p>
           <div className="grid gap-2">
             <button
               onClick={() => handleOpenLocalMap('curiosity')}
