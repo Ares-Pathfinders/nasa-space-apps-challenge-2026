@@ -7,9 +7,9 @@ import requests
 
 from ..terrain.grid import ElevationGrid
 
-# Curiosity Landing Site (Bradbury Landing) & 5 km expansion around the corridor
+# Curiosity Landing Site (Bradbury Landing) & 25 km expansion around the corridor
 MARS_RADIUS_KM = 3389.5
-ANALYSIS_MARGIN_KM = 5.0
+ANALYSIS_MARGIN_KM = 25.0
 GALE_BASE_MIN_LAT = -4.750
 GALE_BASE_MAX_LAT = -4.560
 GALE_BASE_MIN_LON = 137.340

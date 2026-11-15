@@ -1,3 +1,4 @@
+import math
 from io import BytesIO
 from unittest.mock import Mock, patch
 
@@ -30,15 +31,52 @@ def test_gale_grid_uses_float32_elevation_from_nasa_export():
 
 
 def test_default_grids_cover_expanded_expedition_areas():
-    with patch.object(gale, "_fetch_gale_elevation", return_value=np.zeros((2, 2))):
-        gale_grid = gale.generate_gale_crater_elevation_grid()
-    with patch.object(jezero, "_sample_jezero_elevation", return_value=np.zeros((2, 2))):
-        jezero_grid = jezero.generate_jezero_crater_elevation_grid()
+    for module, grid, base_bounds in (
+        (
+            gale,
+            gale.generate_gale_crater_elevation_grid(),
+            (
+                gale.GALE_BASE_MIN_LAT,
+                gale.GALE_BASE_MAX_LAT,
+                gale.GALE_BASE_MIN_LON,
+                gale.GALE_BASE_MAX_LON,
+                gale.GALE_CENTER_LAT,
+            ),
+        ),
+        (
+            jezero,
+            jezero.generate_jezero_crater_elevation_grid(),
+            (
+                jezero.JEZERO_BASE_MIN_LAT,
+                jezero.JEZERO_BASE_MAX_LAT,
+                jezero.JEZERO_BASE_MIN_LON,
+                jezero.JEZERO_BASE_MAX_LON,
+                jezero.JEZERO_CENTER_LAT,
+            ),
+        ),
+    ):
+        base_min_lat, base_max_lat, base_min_lon, base_max_lon, center_lat = base_bounds
+        lat_margin_km = math.radians(base_min_lat - grid.min_lat) * module.MARS_RADIUS_KM
+        lon_margin_km = (
+            math.radians(base_min_lon - grid.min_lon)
+            * module.MARS_RADIUS_KM
+            * math.cos(math.radians(center_lat))
+        )
 
-    assert (gale_grid.min_lat, gale_grid.max_lat) == (-4.925, -4.249)
-    assert (gale_grid.min_lon, gale_grid.max_lon) == (137.1225, 137.7298)
-    assert (jezero_grid.min_lat, jezero_grid.max_lat) == (18.270, 18.490)
-    assert (jezero_grid.min_lon, jezero_grid.max_lon) == (77.445, 77.655)
+        assert math.isclose(lat_margin_km, 25.0, abs_tol=1e-9)
+        assert math.isclose(lon_margin_km, 25.0, abs_tol=1e-9)
+        assert math.isclose(
+            math.radians(grid.max_lat - base_max_lat) * module.MARS_RADIUS_KM,
+            25.0,
+            abs_tol=1e-9,
+        )
+        assert math.isclose(
+            math.radians(grid.max_lon - base_max_lon)
+            * module.MARS_RADIUS_KM
+            * math.cos(math.radians(center_lat)),
+            25.0,
+            abs_tol=1e-9,
+        )
 
 
 def test_jezero_pds_range_decodes_little_endian_float_and_skips_nodata():
