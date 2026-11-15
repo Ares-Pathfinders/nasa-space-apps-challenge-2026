@@ -24,7 +24,13 @@ type LeafletLayer = {
   options?: { color?: string; fillColor?: string; weight?: number; opacity?: number };
   eachLayer?: (fn: (layer: LeafletLayer) => void) => void;
 };
+type LeafletBounds = {
+  getCenter: () => LatLng;
+  getNorth: () => number;
+  getSouth: () => number;
+};
 type LeafletMap = {
+  getBounds: () => LeafletBounds;
   getCenter: () => LatLng;
   getZoom: () => number;
   getSize: () => { x: number; y: number };
@@ -38,6 +44,9 @@ declare const layers: Record<'route' | 'customRoute' | 'returnRoute' | 'wps', Le
 // ---- STL georeferencing -----------------------------------------------------
 const MODEL_URL = `${import.meta.env.BASE_URL}models/gale_crater.stl`;
 const STL_BOUNDS = { west: 135.97957, east: 139.49492, south: -7.84402, north: -3.21708 };
+// Only the part of the STL with map imagery is drawn (MSL CTX mosaic ends at ~-3.40° N).
+// Same bounds as the tactical grid (GALE_MIN/MAX_* in backend/data/gale_crater_topography.py).
+const IMAGERY_BOUNDS = { west: 135.99, east: 139.476, south: -7.834, north: -3.41 };
 const ELEV_SCALE = 0.00147483; // STL units per metre
 const ELEV_OFFSET = 8.426;
 const GRID = 513;
@@ -149,27 +158,39 @@ function elevationAt(lon: number, lat: number): number {
 }
 
 function buildTerrainGeometry(grid: Float32Array): THREE.BufferGeometry {
+  // Sub-grid of STL samples inside IMAGERY_BOUNDS; UVs stay relative to the full STL
+  // so the overview texture (which covers STL_BOUNDS) stays aligned.
+  const toCol = (lon: number) => ((lon - STL_BOUNDS.west) / (STL_BOUNDS.east - STL_BOUNDS.west)) * (GRID - 1);
+  const toRow = (lat: number) => ((STL_BOUNDS.north - lat) / (STL_BOUNDS.north - STL_BOUNDS.south)) * (GRID - 1);
+  const colStart = Math.max(0, Math.ceil(toCol(IMAGERY_BOUNDS.west)));
+  const colEnd = Math.min(GRID - 1, Math.floor(toCol(IMAGERY_BOUNDS.east)));
+  const rowStart = Math.max(0, Math.ceil(toRow(IMAGERY_BOUNDS.north)));
+  const rowEnd = Math.min(GRID - 1, Math.floor(toRow(IMAGERY_BOUNDS.south)));
+  const cols = colEnd - colStart + 1;
+  const rows = rowEnd - rowStart + 1;
+
   const [x0, z0] = lonLatToScene(STL_BOUNDS.west, STL_BOUNDS.north);
   const [x1, z1] = lonLatToScene(STL_BOUNDS.east, STL_BOUNDS.south);
-  const positions = new Float32Array(GRID * GRID * 3);
-  const uvs = new Float32Array(GRID * GRID * 2);
-  for (let row = 0; row < GRID; row += 1) {
-    for (let col = 0; col < GRID; col += 1) {
-      const i = row * GRID + col;
+  const positions = new Float32Array(rows * cols * 3);
+  const uvs = new Float32Array(rows * cols * 2);
+  for (let r = 0; r < rows; r += 1) {
+    for (let c = 0; c < cols; c += 1) {
+      const i = r * cols + c;
+      const row = rowStart + r, col = colStart + c;
       const u = col / (GRID - 1), v = row / (GRID - 1);
       positions[i * 3] = x0 + (x1 - x0) * u;
-      positions[i * 3 + 1] = grid[i];
+      positions[i * 3 + 1] = grid[row * GRID + col];
       positions[i * 3 + 2] = z0 + (z1 - z0) * v;
       uvs[i * 2] = u;
       uvs[i * 2 + 1] = 1 - v;
     }
   }
-  const indices = new Uint32Array((GRID - 1) * (GRID - 1) * 6);
+  const indices = new Uint32Array((rows - 1) * (cols - 1) * 6);
   let k = 0;
-  for (let row = 0; row < GRID - 1; row += 1) {
-    for (let col = 0; col < GRID - 1; col += 1) {
-      const a = row * GRID + col, b = a + 1, c = a + GRID, d = c + 1;
-      indices.set([a, c, b, b, c, d], k);
+  for (let r = 0; r < rows - 1; r += 1) {
+    for (let c = 0; c < cols - 1; c += 1) {
+      const a = r * cols + c, b = a + 1, cc = a + cols, d = cc + 1;
+      indices.set([a, cc, b, b, cc, d], k);
       k += 6;
     }
   }
@@ -248,7 +269,9 @@ async function composeImagery(
     const images = new Map<string, HTMLImageElement | null>();
     await runLimited(
       tiles.map(({ col, row }) => async () => {
-        const url = layer.url.replace('{z}', String(zoom)).replace('{x}', String(col)).replace('{y}', String(n - 1 - row));
+        // "?cors" gives these CORS requests their own cache entry: the 2D map loads the same tiles
+        // without CORS, and Chrome would otherwise reuse that response and block the WebGL texture.
+        const url = `${layer.url.replace('{z}', String(zoom)).replace('{x}', String(col)).replace('{y}', String(n - 1 - row))}?cors`;
         images.set(`${col}/${row}`, await loadImage(url));
         onProgress(++done, total);
       }),
@@ -456,17 +479,22 @@ function refreshOverlays(force = false) {
 
 // ---- Camera synced with the 2D map -----------------------------------------
 function flyToMapView() {
-  const center = map.getCenter();
-  const lon = Math.min(STL_BOUNDS.east, Math.max(STL_BOUNDS.west, center.lng));
-  const lat = Math.min(STL_BOUNDS.north, Math.max(STL_BOUNDS.south, center.lat));
-  // Visible width of the Leaflet EPSG:4326 map: 256·2^z px per 180°.
-  const widthKm = ((map.getSize().x * 180) / (256 * 2 ** map.getZoom())) * KM_PER_DEG * COS_LAT;
-  const distance = Math.min(600, Math.max(1.5, widthKm / (2 * Math.tan((camera.fov * Math.PI) / 360) * camera.aspect)));
+  // Top-down camera, north up, framing exactly the area visible in the 2D map.
+  const view = map.getBounds();
+  const center = view.getCenter();
+  const lon = Math.min(IMAGERY_BOUNDS.east, Math.max(IMAGERY_BOUNDS.west, center.lng));
+  const lat = Math.min(IMAGERY_BOUNDS.north, Math.max(IMAGERY_BOUNDS.south, center.lat));
+  // EPSG:4326 map: the vertical span in degrees maps directly to kilometres on the ground.
+  const heightKm = (view.getNorth() - view.getSouth()) * KM_PER_DEG;
   const [x, z] = lonLatToScene(lon, lat);
   const y = elevationAt(lon, lat) * Number(exaggeration.value);
+  const distance = Math.min(
+    controls.maxDistance,
+    Math.max(controls.minDistance, heightKm / 2 / Math.tan((camera.fov * Math.PI) / 360)),
+  );
   controls.target.set(x, y, z);
-  const tilt = (50 * Math.PI) / 180; // initial tilt from vertical
-  camera.position.set(x, y + distance * Math.cos(tilt), z + distance * Math.sin(tilt));
+  // A tiny southward offset keeps OrbitControls' orientation defined: screen up = north.
+  camera.position.set(x, y + distance, z + distance * 1e-4);
   controls.update();
 }
 

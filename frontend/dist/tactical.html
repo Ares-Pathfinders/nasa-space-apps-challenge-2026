@@ -349,7 +349,7 @@
       .status-grid .wide { grid-column: auto; }
     }
   </style>
-  <script type="module" crossorigin src="/assets/tactical-D-22hWW9.js"></script>
+  <script type="module" crossorigin src="/assets/tactical-DuT5QXrj.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/three.module-BbwUxmN5.js">
 </head>
 <body class="setup-incomplete">
@@ -1600,12 +1600,7 @@
       document.getElementById('startNavigation').disabled = true;
       document.getElementById('startNavigation').style.opacity = '.45';
       if (defaultRouteMetrics) renderRouteMetrics(defaultRouteMetrics);
-      if (currentTerrainBounds) {
-        map.fitBounds([
-          [currentTerrainBounds.min_lat, currentTerrainBounds.min_lon],
-          [currentTerrainBounds.max_lat, currentTerrainBounds.max_lon]
-        ], { padding: [40, 40] });
-      }
+      // Keep the current view: pick the origin and destination where the user is looking.
       map.getContainer().style.cursor = 'crosshair';
       setRouteStatus('Click the origin of the traverse.');
     }
