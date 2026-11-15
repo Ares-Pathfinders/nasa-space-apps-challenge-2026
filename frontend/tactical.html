@@ -467,6 +467,7 @@
     
     // Inicializar mapa Leaflet centrado en Marte
     const map = L.map('map', { crs: L.CRS.EPSG4326, center: [-4.65, 137.43], zoom: 11, zoomControl: false });
+    const terrainRenderer = L.canvas({ padding: 0.5 });
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
     const baseMap = L.tileLayer('https://trek.nasa.gov/tiles/Mars/EQ/Mars_MGS_MOLA_ClrShade_merge_global_463m/1.0.0/default/default028mm/{z}/{y}/{x}.jpg', {
@@ -1232,6 +1233,7 @@
             [cell.lat - dlat / 2, cell.lon - dlon / 2],
             [cell.lat + dlat / 2, cell.lon + dlon / 2]
           ], {
+            renderer: terrainRenderer,
             color,
             weight: 0.7,
             fillColor: color,
@@ -1300,6 +1302,9 @@
         console.error('Error cargando terreno:', error);
       } finally {
         loading.style.display = 'none';
+        if (window.parent !== window) {
+          window.parent.postMessage('tactical-ready', window.location.origin);
+        }
       }
     }
 

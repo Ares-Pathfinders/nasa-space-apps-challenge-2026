@@ -80,8 +80,18 @@
   inset: 0;
   z-index: 30;
   overflow: hidden;
+  visibility: hidden;
   background: transparent;
-  animation: localMapReveal 4.5s cubic-bezier(0.22, 0.8, 0.24, 1) forwards;
+  animation: localMapReveal 3.8s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
+.local-map-transition--zooming {
+  animation-play-state: paused;
+}
+
+.local-map-transition--ready {
+  visibility: visible;
+  will-change: transform, opacity;
 }
 
 .local-map-surface {
@@ -97,9 +107,10 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: saturate(0.86) contrast(1.05);
-  transform: scale(1);
-  animation: localMapImageFocus 4.5s cubic-bezier(0.22, 0.8, 0.24, 1) both;
+}
+
+.local-map-transition--zooming .local-map-surface iframe {
+  animation-play-state: paused;
 }
 
 .local-map-chrome {
@@ -121,19 +132,11 @@
 }
 
 @keyframes localMapReveal {
-  0% { opacity: 0; transform: scale(3.2); border-radius: 50%; }
-  62% { opacity: 1; transform: scale(1.08); border-radius: 12%; }
-  100% { opacity: 1; transform: scale(1); border-radius: 0; }
+  0% { opacity: 0; transform: scale(1.04); }
+  100% { opacity: 1; transform: scale(1); }
 }
 
 @keyframes localMapChromeIn {
   from { opacity: 0; transform: translateY(1rem); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes localMapImageFocus {
-  0% { opacity: 0; filter: blur(24px) saturate(0.45) contrast(0.8); transform: scale(1.55); }
-  38% { opacity: 0.12; filter: blur(16px) saturate(0.55) contrast(0.9); transform: scale(1.34); }
-  72% { opacity: 0.78; filter: blur(4px) saturate(0.76) contrast(1); transform: scale(1.16); }
-  100% { opacity: 1; filter: saturate(0.86) contrast(1.05); transform: scale(1); }
 }

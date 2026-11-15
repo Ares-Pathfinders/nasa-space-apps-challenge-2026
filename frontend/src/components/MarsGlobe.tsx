@@ -407,7 +407,7 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
     const startTarget = roverPosition.clone();
     controls.target.copy(startTarget);
     const startTime = performance.now();
-    const duration = 4500;
+    const duration = 6500;
 
     const animateLocalFocus = (now: number) => {
       const progress = Math.min((now - startTime) / duration, 1);
