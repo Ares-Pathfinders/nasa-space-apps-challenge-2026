@@ -386,7 +386,27 @@
     .thumb-minerals { background: radial-gradient(circle at 30% 35%, #67f04a 0 14%, transparent 15%), radial-gradient(circle at 70% 30%, #49a8d7 0 12%, transparent 13%), radial-gradient(circle at 45% 72%, #ef8181 0 13%, transparent 14%), radial-gradient(circle at 78% 70%, #f7fb43 0 9%, transparent 10%), #5b3a31; }
     .thumb-elevation { background: linear-gradient(135deg, #1e3a8a, #2563eb 22%, #22d3ee 40%, #4ade80 55%, #facc15 70%, #f97316 85%, #dc2626); }
     .thumb-grid { background: repeating-linear-gradient(0deg, rgba(34,197,94,.7) 0 1px, transparent 1px 9px), repeating-linear-gradient(90deg, rgba(34,197,94,.7) 0 1px, transparent 1px 9px), rgba(34,197,94,.12); }
+    .thumb-graticule {
+      background: repeating-linear-gradient(0deg, transparent 0 12px, rgba(226,251,255,.75) 12px 13px),
+                  repeating-linear-gradient(90deg, transparent 0 12px, rgba(226,251,255,.75) 12px 13px),
+                  rgba(69,243,255,.06);
+    }
     .thumb-hazards { background: linear-gradient(135deg, rgba(255,51,102,.85) 0 45%, rgba(234,179,8,.6) 45% 60%, rgba(34,197,94,.25) 60%); }
+    .leaflet-bottom.leaflet-left { left: 346px; bottom: 16px; }
+    body.left-panel-hidden .leaflet-bottom.leaflet-left { left: 0; }
+    .leaflet-control.mars-scale-control {
+      padding: 4px 6px 5px; border: 1px solid rgba(255,255,255,.5);
+      border-radius: 2px; background: rgba(5,6,8,.82); color: #fff;
+      box-shadow: 0 1px 5px rgba(0,0,0,.65); pointer-events: none;
+    }
+    .mars-scale-label {
+      display: block; margin-bottom: 2px; color: #fff;
+      font: 9px 'JetBrains Mono', monospace; line-height: 1.2; text-align: center;
+      text-shadow: 0 1px 2px #000; white-space: nowrap;
+    }
+    .mars-scale-bar { height: 6px; border: solid #fff; border-width: 0 1px 2px; }
+    body.setup-incomplete .mars-scale-control,
+    body.terrain3d-active .mars-scale-control { display: none; }
     .elevation-legend {
       position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 1000;
       display: flex; align-items: center; gap: 10px; padding: 7px 12px;
@@ -406,6 +426,8 @@
     @media (max-width: 860px) {
       .layers-control, body.right-panel-hidden .layers-control { top: 72px; right: 8px; }
       .layers-popover { width: min(312px, calc(100vw - 16px)); }
+      .leaflet-bottom.leaflet-left { left: 0; bottom: calc(44vh + 16px); }
+      body.left-panel-hidden .leaflet-bottom.leaflet-left { bottom: 16px; }
       header { left: 8px; right: 8px; }
       .side {
         top: auto; bottom: 8px; width: calc(50% - 12px);
@@ -636,6 +658,7 @@
       <div class="layer-tiles">
         <label class="layer-tile"><input id="elevationLayer" type="checkbox"><span class="layer-thumb thumb-elevation"></span>Elevation</label>
         <label class="layer-tile"><input id="cells" type="checkbox"><span class="layer-thumb thumb-grid"></span>Terrain grid</label>
+        <label class="layer-tile"><input id="graticule" type="checkbox"><span class="layer-thumb thumb-graticule"></span>Lat/long grid</label>
         <label class="layer-tile"><input id="hazards" type="checkbox"><span class="layer-thumb thumb-hazards"></span>Steep cells</label>
         <label class="layer-tile"><input id="route" type="checkbox" checked><span class="layer-thumb">⚡</span>Safe route</label>
         <label class="layer-tile"><input id="wps" type="checkbox" checked><span class="layer-thumb">📍</span>Waypoints</label>
@@ -675,6 +698,44 @@
       zoomDelta: 0.5
     });
     L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+    const marsScaleControl = L.control({ position: 'bottomleft' });
+    marsScaleControl.onAdd = () => {
+      const container = L.DomUtil.create('div', 'leaflet-control mars-scale-control');
+      container.setAttribute('role', 'img');
+      container.innerHTML = '<span class="mars-scale-label"></span><div class="mars-scale-bar" aria-hidden="true"></div>';
+      return container;
+    };
+    marsScaleControl.addTo(map);
+    const marsScaleContainer = marsScaleControl.getContainer();
+    const marsScaleLabel = marsScaleContainer.querySelector('.mars-scale-label');
+    const marsScaleBar = marsScaleContainer.querySelector('.mars-scale-bar');
+    function chooseScaleDistance(maxMeters) {
+      if (!Number.isFinite(maxMeters) || maxMeters <= 0) return 0;
+      const magnitude = 10 ** Math.floor(Math.log10(maxMeters));
+      for (const factor of [5, 2, 1]) {
+        const distance = factor * magnitude;
+        if (distance <= maxMeters) return distance;
+      }
+      return magnitude / 2;
+    }
+    function updateMarsScale() {
+      const bounds = map.getBounds();
+      const size = map.getSize();
+      if (size.x <= 0) return;
+      const centerLatitude = (bounds.getSouth() + bounds.getNorth()) / 2;
+      const longitudeSpan = bounds.getEast() - bounds.getWest();
+      const metersPerPixel = 3389500 * Math.abs(Math.cos(centerLatitude * Math.PI / 180))
+        * longitudeSpan * Math.PI / 180 / size.x;
+      const distance = chooseScaleDistance(metersPerPixel * 120);
+      if (!distance || !Number.isFinite(metersPerPixel)) return;
+      const label = distance >= 1000 ? `${distance / 1000} km` : `${distance} m`;
+      marsScaleLabel.textContent = label;
+      marsScaleBar.style.width = `${distance / metersPerPixel}px`;
+      marsScaleContainer.setAttribute('aria-label', `Map scale: ${label}`);
+    }
+    map.on('moveend zoomend resize', updateMarsScale);
+    updateMarsScale();
 
     const mineralMapUrl = 'https://trek.nasa.gov/mars/trekarcgis/rest/services/Aquieous_Mineral_Distribution_Options_clon0/MapServer';
     map.createPane('mineralPane').style.zIndex = '250';
@@ -871,6 +932,8 @@
 
     // The terrain grid is drawn as two canvas images (up to 512x512 cells), below routes and markers.
     map.createPane('gridPane').style.zIndex = '350';
+    map.createPane('coordinateGridPane').style.zIndex = '360';
+    const coordinateGridLayer = L.layerGroup();
     // Elevation colour layer sits just below the grid.
     map.createPane('elevationPane').style.zIndex = '340';
 
@@ -925,6 +988,11 @@
       document.getElementById('elevationMax').textContent = formatElevation(max);
     }
     let currentGrid = null;
+    function niceDegreeInterval(minimum) {
+      if (!Number.isFinite(minimum) || minimum <= 0) return 1;
+      const magnitude = 10 ** Math.floor(Math.log10(minimum));
+      return [1, 2, 5, 10].map(factor => factor * magnitude).find(step => step >= minimum) || magnitude * 10;
+    }
 
     function renderGridOverlays(data) {
       const [rows, cols] = data.resolution;
@@ -932,6 +1000,7 @@
       const dlat = (data.bounds.max_lat - data.bounds.min_lat) / (rows - 1);
       const dlon = (data.bounds.max_lon - data.bounds.min_lon) / (cols - 1);
       currentGrid = { rows, cols, dlat, dlon, bounds: data.bounds, elevation, slopes, passable };
+      if (map.hasLayer(coordinateGridLayer)) renderCoordinateGrid();
 
       // Pixels per cell: keep the image around 2048 px; draw cell borders when cells are big enough.
       const scale = Math.max(1, Math.min(8, Math.floor(2048 / Math.max(rows, cols))));
@@ -976,6 +1045,44 @@
       layers.cells.addLayer(L.imageOverlay(passableCanvas.toDataURL(), imageBounds, overlayOptions));
       layers.hazards.addLayer(L.imageOverlay(hazardCanvas.toDataURL(), imageBounds, overlayOptions));
     }
+
+    function renderCoordinateGrid() {
+      if (!map.hasLayer(coordinateGridLayer)) return;
+      const bounds = map.getBounds();
+      const size = map.getSize();
+      if (size.x <= 0 || size.y <= 0) return;
+      const latitudeStep = niceDegreeInterval(Math.max(
+        (bounds.getNorth() - bounds.getSouth()) * 150 / size.y,
+        currentGrid ? currentGrid.dlat * 4 : 0
+      ));
+      const longitudeStep = niceDegreeInterval(Math.max(
+        (bounds.getEast() - bounds.getWest()) * 150 / size.x,
+        currentGrid ? currentGrid.dlon * 4 : 0
+      ));
+      const lineStyle = {
+        pane: 'coordinateGridPane', color: '#e2fbff', weight: 1, opacity: 0.65, interactive: false
+      };
+      coordinateGridLayer.clearLayers();
+      for (let index = Math.ceil(bounds.getSouth() / latitudeStep);
+        index <= Math.floor(bounds.getNorth() / latitudeStep); index += 1) {
+        const latitude = index * latitudeStep;
+        coordinateGridLayer.addLayer(L.polyline([
+          [latitude, bounds.getWest()],
+          [latitude, bounds.getEast()]
+        ], lineStyle));
+      }
+      for (let index = Math.ceil(bounds.getWest() / longitudeStep);
+        index <= Math.floor(bounds.getEast() / longitudeStep); index += 1) {
+        const longitude = index * longitudeStep;
+        coordinateGridLayer.addLayer(L.polyline([
+          [bounds.getSouth(), longitude],
+          [bounds.getNorth(), longitude]
+        ], lineStyle));
+      }
+    }
+    map.on('moveend zoomend resize', () => {
+      if (map.hasLayer(coordinateGridLayer)) renderCoordinateGrid();
+    });
 
     // Keep the 2D map inside the terrain grid (which only covers areas with imagery):
     // it cannot be dragged outside and cannot zoom out past the point where it fills the view.
@@ -1820,6 +1927,7 @@
 
     function setPanelVisible(panelId, closeId, reopenId, visible) {
       document.getElementById(panelId).hidden = !visible;
+      if (panelId === 'leftPanel') document.body.classList.toggle('left-panel-hidden', !visible);
       if (panelId === 'rightPanel') document.body.classList.toggle('right-panel-hidden', !visible);
       document.getElementById(closeId).setAttribute('aria-expanded', String(visible));
       const reopenButton = document.getElementById(reopenId);
@@ -1979,6 +2087,14 @@
       document.getElementById('elevationLegend').hidden = !e.target.checked;
     };
     document.getElementById('cells').onchange = e => e.target.checked ? map.addLayer(layers.cells) : map.removeLayer(layers.cells);
+    document.getElementById('graticule').onchange = e => {
+      if (e.target.checked) {
+        map.addLayer(coordinateGridLayer);
+        renderCoordinateGrid();
+      } else {
+        map.removeLayer(coordinateGridLayer);
+      }
+    };
     document.getElementById('hazards').onchange = e => e.target.checked ? map.addLayer(layers.hazards) : map.removeLayer(layers.hazards);
     document.getElementById('route').onchange = e => {
       if (e.target.checked) {
