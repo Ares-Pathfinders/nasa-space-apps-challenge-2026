@@ -110,7 +110,9 @@
     .route-summary { margin-top: 8px; border-color: rgba(69, 243, 255, 0.3); }
     .route-summary h3 { margin: 0 0 8px; color: var(--cyan); font-size: 9px; letter-spacing: 0.12em; }
     .route-summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .route-summary-grid div:last-child { grid-column: 1 / -1; }
+    .route-summary-grid > div { min-width: 0; }
+    .route-mode-metrics { display: grid; grid-column: 1 / -1; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .route-mode-metrics[hidden] { display: none; }
     .route-summary dt { color: #64748b; font-size: 8px; text-transform: uppercase; }
     .route-summary dd { margin: 2px 0 0; color: #fff; font-size: 12px; font-weight: 700; }
     .route-summary-note { margin: 8px 0 0; color: #64748b; font-size: 8px; }
@@ -432,16 +434,6 @@
       <button id="clearCustomRoute" class="nav-btn" type="button" style="justify-content:center;border-color:#94a3b8;color:#cbd5e1;background:rgba(148,163,184,.08);">BORRAR RUTA PERSONALIZADA</button>
     </div>
     <div id="routeStatus" class="info route-status" aria-live="polite">Elige dos puntos dentro del terreno para calcular una ruta segura.</div>
-    <section id="selectedRouteSummary" class="info route-summary" aria-live="polite" hidden>
-      <h3>RUTA SELECCIONADA</h3>
-      <dl class="route-summary-grid">
-        <div><dt>Longitud</dt><dd id="selectedRouteDistance">--</dd></div>
-        <div><dt>Tiempo a pie</dt><dd id="selectedRouteWalkingTime">--</dd></div>
-        <div><dt>Tiempo en vehículo</dt><dd id="selectedRouteVehicleTime">--</dd></div>
-        <div><dt>Desnivel acumulado · subida / bajada</dt><dd id="selectedRouteElevation">--</dd></div>
-      </dl>
-      <p class="route-summary-note">Estimaciones según las velocidades simuladas configuradas.</p>
-    </section>
 
     <button id="statusToggle" class="status-toggle" type="button" aria-expanded="false" aria-controls="statusNotebook">
       <span>ESTADO</span><span id="statusChevron" aria-hidden="true">▸</span>
@@ -528,17 +520,41 @@
       Pasa el cursor o haz clic en cualquier celda de la cuadrícula para ver su elevación, pendiente y presión barométrica local.
     </div>
 
-    <h2 style="margin-top:16px">MÉTRICAS DE RUTA A*</h2>
-    <div class="metrics">
-      <div class="metric"><small>Distancia total</small><b id="distance" style="color:var(--cyan)">--</b></div>
-      <div class="metric"><small>Waypoints</small><b id="waypoints">--</b></div>
-      <div class="metric"><small>Pendiente media</small><b id="average">--</b></div>
-      <div class="metric"><small>Pendiente máxima</small><b id="maximum">--</b></div>
-      <div class="metric"><small>Desnivel acumulado (↑ / ↓)</small><b id="elevationChange">--</b></div>
-      <div class="metric"><small>Tiempo estimado a pie</small><b id="walkingTime">--</b></div>
-      <div class="metric"><small>Tiempo estimado en vehículo</small><b id="vehicleTime">--</b></div>
-      <div class="metric"><small>Consumo O2</small><b id="oxygen" style="color:var(--amber)">--</b></div>
-    </div>
+    <h2 style="margin-top:16px">RUTA A*</h2>
+    <h2 style="margin-top:16px">RUTAS</h2>
+    <section class="info route-summary">
+      <h3>RUTA A · SEGURA</h3>
+      <dl class="route-summary-grid">
+        <div><dt>Distancia total</dt><dd id="distance">--</dd></div>
+        <div><dt>Waypoints</dt><dd id="waypoints">--</dd></div>
+        <div><dt>Pendiente media</dt><dd id="average">--</dd></div>
+        <div><dt>Pendiente máxima</dt><dd id="maximum">--</dd></div>
+        <div><dt>Desnivel acumulado · subida / bajada</dt><dd id="elevationChange">--</dd></div>
+        <div class="route-mode-metrics">
+          <div><dt id="routeATimeLabel">Tiempo estimado a pie</dt><dd id="routeATime">--</dd></div>
+          <div><dt id="routeAConsumptionLabel">Gasto estimado de O₂</dt><dd id="routeAConsumption">--</dd></div>
+        </div>
+      </dl>
+    </section>
+    <section id="selectedRouteSummary" class="info route-summary" aria-live="polite" hidden>
+      <h3>RUTA B · PERSONALIZADA</h3>
+      <dl class="route-summary-grid">
+        <div><dt>Distancia total</dt><dd id="selectedRouteDistance">--</dd></div>
+        <div><dt>Waypoints</dt><dd id="selectedRouteWaypoints">--</dd></div>
+        <div><dt>Pendiente media</dt><dd id="selectedRouteAverageSlope">--</dd></div>
+        <div><dt>Pendiente máxima</dt><dd id="selectedRouteMaxSlope">--</dd></div>
+        <div><dt>Desnivel acumulado · subida / bajada</dt><dd id="selectedRouteElevation">--</dd></div>
+        <div id="selectedRouteFootMetrics" class="route-mode-metrics">
+          <div><dt>Tiempo estimado a pie</dt><dd id="selectedRouteWalkingTime">--</dd></div>
+          <div><dt>Gasto estimado de O₂</dt><dd id="selectedRouteOxygen">--</dd></div>
+        </div>
+        <div id="selectedRouteVehicleMetrics" class="route-mode-metrics" hidden>
+          <div><dt>Tiempo estimado en vehículo</dt><dd id="selectedRouteVehicleTime">--</dd></div>
+          <div><dt>Gasto estimado de combustible</dt><dd id="selectedRouteFuel">--</dd></div>
+        </div>
+      </dl>
+      <p class="route-summary-note">Tiempo y consumo estimados según el modo y las tasas configuradas.</p>
+    </section>
     <div id="routeReturnStatus" class="info" style="margin-top:10px;font-size:9px;" aria-live="polite">Esperando cálculo de ruta y recursos disponibles.</div>
 
   </aside>
@@ -809,6 +825,7 @@
     let latestRoute = null;
     let defaultRoute = null;
     let defaultRouteMetrics = null;
+    let customRouteMetrics = null;
     let selectedRouteStart = null;
     let customRouteWaypoints = [];
     let isPickingRoute = false;
@@ -1022,6 +1039,8 @@
         updateOxygenEstimate();
         updateFuelEstimate();
         updateReturnRoute();
+        if (defaultRouteMetrics) renderRouteMetrics(defaultRouteMetrics);
+        if (customRouteMetrics) renderSelectedRouteSummary(customRouteMetrics);
       });
     });
     document.getElementById('baseConnection').addEventListener('change', event => {
@@ -1033,6 +1052,8 @@
         saveStatusNotebook();
         updateFuelEstimate();
         updateReturnRoute();
+        if (defaultRouteMetrics) renderRouteMetrics(defaultRouteMetrics);
+        if (customRouteMetrics) renderSelectedRouteSummary(customRouteMetrics);
       });
     });
     document.getElementById('addStatusEntry').addEventListener('click', () => {
@@ -1169,6 +1190,18 @@
       }
     }
 
+    function selectedModeEstimate(distanceMeters) {
+      const isVehicle = document.querySelector('input[name="travelMode"]:checked').value === 'vehicle';
+      const durationMinutes = distanceMeters / (isVehicle ? 120 : 48);
+      const rateInput = document.getElementById(isVehicle ? 'fuelConsumption' : 'oxygenConsumption');
+      const rate = Math.max(0, Number(rateInput.value) || 0);
+      return {
+        isVehicle,
+        duration: formatRouteDuration(durationMinutes),
+        consumption: `${(durationMinutes / 60 * rate).toFixed(1)} L`
+      };
+    }
+
     function renderRouteMetrics(metrics) {
       document.getElementById('distance').textContent = (metrics.distanceMeters / 1000).toFixed(2) + ' km';
       document.getElementById('waypoints').textContent = metrics.waypoints;
@@ -1176,27 +1209,39 @@
       document.getElementById('maximum').textContent = metrics.maxSlope + '°';
       document.getElementById('elevationChange').textContent =
         `+${Math.round(metrics.elevationGainMeters)} m / −${Math.round(metrics.elevationLossMeters)} m`;
-      const walkingMinutes = metrics.distanceMeters / 48;
-      const vehicleMinutes = metrics.distanceMeters / 120;
-      document.getElementById('walkingTime').textContent = formatRouteDuration(walkingMinutes);
-      document.getElementById('vehicleTime').textContent = formatRouteDuration(vehicleMinutes);
-      const selectedSpeedMetersPerMinute =
-        document.querySelector('input[name="travelMode"]:checked').value === 'vehicle' ? 120 : 48;
-      const selectedModeMinutes = metrics.distanceMeters / selectedSpeedMetersPerMinute;
-      const oxygenRate = Math.max(0, Number(document.getElementById('oxygenConsumption').value) || 0);
-      document.getElementById('oxygen').textContent = (selectedModeMinutes * oxygenRate / 60).toFixed(1) + ' L';
+      const estimate = selectedModeEstimate(metrics.distanceMeters);
+      document.getElementById('routeATimeLabel').textContent = estimate.isVehicle
+        ? 'Tiempo estimado en vehículo'
+        : 'Tiempo estimado a pie';
+      document.getElementById('routeATime').textContent = estimate.duration;
+      document.getElementById('routeAConsumptionLabel').textContent = estimate.isVehicle
+        ? 'Gasto estimado de combustible'
+        : 'Gasto estimado de O₂';
+      document.getElementById('routeAConsumption').textContent = estimate.consumption;
       updateReturnRoute();
     }
 
-    function renderSelectedRouteSummary(distanceMeters, elevationGainMeters, elevationLossMeters) {
+    function renderSelectedRouteSummary(metrics) {
       document.getElementById('selectedRouteDistance').textContent =
-        `${(distanceMeters / 1000).toFixed(2)} km`;
+        `${(metrics.distanceMeters / 1000).toFixed(2)} km`;
+      document.getElementById('selectedRouteAverageSlope').textContent = `${metrics.averageSlope}°`;
+      document.getElementById('selectedRouteWaypoints').textContent = metrics.waypoints;
+      document.getElementById('selectedRouteMaxSlope').textContent = `${metrics.maxSlope}°`;
       document.getElementById('selectedRouteWalkingTime').textContent =
-        formatRouteDuration(distanceMeters / 48);
+        formatRouteDuration(metrics.distanceMeters / 48);
       document.getElementById('selectedRouteVehicleTime').textContent =
-        formatRouteDuration(distanceMeters / 120);
+        formatRouteDuration(metrics.distanceMeters / 120);
+      const walkingMinutes = metrics.distanceMeters / 48;
+      const vehicleMinutes = metrics.distanceMeters / 120;
+      const oxygenRate = Math.max(0, Number(document.getElementById('oxygenConsumption').value) || 0);
+      const fuelRate = Math.max(0, Number(document.getElementById('fuelConsumption').value) || 0);
+      document.getElementById('selectedRouteOxygen').textContent = `${(walkingMinutes / 60 * oxygenRate).toFixed(1)} L`;
+      document.getElementById('selectedRouteFuel').textContent = `${(vehicleMinutes / 60 * fuelRate).toFixed(1)} L`;
       document.getElementById('selectedRouteElevation').textContent =
-        `+${Math.round(elevationGainMeters)} m / −${Math.round(elevationLossMeters)} m`;
+        `+${Math.round(metrics.elevationGainMeters)} m / −${Math.round(metrics.elevationLossMeters)} m`;
+      const isVehicle = document.querySelector('input[name="travelMode"]:checked').value === 'vehicle';
+      document.getElementById('selectedRouteFootMetrics').hidden = isVehicle;
+      document.getElementById('selectedRouteVehicleMetrics').hidden = !isVehicle;
       document.getElementById('selectedRouteSummary').hidden = false;
     }
 
@@ -1266,7 +1311,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             zone: document.getElementById('zone').value,
-            resolution: Number(document.getElementById('resolution').value),
+            resolution: Math.min(Number(document.getElementById('resolution').value), 100),
             max_slope: Number(document.getElementById('slope').value),
             start,
             target
@@ -1287,19 +1332,15 @@
 
         customRouteWaypoints = result.waypoints;
         latestRoute = { points, distanceMeters: result.total_distance_m };
-        renderRouteMetrics({
+        customRouteMetrics = {
           distanceMeters: result.total_distance_m,
           waypoints: result.waypoints.length,
           averageSlope: result.average_slope_deg,
           maxSlope: result.max_slope_deg,
           elevationGainMeters: result.total_elevation_gain_m,
           elevationLossMeters: result.total_elevation_loss_m
-        });
-        renderSelectedRouteSummary(
-          result.total_distance_m,
-          result.total_elevation_gain_m,
-          result.total_elevation_loss_m
-        );
+        };
+        renderSelectedRouteSummary(customRouteMetrics);
         document.getElementById('startNavigation').disabled = false;
         document.getElementById('startNavigation').style.opacity = '1';
         const snapped = result.snapped_start || result.snapped_target;
@@ -1335,6 +1376,7 @@
       layers.customRoute.clearLayers();
       map.getContainer().style.cursor = '';
       document.getElementById('selectedRouteSummary').hidden = true;
+      customRouteMetrics = null;
       defaultRoute = null;
       defaultRouteMetrics = null;
       setRouteStatus('Elige dos puntos dentro del terreno para calcular una ruta segura.');
@@ -1490,6 +1532,7 @@
     function beginRoutePlanning() {
       selectedRouteStart = null;
       customRouteWaypoints = [];
+      customRouteMetrics = null;
       document.getElementById('selectedRouteSummary').hidden = true;
       customRouteRequestId += 1;
       isPickingRoute = true;
@@ -1529,6 +1572,8 @@
         document.querySelector(`input[name="travelMode"][value="${mode}"]`).checked = true;
         updateFuelEstimate();
         saveStatusNotebook();
+        if (defaultRouteMetrics) renderRouteMetrics(defaultRouteMetrics);
+        if (customRouteMetrics) renderSelectedRouteSummary(customRouteMetrics);
         document.getElementById('beginSetupRoute').disabled = !currentTerrainBounds;
         document.getElementById('setupStatus').textContent = currentTerrainBounds
           ? 'Modo seleccionado. Ya puedes elegir el origen y el destino.'
@@ -1560,6 +1605,7 @@
       isPickingRoute = false;
       selectedRouteStart = null;
       customRouteWaypoints = [];
+      customRouteMetrics = null;
       layers.customRoute.clearLayers();
       latestRoute = defaultRoute;
       document.getElementById('selectedRouteSummary').hidden = true;

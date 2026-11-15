@@ -26,6 +26,7 @@ interface MarsGlobeProps {
 }
 
 const GLOBE_RADIUS = 0.9;
+const ROVER_TRANSITION_DURATION_MS = 6500;
 const SUN_POSITION: [number, number, number] = [0, 0, 0];
 const ORBIT_SCALE = 25;
 const MARS_ORBIT_RADIUS = 1.52 * ORBIT_SCALE;
@@ -268,6 +269,7 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
   const meshRef = useRef<THREE.Mesh>(null);
   const globeRef = useRef<THREE.Group>(null);
   const controlsRef = useRef<any>(null);
+  const previousFocusRoverRef = useRef<RoverId | null>(null);
   const { camera } = useThree();
 
   // Create procedural textures on client-side
@@ -307,15 +309,65 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
   }, [camera]);
 
   React.useEffect(() => {
-    if (focusRover || !controlsRef.current) return;
+    const controls = controlsRef.current;
+    if (!controls) return;
 
     const marsCenter = new THREE.Vector3(...MARS_POSITION);
-    camera.position.set(marsCenter.x, marsCenter.y + 0.4, marsCenter.z + 6.4);
-    camera.lookAt(marsCenter);
-    controlsRef.current.enabled = true;
-    controlsRef.current.minDistance = 3.2;
-    controlsRef.current.target.copy(marsCenter);
-    controlsRef.current.update();
+    if (!focusRover) {
+      const shouldAnimateOut = previousFocusRoverRef.current !== null;
+      previousFocusRoverRef.current = null;
+
+      if (!shouldAnimateOut) {
+        camera.position.set(marsCenter.x, marsCenter.y + 0.4, marsCenter.z + 6.4);
+        camera.lookAt(marsCenter);
+        controls.enabled = true;
+        controls.minDistance = 3.2;
+        controls.target.copy(marsCenter);
+        controls.update();
+        return;
+      }
+
+      controls.enabled = false;
+      controls.minDistance = 0.01;
+      const startOffset = camera.position.clone().sub(marsCenter);
+      const endOffset = new THREE.Vector3(0, 0.4, 6.4);
+      const startDirection = startOffset.clone().normalize();
+      const endDirection = endOffset.clone().normalize();
+      const orbitRotation = new THREE.Quaternion().setFromUnitVectors(startDirection, endDirection);
+      const startRadius = Math.max(startOffset.length(), GLOBE_RADIUS + 0.05);
+      const endRadius = endOffset.length();
+      const startTarget = controls.target.clone();
+      const startTime = performance.now();
+      let frameId = 0;
+
+      const animateGlobalReturn = (now: number) => {
+        const progress = Math.min((now - startTime) / ROVER_TRANSITION_DURATION_MS, 1);
+        const ease = 0.5 - Math.cos(progress * Math.PI) / 2;
+        const partialRotation = new THREE.Quaternion().slerp(orbitRotation, ease);
+        const orbitDirection = startDirection.clone().applyQuaternion(partialRotation).normalize();
+        const orbitRadius = THREE.MathUtils.lerp(startRadius, endRadius, ease);
+        camera.position.copy(marsCenter).add(orbitDirection.multiplyScalar(orbitRadius));
+        controls.target.lerpVectors(startTarget, marsCenter, ease);
+        controls.update();
+
+        if (progress < 1) {
+          frameId = requestAnimationFrame(animateGlobalReturn);
+        } else {
+          camera.position.copy(marsCenter).add(endOffset);
+          camera.lookAt(marsCenter);
+          controls.target.copy(marsCenter);
+          controls.minDistance = 3.2;
+          controls.enabled = true;
+          controls.update();
+        }
+      };
+
+      frameId = requestAnimationFrame(animateGlobalReturn);
+      return () => cancelAnimationFrame(frameId);
+    }
+
+    previousFocusRoverRef.current = focusRover;
+    return;
   }, [focusRover, camera]);
 
   // Slow ambient rotation of Mars
@@ -394,7 +446,7 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
     const startTarget = roverPosition.clone();
     controls.target.copy(startTarget);
     const startTime = performance.now();
-    const duration = 6500;
+    const duration = ROVER_TRANSITION_DURATION_MS;
 
     const animateLocalFocus = (now: number) => {
       const progress = Math.min((now - startTime) / duration, 1);
@@ -420,7 +472,8 @@ export const MarsGlobe: React.FC<MarsGlobeProps> = ({
       }
     };
 
-    requestAnimationFrame(animateLocalFocus);
+    const frameId = requestAnimationFrame(animateLocalFocus);
+    return () => cancelAnimationFrame(frameId);
   }, [focusRover, camera]);
 
   return (

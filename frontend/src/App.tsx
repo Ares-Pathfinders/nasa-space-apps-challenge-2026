@@ -8,9 +8,10 @@ import { MarsGlobe } from './components/MarsGlobe';
 import { fetchHealth } from './services/api';
 import { RoverId } from './types/mars';
 
-type LocalMapPhase = 'global' | 'zooming' | 'handoff' | 'ready';
+type LocalMapPhase = 'global' | 'zooming' | 'handoff' | 'ready' | 'exit-handoff' | 'zooming-out';
 const LOCAL_MAP_ZOOM_DURATION_MS = 6500;
-const LOCAL_MAP_HANDOFF_START_MS = 6000;
+const LOCAL_MAP_HANDOFF_START_MS = 6200;
+const LOCAL_MAP_HANDOFF_DURATION_MS = 1200;
 
 function App() {
   const [apiOnline, setApiOnline] = useState(false);
@@ -18,6 +19,7 @@ function App() {
   const [selectedRover, setSelectedRover] = useState<RoverId | null>(null);
   const [zoomComplete, setZoomComplete] = useState(false);
   const [tacticalReady, setTacticalReady] = useState(false);
+  const [handoffComplete, setHandoffComplete] = useState(false);
 
   useEffect(() => {
     fetchHealth().then((health) => setApiOnline(health.status === 'operational'));
@@ -27,9 +29,11 @@ function App() {
     setSelectedRover(rover);
     setZoomComplete(false);
     setTacticalReady(false);
+    setHandoffComplete(false);
     setLocalMapPhase('zooming');
     setTimeout(() => {
       setLocalMapPhase('handoff');
+      setTimeout(() => setHandoffComplete(true), LOCAL_MAP_HANDOFF_DURATION_MS);
     }, LOCAL_MAP_HANDOFF_START_MS);
     setTimeout(() => {
       setZoomComplete(true);
@@ -37,10 +41,17 @@ function App() {
   };
 
   const handleCloseLocalMap = () => {
-    setLocalMapPhase('global');
-    setSelectedRover(null);
-    setZoomComplete(false);
-    setTacticalReady(false);
+    setLocalMapPhase('exit-handoff');
+    window.setTimeout(() => {
+      setLocalMapPhase('zooming-out');
+      window.setTimeout(() => {
+        setLocalMapPhase('global');
+        setSelectedRover(null);
+        setZoomComplete(false);
+        setTacticalReady(false);
+        setHandoffComplete(false);
+      }, LOCAL_MAP_ZOOM_DURATION_MS);
+    }, LOCAL_MAP_HANDOFF_DURATION_MS);
   };
 
   useEffect(() => {
@@ -55,10 +66,10 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (localMapPhase === 'handoff' && zoomComplete && tacticalReady) {
+    if (localMapPhase === 'handoff' && zoomComplete && tacticalReady && handoffComplete) {
       setLocalMapPhase('ready');
     }
-  }, [localMapPhase, tacticalReady, zoomComplete]);
+  }, [handoffComplete, localMapPhase, tacticalReady, zoomComplete]);
 
   return (
     <main className="relative h-screen w-screen overflow-hidden bg-[#050608] text-slate-100">
@@ -69,7 +80,7 @@ function App() {
             selectedSite={null}
             onSelectSite={() => undefined}
             onOpenRoverMap={handleOpenLocalMap}
-            focusRover={localMapPhase !== 'global' ? selectedRover : null}
+            focusRover={localMapPhase !== 'global' && localMapPhase !== 'zooming-out' ? selectedRover : null}
             layerMode="optical"
           />
         </Canvas>
@@ -100,12 +111,12 @@ function App() {
               title="Mapa táctica de Marte"
             />
           </div>
-          {(localMapPhase === 'handoff' || localMapPhase === 'ready') && (
+          {(localMapPhase === 'handoff' || localMapPhase === 'ready' || localMapPhase === 'exit-handoff' || localMapPhase === 'zooming-out') && (
             <div
-              className={`local-map-handoff${localMapPhase === 'ready' ? ' local-map-handoff--out' : ''}`}
+              className={`local-map-handoff${localMapPhase === 'ready' || localMapPhase === 'zooming-out' ? ' local-map-handoff--out' : ''}`}
               aria-hidden="true"
             >
-              <span>2D</span>
+              <span>{localMapPhase === 'exit-handoff' || localMapPhase === 'zooming-out' ? '3D' : '2D'}</span>
             </div>
           )}
           {localMapPhase === 'ready' && (
