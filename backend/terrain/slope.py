@@ -17,7 +17,9 @@ class SlopeAnalyzer:
         """
         self.grid = grid
         self.max_slope_deg = float(max_slope_deg)
-        self.slope_deg_matrix = self._compute_slope_matrix()
+        self.slope_deg_matrix = (
+            grid.slope_deg if getattr(grid, "slope_deg", None) is not None else self._compute_slope_matrix()
+        )
         self.passable_mask = self.slope_deg_matrix <= self.max_slope_deg
 
     def _compute_slope_matrix(self) -> np.ndarray:

@@ -375,10 +375,10 @@
 
     <label for="resolution">Resolución de cuadrícula</label>
     <select id="resolution">
-      <option value="20">20 x 20 (Rápida)</option>
-      <option value="40">40 x 40 (Media)</option>
-      <option value="60" selected>60 x 60 (Alta resolución)</option>
-      <option value="80">80 x 80 (Submétrica)</option>
+      <option value="64">64 x 64 (Rápida · celdas ~3,5 km)</option>
+      <option value="128" selected>128 x 128 (Media · ~1,8 km)</option>
+      <option value="192">192 x 192 (Alta · ~1,2 km)</option>
+      <option value="256">256 x 256 (Máxima · ~0,9 km)</option>
     </select>
 
     <h2 style="margin-top:16px">PLANIFICADOR DE RUTA</h2>
@@ -691,6 +691,8 @@
     });
     setBaseMapMode(document.getElementById('basemap').value);
 
+    // Las celdas cubren todo el cráter (decenas de miles): se pintan en canvas, no en SVG.
+    const cellRenderer = L.canvas({ padding: 0.5 });
     const layers = {
       cells: L.layerGroup().addTo(map),
       hazards: L.layerGroup().addTo(map),
@@ -1266,8 +1268,9 @@
             [cell.lat - dlat / 2, cell.lon - dlon / 2],
             [cell.lat + dlat / 2, cell.lon + dlon / 2]
           ], {
+            renderer: cellRenderer,
             color,
-            weight: 0.7,
+            weight: 0.4,
             fillColor: color,
             fillOpacity: !cell.passable ? 0.75 : cell.slope > 10 ? 0.35 : 0.12
           });

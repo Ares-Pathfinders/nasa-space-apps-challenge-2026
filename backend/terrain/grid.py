@@ -33,6 +33,7 @@ class ElevationGrid:
         max_lat: float,
         min_lon: float,
         max_lon: float,
+        slope_deg: Optional[np.ndarray] = None,
     ):
         """
         Initialize the elevation grid.
@@ -42,6 +43,9 @@ class ElevationGrid:
         :param max_lat: Northern-most latitude in decimal degrees.
         :param min_lon: Western-most longitude in decimal degrees.
         :param max_lon: Eastern-most longitude in decimal degrees.
+        :param slope_deg: Optional precomputed slope raster (degrees, same shape as elevation),
+                          e.g. derived from a higher-resolution source. When given,
+                          SlopeAnalyzer uses it instead of recomputing slopes from this grid.
         """
         if elevation.ndim != 2:
             raise ValueError(f"Elevation array must be 2D, got shape {elevation.shape}")
@@ -52,6 +56,9 @@ class ElevationGrid:
 
         self.elevation = elevation.astype(np.float64)
         self.rows, self.cols = elevation.shape
+        if slope_deg is not None and np.shape(slope_deg) != elevation.shape:
+            raise ValueError(f"slope_deg shape {np.shape(slope_deg)} must match elevation shape {elevation.shape}")
+        self.slope_deg = None if slope_deg is None else np.asarray(slope_deg, dtype=np.float64)
         self.min_lat = float(min_lat)
         self.max_lat = float(max_lat)
         self.min_lon = float(min_lon)
