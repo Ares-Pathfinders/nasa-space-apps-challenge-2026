@@ -171,6 +171,26 @@ The API is available at `http://localhost:8000` and its interactive documentatio
 `http://localhost:8000/docs`. The Vite application is available at
 `http://localhost:5173`.
 
+### Deploy publicly with Render
+
+The Docker image builds the frontend and serves it together with the API, so the
+public website uses one URL and requires no separate frontend or CORS setup.
+
+1. Push this repository to GitHub.
+2. In Render, choose **New → Blueprint**, connect the repository, and deploy the
+   `render.yaml` blueprint.
+3. When the deployment is ready, open the service's `onrender.com` URL. The
+   tactical map is available at `/tactical`; the health check is at `/api/health`.
+
+The service listens on Render's `PORT` environment variable. The first startup
+builds the terrain graph, so allow a few minutes for initial deployment. The
+blueprint uses Render's free plan. Free web services sleep after 15 minutes
+without traffic and can take about a minute to wake. They have 512 MB of RAM;
+the running server used about 376 MB in a local measurement, so startup or
+route calculations may exceed the free limit. If that happens, select a larger
+instance (at least 2 GB) in Render. For another Docker host, build from the
+repository root and run the image with its `PORT` environment variable set.
+
 ---
 
 ## 📄 License
