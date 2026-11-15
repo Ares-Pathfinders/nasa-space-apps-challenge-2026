@@ -97,6 +97,15 @@
   visibility: visible;
 }
 
+.local-map-transition--handoff .local-map-surface {
+  visibility: hidden;
+}
+
+.local-map-transition--exit-handoff,
+.local-map-transition--zooming-out {
+  visibility: visible;
+}
+
 .local-map-surface {
   position: absolute;
   inset: 0;
@@ -116,6 +125,10 @@
   animation-play-state: paused;
 }
 
+.local-map-transition--zooming-out .local-map-surface {
+  visibility: hidden;
+}
+
 .local-map-handoff {
   position: absolute;
   inset: 0;
@@ -128,11 +141,12 @@
   font-size: clamp(3rem, 12vw, 8rem);
   font-weight: 700;
   letter-spacing: 0.12em;
+  animation: localMapHandoffIn 1.2s ease-out both;
 }
 
 .local-map-handoff--out {
   pointer-events: none;
-  animation: localMapHandoffOut 0.75s ease-out forwards;
+  animation: localMapHandoffOut 1.2s ease-out forwards;
 }
 
 .local-map-chrome {
@@ -156,6 +170,11 @@
 @keyframes localMapHandoffOut {
   from { opacity: 1; }
   to { opacity: 0; }
+}
+
+@keyframes localMapHandoffIn {
+  from { opacity: 0; transform: scale(1.03); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 @keyframes localMapChromeIn {
