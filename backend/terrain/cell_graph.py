@@ -156,45 +156,75 @@ class CellGraphBuilder:
             cell_path = nx.astar_path(
                 self.graph, start, goal, heuristic=heuristic, weight="travel_time_s"
             )
-
-            total_distance_m = 0.0
-            total_time_s = 0.0
-            elevation_gain_m = 0.0
-            elevation_loss_m = 0.0
-            edge_slopes = []
-            coordinates = []
-
-            for i in range(len(cell_path)):
-                curr = cell_path[i]
-                node_data = self.graph.nodes[curr]
-                coordinates.append([node_data["lon"], node_data["lat"], node_data["elevation"]])
-
-                if i > 0:
-                    prev = cell_path[i - 1]
-                    edge = self.graph.edges[prev, curr]
-                    total_distance_m += edge["distance_m"]
-                    total_time_s += edge["travel_time_s"]
-                    edge_slopes.append(edge["edge_slope_deg"])
-                    if edge["elevation_change_m"] > 0:
-                        elevation_gain_m += edge["elevation_change_m"]
-                    else:
-                        elevation_loss_m += abs(edge["elevation_change_m"])
-
-            return {
-                "success": True,
-                "num_waypoints": len(cell_path),
-                "total_distance_meters": round(total_distance_m, 2),
-                "total_cost_seconds": round(total_time_s, 2),
-                "estimated_duration_min": round(total_time_s / 60.0, 1),
-                "cell_path": cell_path,
-                "coordinates_lon_lat_elev": coordinates,
-                "mean_path_slope_deg": round(float(np.mean(edge_slopes)), 2) if edge_slopes else 0.0,
-                "max_path_slope_deg": round(float(np.max(edge_slopes)), 2) if edge_slopes else 0.0,
-                "elevation_gain_m": round(elevation_gain_m, 2),
-                "elevation_loss_m": round(elevation_loss_m, 2),
-            }
+            return self._summarize_path(cell_path)
         except nx.NetworkXNoPath:
             return None
+
+    def find_path_through(self, cells: List[Tuple[int, int]]) -> Optional[Dict[str, Any]]:
+        """
+        Computes a route that visits the given cells in order (origin, waypoints..., destination)
+        by chaining A* legs. Returns the same structure as find_path_astar for the whole route,
+        or None if any leg has no safe path.
+        """
+        stops = [cell for i, cell in enumerate(cells) if i == 0 or cell != cells[i - 1]]
+        if len(stops) < 2:
+            raise ValueError("A route needs at least two distinct cells.")
+        for cell in stops:
+            if cell not in self.graph:
+                raise ValueError(f"Cell {cell} is either out of bounds or impassable.")
+
+        def heuristic(u, v):
+            return self.grid.get_distance_meters(u[0], u[1], v[0], v[1]) / self.BASE_EVA_SPEED_MPS
+
+        full_path: List[Tuple[int, int]] = []
+        try:
+            for leg_start, leg_goal in zip(stops, stops[1:]):
+                leg = nx.astar_path(
+                    self.graph, leg_start, leg_goal, heuristic=heuristic, weight="travel_time_s"
+                )
+                full_path.extend(leg if not full_path else leg[1:])
+        except nx.NetworkXNoPath:
+            return None
+        return self._summarize_path(full_path)
+
+    def _summarize_path(self, cell_path: List[Tuple[int, int]]) -> Dict[str, Any]:
+        """Distance, time, slope and elevation statistics for a connected cell path."""
+        total_distance_m = 0.0
+        total_time_s = 0.0
+        elevation_gain_m = 0.0
+        elevation_loss_m = 0.0
+        edge_slopes = []
+        coordinates = []
+
+        for i in range(len(cell_path)):
+            curr = cell_path[i]
+            node_data = self.graph.nodes[curr]
+            coordinates.append([node_data["lon"], node_data["lat"], node_data["elevation"]])
+
+            if i > 0:
+                prev = cell_path[i - 1]
+                edge = self.graph.edges[prev, curr]
+                total_distance_m += edge["distance_m"]
+                total_time_s += edge["travel_time_s"]
+                edge_slopes.append(edge["edge_slope_deg"])
+                if edge["elevation_change_m"] > 0:
+                    elevation_gain_m += edge["elevation_change_m"]
+                else:
+                    elevation_loss_m += abs(edge["elevation_change_m"])
+
+        return {
+            "success": True,
+            "num_waypoints": len(cell_path),
+            "total_distance_meters": round(total_distance_m, 2),
+            "total_cost_seconds": round(total_time_s, 2),
+            "estimated_duration_min": round(total_time_s / 60.0, 1),
+            "cell_path": cell_path,
+            "coordinates_lon_lat_elev": coordinates,
+            "mean_path_slope_deg": round(float(np.mean(edge_slopes)), 2) if edge_slopes else 0.0,
+            "max_path_slope_deg": round(float(np.max(edge_slopes)), 2) if edge_slopes else 0.0,
+            "elevation_gain_m": round(elevation_gain_m, 2),
+            "elevation_loss_m": round(elevation_loss_m, 2),
+        }
 
     def get_impassable_hazard_zones(self, min_cluster_size: int = 2) -> List[Dict[str, Any]]:
         """

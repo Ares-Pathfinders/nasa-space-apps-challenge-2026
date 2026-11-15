@@ -518,6 +518,7 @@ function animate(time: number) {
 function setActive(next: boolean) {
   active = next;
   container.hidden = !next;
+  document.body.classList.toggle('terrain3d-active', next);
   mapElement.style.visibility = next ? 'hidden' : '';
   toggleButton.textContent = next ? '🗺️ 2D MAP' : '🏔️ 3D RELIEF';
   toggleButton.setAttribute('aria-pressed', String(next));

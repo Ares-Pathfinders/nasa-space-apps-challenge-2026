@@ -142,3 +142,22 @@ END
     assert product["image_offset"] == 32940
     assert product["line_samples"] == 8235
     assert jezero._pixel_for_coordinate(product, 18.4, 77.5) == (1759, 4199)
+
+
+def test_gale_route_through_waypoints_visits_them_in_order():
+    grid = gale.generate_gale_crater_elevation_grid(resolution_rows=128, resolution_cols=128)
+    builder = CellGraphBuilder(grid, SlopeAnalyzer(grid, max_slope_deg=15.0), slope_penalty_weight=3.5)
+    start = grid.geo_to_cell(-4.5895, 137.4417)
+    via = grid.geo_to_cell(-4.70, 137.30)
+    goal = grid.geo_to_cell(-4.90, 137.45)
+
+    direct = builder.find_path_astar(start, goal)
+    through = builder.find_path_through([start, via, goal])
+
+    assert through is not None
+    path = through["cell_path"]
+    assert path[0] == start and path[-1] == goal and via in path
+    assert path.index(via) > 0
+    # Consecutive cells are neighbours, so the legs are joined without gaps or repeats.
+    assert all(max(abs(a[0] - b[0]), abs(a[1] - b[1])) == 1 for a, b in zip(path, path[1:]))
+    assert through["total_distance_meters"] >= direct["total_distance_meters"]

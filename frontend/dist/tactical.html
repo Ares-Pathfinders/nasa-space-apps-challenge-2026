@@ -225,8 +225,6 @@
     .status-entry label { margin-top: 6px; }
     .status-delete { border: 0; background: transparent; color: var(--red); font-size: 9px; }
     .status-empty { color: #64748b; font-size: 9px; }
-    .checks { display: grid; gap: 7px; color: #cbd5e1; font-size: 9px; }
-    .checks label { margin: 0; text-transform: none; letter-spacing: 0; display: flex; align-items: center; gap: 6px; cursor: pointer; }
     .legend, .info {
       padding: 9px;
       background: rgba(0, 0, 0, 0.45);
@@ -337,7 +335,77 @@
     }
     .terrain3d-status[hidden] { display: none; }
     #terrain3dToggle[aria-pressed="true"] { background: var(--cyan); color: #050608; }
+    /* Google Maps-style layers control (top right of the map, next to the data panel) */
+    .layers-control {
+      position: absolute; top: 84px; right: 402px; z-index: 1050;
+      display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+    }
+    body.right-panel-hidden .layers-control { right: 16px; }
+    body.setup-incomplete .layers-control,
+    body.terrain3d-active .layers-control,
+    body.terrain3d-active .elevation-legend { display: none; }
+    .layers-button {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 12px; border: 1px solid rgba(69, 243, 255, 0.45);
+      background: var(--panel); color: var(--cyan);
+      font: 600 10px 'JetBrains Mono', monospace; letter-spacing: 0.12em;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6); backdrop-filter: blur(14px);
+    }
+    .layers-button:hover, .layers-button[aria-expanded="true"] { background: var(--cyan); color: var(--bg); }
+    .layers-button svg { width: 18px; height: 18px; }
+    .layers-popover {
+      width: 312px; padding: 12px 14px 14px;
+      background: var(--panel); border: 1px solid rgba(69, 243, 255, 0.35);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.75); backdrop-filter: blur(14px);
+    }
+    .layers-popover[hidden] { display: none; }
+    .layers-popover h3 {
+      margin: 0 0 8px; color: #94a3b8; font-size: 9px; font-weight: 600; letter-spacing: 0.16em;
+    }
+    .layers-popover h3:not(:first-child) { margin-top: 14px; }
+    .layer-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .layer-tile {
+      display: flex; flex-direction: column; align-items: center; gap: 5px;
+      margin: 0; padding: 0; cursor: pointer; text-align: center;
+      color: #cbd5e1; font-size: 9px; letter-spacing: 0.02em; text-transform: none;
+    }
+    .layer-tile input { position: absolute; opacity: 0; pointer-events: none; }
+    .layer-thumb {
+      display: grid; place-items: center; width: 100%; aspect-ratio: 1;
+      border: 2px solid rgba(148, 163, 184, 0.35); border-radius: 8px;
+      background: #111827 center / cover no-repeat; font-size: 22px;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .layer-tile:hover .layer-thumb { border-color: rgba(69, 243, 255, 0.7); }
+    .layer-tile:has(input:checked) { color: var(--cyan); }
+    .layer-tile:has(input:checked) .layer-thumb {
+      border-color: var(--cyan); box-shadow: 0 0 0 1px var(--cyan), 0 0 14px rgba(69, 243, 255, 0.35);
+    }
+    .layer-tile:has(input:focus-visible) .layer-thumb { outline: 2px solid #fff; outline-offset: 2px; }
+    .thumb-default { background-image: url('https://mars.nasa.gov/mmgis-maps/MSL/Layers/MSL_CTX_ortho_mosaic_6m/10/903/495.png'); filter: sepia(.72) saturate(1.55) hue-rotate(326deg) brightness(.92); }
+    .thumb-minerals { background: radial-gradient(circle at 30% 35%, #67f04a 0 14%, transparent 15%), radial-gradient(circle at 70% 30%, #49a8d7 0 12%, transparent 13%), radial-gradient(circle at 45% 72%, #ef8181 0 13%, transparent 14%), radial-gradient(circle at 78% 70%, #f7fb43 0 9%, transparent 10%), #5b3a31; }
+    .thumb-elevation { background: linear-gradient(135deg, #1e3a8a, #2563eb 22%, #22d3ee 40%, #4ade80 55%, #facc15 70%, #f97316 85%, #dc2626); }
+    .thumb-grid { background: repeating-linear-gradient(0deg, rgba(34,197,94,.7) 0 1px, transparent 1px 9px), repeating-linear-gradient(90deg, rgba(34,197,94,.7) 0 1px, transparent 1px 9px), rgba(34,197,94,.12); }
+    .thumb-hazards { background: linear-gradient(135deg, rgba(255,51,102,.85) 0 45%, rgba(234,179,8,.6) 45% 60%, rgba(34,197,94,.25) 60%); }
+    .elevation-legend {
+      position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 1000;
+      display: flex; align-items: center; gap: 10px; padding: 7px 12px;
+      color: #cbd5e1; font-size: 9px; letter-spacing: 0.08em;
+    }
+    .elevation-legend[hidden] { display: none; }
+    .elevation-ramp {
+      width: 180px; height: 9px; border: 1px solid rgba(255, 255, 255, 0.2);
+      background: linear-gradient(90deg, #1e3a8a, #2563eb 17%, #22d3ee 34%, #4ade80 51%, #facc15 68%, #f97316 84%, #dc2626);
+    }
+    .elevation-overlay { image-rendering: auto; }
+    .leaflet-tooltip.waypoint-label {
+      padding: 1px 5px; border: 1px solid #ffb703; border-radius: 3px;
+      background: rgba(5, 6, 8, 0.85); color: #ffb703; font: 700 10px 'JetBrains Mono', monospace; box-shadow: none;
+    }
+    .leaflet-tooltip.waypoint-label::before { display: none; }
     @media (max-width: 860px) {
+      .layers-control, body.right-panel-hidden .layers-control { top: 72px; right: 8px; }
+      .layers-popover { width: min(312px, calc(100vw - 16px)); }
       header { left: 8px; right: 8px; }
       .side {
         top: auto; bottom: 8px; width: calc(50% - 12px);
@@ -351,7 +419,7 @@
       .status-grid .wide { grid-column: auto; }
     }
   </style>
-  <script type="module" crossorigin src="/assets/tactical-DuT5QXrj.js"></script>
+  <script type="module" crossorigin src="/assets/tactical-CmFiGmrR.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/three.module-BbwUxmN5.js">
 </head>
 <body class="setup-incomplete">
@@ -399,13 +467,6 @@
   <!-- Left panel: terrain and grid settings -->
   <aside id="leftPanel" class="panel side left">
     <h2><span>EXPEDITION SETUP</span><button id="closeLeftPanel" class="panel-close" type="button" aria-label="Close expedition panel">×</button></h2>
-    <label for="basemap">Base map</label>
-    <select id="basemap">
-      <option value="default" selected>Default (per Martian zone)</option>
-      <option value="minerals">Colour mineral map</option>
-      <option value="mola">MOLA shaded relief</option>
-    </select>
-
     <label for="zone">Martian zone</label>
     <select id="zone">
       <option value="gale" selected>Gale Crater - Mount Sharp (Curiosity / MSL)</option>
@@ -432,6 +493,7 @@
     <h2 style="margin-top:16px">ROUTE PLANNER</h2>
     <div class="route-controls">
       <button id="planRoute" class="nav-btn" type="button" style="justify-content:center;">🧭 CHOOSE ORIGIN AND DESTINATION</button>
+      <button id="addWaypoint" class="nav-btn" type="button" disabled style="justify-content:center;opacity:.45;" title="Add a stop the custom route must pass through">＋ ADD WAYPOINT</button>
       <button id="startNavigation" class="nav-btn" type="button" disabled style="justify-content:center;opacity:.45;">▶ START NAVIGATION</button>
       <button id="clearCustomRoute" class="nav-btn" type="button" style="justify-content:center;border-color:#94a3b8;color:#cbd5e1;background:rgba(148,163,184,.08);">CLEAR CUSTOM ROUTE</button>
     </div>
@@ -476,22 +538,15 @@
       <div id="statusLog" class="status-log" aria-live="polite"></div>
     </section>
 
-    <h2 style="margin-top:16px">VISIBLE LAYERS</h2>
-    <div class="checks">
-      <label><input id="cells" type="checkbox"> ▦ Topographic grid</label>
-      <label><input id="hazards" type="checkbox"> ⛔ Impassable cells (steep)</label>
-      <label><input id="route" type="checkbox" checked> ⚡ Optimised A* safe route</label>
-      <label><input id="wps" type="checkbox" checked> 📍 Rover expedition waypoints</label>
-      <label><input id="gasesLayer" type="checkbox" checked> 🪐 Gas auras and beacons (ESA PSA)</label>
-    </div>
-
     <h2 style="margin-top:16px">LEGEND</h2>
     <div class="legend">
       <div><span style="background:#22c55e;border-color:#22c55e"></span>Passable (&lt; 10°)</div>
       <div><span style="background:#eab308;border-color:#eab308"></span>Caution (10° - 15°)</div>
       <div><span style="background:#ff3366;border-color:#ff3366"></span>Impassable (&gt; 15°)</div>
-      <div><span style="background:var(--cyan);border-color:var(--cyan);height:3px"></span>Lowest-cost A* route</div>
-      <div><span style="background:#ffb703;border-color:#ffb703;height:3px"></span>Automatic return</div>
+      <div><span style="background:var(--cyan);border-color:var(--cyan);height:3px"></span>Route A · safe (lowest-cost A*)</div>
+      <div><span style="background:repeating-linear-gradient(90deg,#ffb703 0 4px,transparent 4px 7px);border-color:transparent;height:3px"></span>Route B · custom (your route)</div>
+      <div><span style="background:#fff;border-color:#fff;border-radius:50%;width:9px;height:9px"></span>Route B waypoints (click to remove)</div>
+      <div><span style="background:repeating-linear-gradient(90deg,#e2e8f0 0 4px,transparent 4px 7px);border-color:transparent;height:3px"></span>Automatic return (low resources)</div>
       <div><span style="background:#a855f7;border-color:#a855f7"></span>ESA spectrometry (NOMAD/ACS)</div>
     </div>
 
@@ -559,6 +614,41 @@
     <div id="routeReturnStatus" class="info" style="margin-top:10px;font-size:9px;" aria-live="polite">Waiting for route calculation and available resources.</div>
 
   </aside>
+  <!-- Layers control (Google Maps style): base map type + map details -->
+  <div id="layersControl" class="layers-control">
+    <button id="layersButton" class="layers-button" type="button" aria-expanded="false" aria-controls="layersPopover">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 3 2 8.5 12 14l10-5.5L12 3Z"/><path d="m2 13 10 5.5L22 13"/><path d="m2 17.5 10 5.5 10-5.5"/>
+      </svg>
+      LAYERS
+    </button>
+    <section id="layersPopover" class="layers-popover" aria-label="Map layers" hidden>
+      <h3>MAP TYPE</h3>
+      <div class="layer-tiles" role="radiogroup" aria-label="Base map">
+        <label class="layer-tile"><input type="radio" name="basemapChoice" value="default" checked><span class="layer-thumb thumb-default"></span>Imagery</label>
+        <label class="layer-tile"><input type="radio" name="basemapChoice" value="minerals"><span class="layer-thumb thumb-minerals"></span>Minerals</label>
+      </div>
+      <select id="basemap" hidden aria-hidden="true">
+        <option value="default" selected>Default (per Martian zone)</option>
+        <option value="minerals">Colour mineral map</option>
+      </select>
+      <h3>MAP DETAILS</h3>
+      <div class="layer-tiles">
+        <label class="layer-tile"><input id="elevationLayer" type="checkbox"><span class="layer-thumb thumb-elevation"></span>Elevation</label>
+        <label class="layer-tile"><input id="cells" type="checkbox"><span class="layer-thumb thumb-grid"></span>Terrain grid</label>
+        <label class="layer-tile"><input id="hazards" type="checkbox"><span class="layer-thumb thumb-hazards"></span>Steep cells</label>
+        <label class="layer-tile"><input id="route" type="checkbox" checked><span class="layer-thumb">⚡</span>Safe route</label>
+        <label class="layer-tile"><input id="wps" type="checkbox" checked><span class="layer-thumb">📍</span>Waypoints</label>
+        <label class="layer-tile"><input id="gasesLayer" type="checkbox" checked><span class="layer-thumb">🪐</span>Gas beacons</label>
+      </div>
+    </section>
+  </div>
+  <div id="elevationLegend" class="panel elevation-legend" hidden>
+    <span>ELEVATION</span>
+    <b id="elevationMin">--</b>
+    <span class="elevation-ramp" aria-hidden="true"></span>
+    <b id="elevationMax">--</b>
+  </div>
   <button id="reopenLeftPanel" class="panel-reopen" type="button" aria-controls="leftPanel" aria-expanded="true">SHOW EXPEDITION</button>
   <button id="reopenRightPanel" class="panel-reopen" type="button" aria-controls="rightPanel" aria-expanded="true">SHOW DATA</button>
   <div id="routePickerHint" class="route-picker-hint" role="status" aria-live="polite" hidden></div>
@@ -586,9 +676,6 @@
     });
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    const baseMap = L.tileLayer('https://trek.nasa.gov/tiles/Mars/EQ/Mars_MGS_MOLA_ClrShade_merge_global_463m/1.0.0/default/default028mm/{z}/{y}/{x}.jpg', {
-      maxZoom: 12, maxNativeZoom: 7, minZoom: 2, attribution: 'NASA / USGS MOLA'
-    }).addTo(map);
     const mineralMapUrl = 'https://trek.nasa.gov/mars/trekarcgis/rest/services/Aquieous_Mineral_Distribution_Options_clon0/MapServer';
     map.createPane('mineralPane').style.zIndex = '250';
     map.createPane('mineralDetectionsPane').style.zIndex = '450';
@@ -747,12 +834,9 @@
     function setBaseMapMode(mode) {
       const showMinerals = mode === 'minerals';
       const zone = document.getElementById('zone').value;
-      const showMola = mode === 'mola';
       const showRegionalImagery = mode === 'default' || showMinerals;
       const showGaleImagery = showRegionalImagery && zone === 'gale';
       const showJezeroImagery = showRegionalImagery && zone === 'jezero';
-      if (showMola) map.addLayer(baseMap);
-      else map.removeLayer(baseMap);
       if (showGaleImagery) map.addLayer(galeImageryLayer);
       else map.removeLayer(galeImageryLayer);
       if (showJezeroImagery) map.addLayer(jezeroImageryLayer);
@@ -787,6 +871,59 @@
 
     // The terrain grid is drawn as two canvas images (up to 512x512 cells), below routes and markers.
     map.createPane('gridPane').style.zIndex = '350';
+    // Elevation colour layer sits just below the grid.
+    map.createPane('elevationPane').style.zIndex = '340';
+
+    // Hypsometric ramp: blue = low, red = high.
+    const ELEVATION_RAMP = [
+      [0.0, [30, 58, 138]], [0.17, [37, 99, 235]], [0.34, [34, 211, 238]], [0.51, [74, 222, 128]],
+      [0.68, [250, 204, 21]], [0.84, [249, 115, 22]], [1.0, [220, 38, 38]]
+    ];
+    function elevationColor(t) {
+      for (let i = 1; i < ELEVATION_RAMP.length; i += 1) {
+        const [t1, c1] = ELEVATION_RAMP[i];
+        if (t <= t1) {
+          const [t0, c0] = ELEVATION_RAMP[i - 1];
+          const f = (t - t0) / (t1 - t0);
+          return c0.map((v, k) => Math.round(v + (c1[k] - v) * f));
+        }
+      }
+      return ELEVATION_RAMP[ELEVATION_RAMP.length - 1][1];
+    }
+
+    function formatElevation(meters) {
+      return `${meters >= 0 ? '+' : '−'}${(Math.abs(meters) / 1000).toFixed(1)} km`;
+    }
+
+    function renderElevationOverlay(data, imageBounds) {
+      const [rows, cols] = data.resolution;
+      const elevation = data.grid.elevation_m;
+      let min = Infinity, max = -Infinity;
+      for (const value of elevation) {
+        if (value < min) min = value;
+        if (value > max) max = value;
+      }
+      const span = Math.max(1, max - min);
+      const canvas = document.createElement('canvas');
+      canvas.width = cols;
+      canvas.height = rows;
+      const ctx = canvas.getContext('2d');
+      const image = ctx.createImageData(cols, rows);
+      for (let i = 0; i < elevation.length; i += 1) {
+        const [r, g, b] = elevationColor((elevation[i] - min) / span);
+        image.data[i * 4] = r;
+        image.data[i * 4 + 1] = g;
+        image.data[i * 4 + 2] = b;
+        image.data[i * 4 + 3] = 150; // ~60% opacity so the imagery shows through
+      }
+      ctx.putImageData(image, 0, 0);
+      layers.elevation.clearLayers();
+      layers.elevation.addLayer(L.imageOverlay(canvas.toDataURL(), imageBounds, {
+        pane: 'elevationPane', interactive: false, className: 'elevation-overlay'
+      }));
+      document.getElementById('elevationMin').textContent = formatElevation(min);
+      document.getElementById('elevationMax').textContent = formatElevation(max);
+    }
     let currentGrid = null;
 
     function renderGridOverlays(data) {
@@ -835,6 +972,7 @@
         [data.bounds.max_lat + dlat / 2, data.bounds.max_lon + dlon / 2]
       ];
       const overlayOptions = { pane: 'gridPane', interactive: false, className: 'grid-overlay' };
+      renderElevationOverlay(data, imageBounds);
       layers.cells.addLayer(L.imageOverlay(passableCanvas.toDataURL(), imageBounds, overlayOptions));
       layers.hazards.addLayer(L.imageOverlay(hazardCanvas.toDataURL(), imageBounds, overlayOptions));
     }
@@ -881,7 +1019,7 @@
     // Cell inspector: hover or click while the grid (or impassable cells) layer is visible.
     let lastInspectedCell = -1;
     const inspectGridCell = event => {
-      if (!map.hasLayer(layers.cells) && !map.hasLayer(layers.hazards)) return;
+      if (!map.hasLayer(layers.cells) && !map.hasLayer(layers.hazards) && !map.hasLayer(layers.elevation)) return;
       const cell = gridCellAt(event.latlng);
       if (!cell) return;
       const key = cell.r * currentGrid.cols + cell.c;
@@ -896,6 +1034,7 @@
       // Hidden by default; shown with the "Topographic grid" / "Impassable cells" checkboxes.
       cells: L.layerGroup(),
       hazards: L.layerGroup(),
+      elevation: L.layerGroup(),
       route: L.layerGroup().addTo(map),
       customRoute: L.layerGroup().addTo(map),
       returnRoute: L.layerGroup().addTo(map),
@@ -939,6 +1078,10 @@
     let defaultRouteMetrics = null;
     let customRouteMetrics = null;
     let selectedRouteStart = null;
+    let customRouteTarget = null;
+    let customRouteVias = [];      // intermediate stops of route B, in travel order
+    let isPickingVia = false;
+    const MAX_ROUTE_WAYPOINTS = 10;
     let customRouteWaypoints = [];
     let isPickingRoute = false;
     let initialSetupPending = true;
@@ -1039,7 +1182,7 @@
       if (returnTriggered) {
         const returnPoints = [...latestRoute.points].reverse();
         layers.returnRoute.addLayer(L.polyline(returnPoints, {
-          color: '#ffb703',
+          color: '#e2e8f0',
           weight: 5,
           dashArray: '9 8',
           opacity: 0.95
@@ -1367,7 +1510,7 @@
     function setRouteStatus(message) {
       document.getElementById('routeStatus').textContent = message;
       const hint = document.getElementById('routePickerHint');
-      if (isPickingRoute || (initialSetupPending && document.getElementById('missionSetup').hidden)) {
+      if (isPickingRoute || isPickingVia || (initialSetupPending && document.getElementById('missionSetup').hidden)) {
         hint.textContent = message;
         hint.hidden = false;
       }
@@ -1406,15 +1549,85 @@
       map.getContainer().style.cursor = '';
       if (initialSetupPending) document.body.classList.remove('route-picking');
       else restorePanelsAfterRoute();
-      layers.customRoute.addLayer(L.circleMarker([point.latitude, point.longitude], {
-        radius: 8, color: '#fff', weight: 2, fillColor: '#ffb703', fillOpacity: 1
-      }).bindTooltip('DESTINATION', { permanent: true, direction: 'top' }));
-      calculateCustomRoute(selectedRouteStart, point);
+      customRouteTarget = point;
+      customRouteVias = [];
+      calculateCustomRoute();
     }
 
-    async function calculateCustomRoute(start, target) {
+    function setAddWaypointEnabled(enabled) {
+      const button = document.getElementById('addWaypoint');
+      button.disabled = !enabled;
+      button.style.opacity = enabled ? '1' : '.45';
+    }
+
+    function resetCustomRouteStops() {
+      customRouteTarget = null;
+      customRouteVias = [];
+      isPickingVia = false;
+      setAddWaypointEnabled(false);
+    }
+
+    // Origin, numbered waypoints and destination of route B.
+    function drawCustomRouteStops() {
+      layers.customRoute.clearLayers();
+      if (!selectedRouteStart || !customRouteTarget) return;
+      layers.customRoute.addLayer(L.circleMarker([selectedRouteStart.latitude, selectedRouteStart.longitude], {
+        radius: 8, color: '#fff', weight: 2, fillColor: '#22c55e', fillOpacity: 1
+      }).bindTooltip('ORIGIN', { permanent: true, direction: 'top' }));
+      customRouteVias.forEach((via, index) => {
+        const marker = L.circleMarker([via.latitude, via.longitude], {
+          radius: 7, color: '#ffb703', weight: 3, fillColor: '#fff', fillOpacity: 1
+        }).bindTooltip(`${index + 1}`, { permanent: true, direction: 'top', className: 'waypoint-label' });
+        marker.on('click', event => {
+          L.DomEvent.stopPropagation(event);
+          if (isPickingRoute || isPickingVia) return;
+          customRouteVias.splice(index, 1);
+          calculateCustomRoute();
+        });
+        layers.customRoute.addLayer(marker);
+      });
+      layers.customRoute.addLayer(L.circleMarker([customRouteTarget.latitude, customRouteTarget.longitude], {
+        radius: 8, color: '#fff', weight: 2, fillColor: '#ffb703', fillOpacity: 1
+      }).bindTooltip('DESTINATION', { permanent: true, direction: 'top' }));
+      if (document.getElementById('route').checked) map.addLayer(layers.customRoute);
+    }
+
+    // Insert a new waypoint where it adds the smallest detour to the current stop sequence.
+    function addRouteWaypoint(latlng) {
+      if (!currentTerrainBounds ||
+          latlng.lat < currentTerrainBounds.min_lat || latlng.lat > currentTerrainBounds.max_lat ||
+          latlng.lng < currentTerrainBounds.min_lon || latlng.lng > currentTerrainBounds.max_lon) {
+        setRouteStatus('Choose waypoints inside the loaded terrain bounds.');
+        return;
+      }
+      const point = { latitude: latlng.lat, longitude: latlng.lng };
+      const stops = [selectedRouteStart, ...customRouteVias, customRouteTarget]
+        .map(stop => L.latLng(stop.latitude, stop.longitude));
+      let bestLeg = 0;
+      let bestDetour = Infinity;
+      for (let i = 0; i < stops.length - 1; i += 1) {
+        const detour = stops[i].distanceTo(latlng) + latlng.distanceTo(stops[i + 1]) - stops[i].distanceTo(stops[i + 1]);
+        if (detour < bestDetour) {
+          bestDetour = detour;
+          bestLeg = i;
+        }
+      }
+      customRouteVias.splice(bestLeg, 0, point);
+      isPickingVia = false;
+      map.getContainer().style.cursor = '';
+      document.getElementById('routePickerHint').hidden = true;
+      calculateCustomRoute();
+    }
+
+    async function calculateCustomRoute() {
+      const start = selectedRouteStart;
+      const target = customRouteTarget;
       const requestId = ++customRouteRequestId;
-      setRouteStatus('Computing a safe route over the topographic grid...');
+      drawCustomRouteStops();
+      setAddWaypointEnabled(false);
+      setRouteStatus(customRouteVias.length
+        ? `Computing a safe route through ${customRouteVias.length} waypoint${customRouteVias.length > 1 ? 's' : ''}...`
+        : 'Computing a safe route over the topographic grid...');
       document.getElementById('startNavigation').disabled = true;
       document.getElementById('startNavigation').style.opacity = '.45';
       try {
@@ -1423,10 +1636,12 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             zone: document.getElementById('zone').value,
-            resolution: Math.min(Number(document.getElementById('resolution').value), 100),
+            // Same grid as the map (the backend caps Jezero at 100x100).
+            resolution: Number(document.getElementById('resolution').value),
             max_slope: Number(document.getElementById('slope').value),
             start,
-            target
+            target,
+            via: customRouteVias
           })
         });
         const result = await response.json();
@@ -1434,12 +1649,12 @@
         if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
 
         const points = result.waypoints.map(waypoint => [waypoint.latitude, waypoint.longitude]);
-        layers.customRoute.addLayer(L.polyline(points, {
-          color: '#ffb703', weight: 8, opacity: 0.3
-        }));
-        layers.customRoute.addLayer(L.polyline(points, {
-          color: '#ffb703', weight: 3, dashArray: '9 7'
-        }));
+        const halo = L.polyline(points, { color: '#ffb703', weight: 8, opacity: 0.3, interactive: false });
+        const line = L.polyline(points, { color: '#ffb703', weight: 3, dashArray: '9 7', interactive: false });
+        layers.customRoute.addLayer(halo);
+        layers.customRoute.addLayer(line);
+        halo.bringToBack();
+        line.bringToBack();
         if (document.getElementById('route').checked) map.addLayer(layers.customRoute);
 
         customRouteWaypoints = result.waypoints;
@@ -1462,7 +1677,11 @@
           document.getElementById('routePickerHint').hidden = true;
           map.invalidateSize({ pan: false });
         }
-        setRouteStatus(`Safe route computed${snapped ? ' (endpoints snapped to passable cells)' : ''}: ${(result.total_distance_m / 1000).toFixed(2)} km.`);
+        setAddWaypointEnabled(customRouteVias.length < MAX_ROUTE_WAYPOINTS);
+        const viaNote = customRouteVias.length
+          ? ` via ${customRouteVias.length} waypoint${customRouteVias.length > 1 ? 's' : ''}`
+          : '';
+        setRouteStatus(`Safe route computed${viaNote}${snapped ? ' (endpoints snapped to passable cells)' : ''}: ${(result.total_distance_m / 1000).toFixed(2)} km.`);
       } catch (error) {
         if (requestId !== customRouteRequestId) return;
         if (initialSetupPending) {
@@ -1473,6 +1692,11 @@
           return;
         }
         setRouteStatus(`Could not compute the route: ${error.message}`);
+        if (customRouteVias.length) {
+          // Keep the waypoints so the user can remove the one that makes the route impossible.
+          setAddWaypointEnabled(false);
+          setRouteStatus(`Could not compute the route through the waypoints: ${error.message} Click a waypoint to remove it.`);
+        }
       }
     }
 
@@ -1482,6 +1706,7 @@
       customRouteRequestId += 1;
       isPickingRoute = false;
       selectedRouteStart = null;
+      resetCustomRouteStops();
       customRouteWaypoints = [];
       document.getElementById('startNavigation').disabled = true;
       document.getElementById('startNavigation').style.opacity = '.45';
@@ -1595,6 +1820,7 @@
 
     function setPanelVisible(panelId, closeId, reopenId, visible) {
       document.getElementById(panelId).hidden = !visible;
+      if (panelId === 'rightPanel') document.body.classList.toggle('right-panel-hidden', !visible);
       document.getElementById(closeId).setAttribute('aria-expanded', String(visible));
       const reopenButton = document.getElementById(reopenId);
       reopenButton.setAttribute('aria-expanded', String(visible));
@@ -1612,11 +1838,27 @@
       setPanelVisible('rightPanel', 'closeRightPanel', 'reopenRightPanel', true);
 
     map.on('click', event => {
-      if (isPickingRoute) addRoutePoint(event.latlng);
+      if (isPickingVia) addRouteWaypoint(event.latlng);
+      else if (isPickingRoute) addRoutePoint(event.latlng);
+    });
+
+    document.getElementById('addWaypoint').onclick = () => {
+      if (!customRouteTarget || customRouteVias.length >= MAX_ROUTE_WAYPOINTS) return;
+      isPickingVia = true;
+      map.getContainer().style.cursor = 'crosshair';
+      setRouteStatus('Click the map where the route must pass. Press Esc to cancel.');
+    };
+    document.addEventListener('keydown', event => {
+      if (event.key !== 'Escape' || !isPickingVia) return;
+      isPickingVia = false;
+      map.getContainer().style.cursor = '';
+      document.getElementById('routePickerHint').hidden = true;
+      setRouteStatus('Waypoint cancelled.');
     });
 
     function beginRoutePlanning() {
       selectedRouteStart = null;
+      resetCustomRouteStops();
       customRouteWaypoints = [];
       customRouteMetrics = null;
       document.getElementById('selectedRouteSummary').hidden = true;
@@ -1685,6 +1927,7 @@
       restorePanelsAfterRoute();
       isPickingRoute = false;
       selectedRouteStart = null;
+      resetCustomRouteStops();
       customRouteWaypoints = [];
       customRouteMetrics = null;
       layers.customRoute.clearLayers();
@@ -1707,7 +1950,34 @@
     document.getElementById('slope').oninput = e => document.getElementById('slopeValue').textContent = Number(e.target.value).toFixed(1) + '°';
     document.getElementById('slope').onchange = load;
 
+    // Layers control (Google Maps style)
+    const layersButton = document.getElementById('layersButton');
+    const layersPopover = document.getElementById('layersPopover');
+    function setLayersPopoverOpen(open) {
+      layersPopover.hidden = !open;
+      layersButton.setAttribute('aria-expanded', String(open));
+    }
+    layersButton.addEventListener('click', () => setLayersPopoverOpen(layersPopover.hidden));
+    document.addEventListener('click', event => {
+      if (!layersPopover.hidden && !document.getElementById('layersControl').contains(event.target)) setLayersPopoverOpen(false);
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && !layersPopover.hidden) setLayersPopoverOpen(false);
+    });
+    document.querySelectorAll('input[name="basemapChoice"]').forEach(input => {
+      input.addEventListener('change', () => {
+        const select = document.getElementById('basemap');
+        select.value = input.value;
+        select.dispatchEvent(new Event('change'));
+      });
+    });
+
     // Layer toggles
+    document.getElementById('elevationLayer').onchange = e => {
+      if (e.target.checked) map.addLayer(layers.elevation);
+      else map.removeLayer(layers.elevation);
+      document.getElementById('elevationLegend').hidden = !e.target.checked;
+    };
     document.getElementById('cells').onchange = e => e.target.checked ? map.addLayer(layers.cells) : map.removeLayer(layers.cells);
     document.getElementById('hazards').onchange = e => e.target.checked ? map.addLayer(layers.hazards) : map.removeLayer(layers.hazards);
     document.getElementById('route').onchange = e => {

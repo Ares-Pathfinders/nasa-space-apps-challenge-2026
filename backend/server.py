@@ -52,6 +52,7 @@ GALE_TERRAIN_SOURCE = {
         "cell slope = 75th percentile of the real slope inside the cell."
     ),
 }
+MAX_ROUTE_WAYPOINTS = 10
 GALE_MAX_RESOLUTION = 512  # ~native STL resolution (513x513 heights)
 # Default Gale route: from Bradbury Landing to the slopes of Mount Sharp.
 GALE_DEFAULT_ROUTE = ((-4.5895, 137.4417), (-4.90, 137.45))
@@ -363,6 +364,11 @@ class AresNavHandler(SimpleHTTPRequestHandler):
             target_coords = req.get("target", {"latitude": -4.716, "longitude": 137.397})
             start = (float(start_coords["latitude"]), float(start_coords["longitude"]))
             target = (float(target_coords["latitude"]), float(target_coords["longitude"]))
+            # Optional intermediate waypoints the route must pass through, in order.
+            via_coords = req.get("via") or []
+            if not isinstance(via_coords, list):
+                raise TypeError("via must be a list of {latitude, longitude} points")
+            via = [(float(point["latitude"]), float(point["longitude"])) for point in via_coords]
         except (KeyError, TypeError, ValueError) as error:
             self._send_json({"error": f"Invalid route parameters: {error}"}, status=400)
             return
@@ -376,7 +382,10 @@ class AresNavHandler(SimpleHTTPRequestHandler):
         if not math.isfinite(max_slope) or not 8.0 <= max_slope <= 25.0:
             self._send_json({"error": "max_slope must be between 8 and 25 degrees."}, status=400)
             return
-        if not all(math.isfinite(value) for value in (*start, *target)):
+        if len(via) > MAX_ROUTE_WAYPOINTS:
+            self._send_json({"error": f"At most {MAX_ROUTE_WAYPOINTS} intermediate waypoints are supported."}, status=400)
+            return
+        if not all(math.isfinite(value) for value in (*start, *target, *(v for point in via for v in point))):
             self._send_json({"error": "Route coordinates must be finite numbers."}, status=400)
             return
 
@@ -402,7 +411,8 @@ class AresNavHandler(SimpleHTTPRequestHandler):
             self._send_json({"error": str(error)}, status=503)
             return
 
-        for name, coords in (("start", start), ("target", target)):
+        named_points = [("start", start), *((f"waypoint {i + 1}", point) for i, point in enumerate(via)), ("target", target)]
+        for name, coords in named_points:
             latitude, longitude = coords
             if not (grid.min_lat <= latitude <= grid.max_lat and grid.min_lon <= longitude <= grid.max_lon):
                 self._send_json({
@@ -416,20 +426,27 @@ class AresNavHandler(SimpleHTTPRequestHandler):
                 }, status=400)
                 return
 
-        requested_start_cell = grid.geo_to_cell(*start)
-        requested_goal_cell = grid.geo_to_cell(*target)
-        start_cell = _nearest_passable_cell(grid, builder, requested_start_cell)
-        goal_cell = _nearest_passable_cell(grid, builder, requested_goal_cell)
-        if start_cell is None or goal_cell is None:
-            self._send_json({
-                "error": "The selected endpoint is on impassable terrain with no safe cell nearby. Choose a safer point."
-            }, status=422)
-            return
-        if start_cell == goal_cell:
+        requested_cells = [grid.geo_to_cell(*coords) for _, coords in named_points]
+        stop_cells = []
+        for (name, _), requested in zip(named_points, requested_cells):
+            cell = _nearest_passable_cell(grid, builder, requested)
+            if cell is None:
+                self._send_json({
+                    "error": f"The {name} is on impassable terrain with no safe cell nearby. Choose a safer point."
+                }, status=422)
+                return
+            stop_cells.append(cell)
+        requested_start_cell, requested_goal_cell = requested_cells[0], requested_cells[-1]
+        start_cell, goal_cell = stop_cells[0], stop_cells[-1]
+        if start_cell == goal_cell and not via:
             self._send_json({"error": "Choose two points at least one navigable cell apart."}, status=422)
             return
 
-        route = builder.find_path_astar(start_cell, goal_cell)
+        try:
+            route = builder.find_path_through(stop_cells)
+        except ValueError as error:
+            self._send_json({"error": str(error)}, status=422)
+            return
         if not route:
             self._send_json({"error": "No safe route connects the selected points at this slope limit."}, status=422)
             return
@@ -484,6 +501,10 @@ class AresNavHandler(SimpleHTTPRequestHandler):
             },
             "snapped_start": start_cell != requested_start_cell,
             "snapped_target": goal_cell != requested_goal_cell,
+            "via_points": [
+                {"latitude": round(lat, 5), "longitude": round(lon, 5)}
+                for lat, lon in (grid.cell_to_geo(*cell) for cell in stop_cells[1:-1])
+            ],
             "waypoints": waypoints,
         })
 
