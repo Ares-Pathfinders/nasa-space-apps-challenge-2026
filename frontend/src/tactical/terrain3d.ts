@@ -2,8 +2,10 @@
  * Vista "Relieve 3D" del visor táctico (tactical.html), estilo Google Earth.
  *
  * Usa el modelo public/models/gale_crater.stl como relieve y le superpone las
- * mismas imágenes del mapa 2D de Gale (CTX 6 m teñido + HiRISE + rótulos MMGIS),
- * además de las rutas y los hitos que haya en el mapa.
+ * imágenes MMGIS de Gale: el color sale del CTX 6 m con el tinte del mapa 2D y,
+ * en el corredor de Curiosity, el detalle de CTX/HiRISE se aplica sólo como
+ * luminancia para que no haya cambios bruscos de color. Encima van las rutas y
+ * los hitos que haya en el mapa.
  *
  * El STL no trae coordenadas. Su posición se obtuvo ajustándolo al DEM
  * MOLA/HRSC blend de 200 m (correlación 0,9998): es una rejilla de 513×513 alturas,
@@ -54,7 +56,6 @@ const DETAIL_ZOOM = 13; // ≈10 m/px en el corredor
 const GALE_LAYERS = {
   ctx: 'https://mars.nasa.gov/mmgis-maps/MSL/Layers/MSL_CTX_ortho_mosaic_6m/{z}/{x}/{y}.png',
   hirise: 'https://mars.nasa.gov/mmgis-maps/MSL/Layers/MSL_Gale_HiRISE-LRGB_78quads/{z}/{x}/{y}.png',
-  labels: 'https://mars.nasa.gov/mmgis-maps/MSL/Layers/MSL_WebGIS_PlaceText/{z}/{x}/{y}.png',
 };
 
 function lonLatToScene(lon: number, lat: number): [number, number] {
@@ -205,10 +206,24 @@ const mercatorRow = (lat: number, n: number) =>
   Math.floor(((1 - Math.asinh(Math.tan((lat * Math.PI) / 180)) / Math.PI) / 2) * n);
 const rowToLat = (row: number, n: number) => (Math.atan(Math.sinh(Math.PI * (1 - (2 * row) / n))) * 180) / Math.PI;
 
+type ImageryLayer = { url: string; alpha: number; filter: string };
+
+// Color: CTX con el mismo tinte que el mapa 2D (ver galeImageryLayer en tactical.html).
+// Sin HiRISE ni rótulos, para que todo el cráter tenga un tono uniforme y realista.
+const OVERVIEW_STACK: ImageryLayer[] = [
+  { url: GALE_LAYERS.ctx, alpha: 0.72, filter: 'sepia(.72) saturate(1.55) hue-rotate(326deg) brightness(.92)' },
+];
+// Detalle: sólo aporta luces y sombras (luminancia). El color lo pone la textura general,
+// así las franjas grises y los quads en color de HiRISE no producen saltos de tono.
+const DETAIL_STACK: ImageryLayer[] = [
+  { url: GALE_LAYERS.ctx, alpha: 1, filter: 'grayscale(1)' },
+  { url: GALE_LAYERS.hirise, alpha: 1, filter: 'grayscale(1)' },
+];
+
 async function composeImagery(
   bounds: Bounds,
   zoom: number,
-  withLabels: boolean,
+  stack: ImageryLayer[],
   onProgress: (done: number, total: number) => void,
 ) {
   const n = 2 ** zoom;
@@ -227,13 +242,6 @@ async function composeImagery(
   const tiles: Array<{ col: number; row: number }> = [];
   for (let col = colStart; col <= colEnd; col += 1) for (let row = rowStart; row <= rowEnd; row += 1) tiles.push({ col, row });
 
-  // Misma pila y estilo que el mapa 2D (ver galeImageryLayer en tactical.html).
-  const stack: Array<{ url: string; alpha: number; filter: string }> = [
-    { url: GALE_LAYERS.ctx, alpha: 0.72, filter: 'sepia(.72) saturate(1.55) hue-rotate(326deg) brightness(.92)' },
-    { url: GALE_LAYERS.hirise, alpha: 1, filter: 'none' },
-    // Los rótulos se queman en la textura: sólo en el detalle, donde su tamaño es razonable.
-    ...(withLabels ? [{ url: GALE_LAYERS.labels, alpha: 0.96, filter: 'none' }] : []),
-  ];
   const total = tiles.length * stack.length;
   let done = 0;
   for (const layer of stack) {
@@ -331,8 +339,14 @@ function createTerrainMaterial(): THREE.MeshStandardMaterial {
         vec2 detailUv = (vMapUv - detailRect.xy) / (detailRect.zw - detailRect.xy);
         if (detailReady > 0.5 && all(greaterThanEqual(detailUv, vec2(0.0))) && all(lessThanEqual(detailUv, vec2(1.0)))) {
           // Funde el borde del parche de detalle con la textura general.
-          vec2 edge = smoothstep(vec2(0.0), vec2(0.06), detailUv) * smoothstep(vec2(0.0), vec2(0.06), 1.0 - detailUv);
-          diffuseColor.rgb = mix(diffuseColor.rgb, texture2D(detailMap, detailUv).rgb, edge.x * edge.y);
+          vec2 edge = smoothstep(vec2(0.0), vec2(0.15), detailUv) * smoothstep(vec2(0.0), vec2(0.15), 1.0 - detailUv);
+          // Transferencia de detalle: color de la textura general × (luminancia local del
+          // detalle / su media en ~300 m, leída de un mipmap borroso).
+          const vec3 LUMA = vec3(0.2126, 0.7152, 0.0722);
+          float detailLuma = dot(texture2D(detailMap, detailUv).rgb, LUMA);
+          float detailMean = max(dot(texture2D(detailMap, detailUv, 5.0).rgb, LUMA), 0.002);
+          vec3 harmonized = diffuseColor.rgb * mix(1.0, clamp(detailLuma / detailMean, 0.5, 1.7), 0.8);
+          diffuseColor.rgb = mix(diffuseColor.rgb, harmonized, edge.x * edge.y);
         }
         #endif`,
       );
@@ -350,7 +364,7 @@ async function loadEverything() {
   refreshOverlays(true);
   flyToMapView();
 
-  const overview = await composeImagery(STL_BOUNDS, OVERVIEW_ZOOM, false, (d, t) =>
+  const overview = await composeImagery(STL_BOUNDS, OVERVIEW_ZOOM, OVERVIEW_STACK, (d, t) =>
     setStatus(`Proyectando imágenes CTX/HiRISE sobre el relieve… ${Math.round((d / t) * 100)}%`),
   );
   material.map = canvasTexture(overview);
@@ -358,7 +372,7 @@ async function loadEverything() {
   material.needsUpdate = true;
   setStatus('Cargando detalle del corredor de Curiosity…');
 
-  const detail = await composeImagery(DETAIL_BOUNDS, DETAIL_ZOOM, true, (d, t) =>
+  const detail = await composeImagery(DETAIL_BOUNDS, DETAIL_ZOOM, DETAIL_STACK, (d, t) =>
     setStatus(`Cargando detalle del corredor de Curiosity… ${Math.round((d / t) * 100)}%`),
   );
   const lonSpan = STL_BOUNDS.east - STL_BOUNDS.west, latSpan = STL_BOUNDS.north - STL_BOUNDS.south;
