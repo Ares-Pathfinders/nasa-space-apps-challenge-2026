@@ -11,8 +11,9 @@ import { MarsGlobe } from './components/MarsGlobe';
 import { fetchHealth } from './services/api';
 import { RoverId } from './types/mars';
 
-type LocalMapPhase = 'global' | 'zooming' | 'ready';
+type LocalMapPhase = 'global' | 'zooming' | 'handoff' | 'ready';
 const LOCAL_MAP_ZOOM_DURATION_MS = 6500;
+const LOCAL_MAP_HANDOFF_START_MS = 6000;
 
 function App() {
   const [apiOnline, setApiOnline] = useState(false);
@@ -30,6 +31,9 @@ function App() {
     setZoomComplete(false);
     setTacticalReady(false);
     setLocalMapPhase('zooming');
+    setTimeout(() => {
+      setLocalMapPhase('handoff');
+    }, LOCAL_MAP_HANDOFF_START_MS);
     setTimeout(() => {
       setZoomComplete(true);
     }, LOCAL_MAP_ZOOM_DURATION_MS);
@@ -54,7 +58,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (localMapPhase === 'zooming' && zoomComplete && tacticalReady) {
+    if (localMapPhase === 'handoff' && zoomComplete && tacticalReady) {
       setLocalMapPhase('ready');
     }
   }, [localMapPhase, tacticalReady, zoomComplete]);
@@ -99,6 +103,14 @@ function App() {
               title="Mapa táctica de Marte"
             />
           </div>
+          {(localMapPhase === 'handoff' || localMapPhase === 'ready') && (
+            <div
+              className={`local-map-handoff${localMapPhase === 'ready' ? ' local-map-handoff--out' : ''}`}
+              aria-hidden="true"
+            >
+              <span>2D</span>
+            </div>
+          )}
           {localMapPhase === 'ready' && (
             <div className="local-map-chrome" style={{ zIndex: 50 }}>
               <button
