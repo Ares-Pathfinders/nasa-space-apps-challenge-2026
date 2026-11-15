@@ -15,9 +15,11 @@ try:
     from backend.data.jezero_crater_topography import (
         generate_jezero_crater_elevation_grid,
     )
+    from backend.data.jezero_slope import resample_jezero_slope_to_grid
 except ModuleNotFoundError:
     from data.gale_crater_topography import generate_gale_crater_elevation_grid
     from data.jezero_crater_topography import generate_jezero_crater_elevation_grid
+    from data.jezero_slope import resample_jezero_slope_to_grid
 
 
 def _nearest_passable_cell(
@@ -57,7 +59,16 @@ class PathfindingService:
             raise ValueError("Pathfinding is available only for Gale Crater and Jezero.")
 
         grid = generator(resolution_rows=80, resolution_cols=80)
-        analyzer = SlopeAnalyzer(grid, max_slope_deg=req.max_slope_limit_deg)
+        slope_deg_matrix = (
+            resample_jezero_slope_to_grid(grid)
+            if req.site_id.lower() in {"jezero-crater-delta", "jezero"}
+            else None
+        )
+        analyzer = SlopeAnalyzer(
+            grid,
+            max_slope_deg=req.max_slope_limit_deg,
+            slope_deg_matrix=slope_deg_matrix,
+        )
         builder = CellGraphBuilder(grid, analyzer, slope_penalty_weight=3.5)
 
         endpoints = (

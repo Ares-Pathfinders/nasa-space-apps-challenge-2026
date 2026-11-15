@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 
@@ -71,6 +72,41 @@ def test_astar_prefers_a_longer_flat_detour_when_it_is_faster():
     assert route["total_distance_meters"] > grid.get_distance_meters(0, 0, 0, 2)
 
 
+def test_astar_applies_measured_slope_penalty_to_route_time():
+    grid = _small_grid(np.zeros((3, 3)))
+    measured_slopes = np.zeros(grid.shape)
+    measured_slopes[0, 1] = 15.0
+    analyzer = SlopeAnalyzer(
+        grid, max_slope_deg=25, slope_deg_matrix=measured_slopes
+    )
+    builder = CellGraphBuilder(grid, analyzer)
+
+    route = builder.find_path_astar((0, 0), (0, 2))
+
+    assert route is not None
+    assert any(row > 0 for row, _ in route["cell_path"])
+    assert (0, 1) not in route["cell_path"]
+    assert route["max_path_slope_deg"] == 0.0
+
+
+def test_slope_analyzer_blocks_unknown_or_out_of_limit_measured_slopes():
+    grid = _small_grid(np.zeros((2, 2)))
+    analyzer = SlopeAnalyzer(
+        grid,
+        max_slope_deg=15,
+        slope_deg_matrix=np.array([[5.0, 16.0], [np.nan, 10.0]]),
+    )
+
+    assert analyzer.is_cell_passable(0, 0)
+    assert not analyzer.is_cell_passable(0, 1)
+    assert not analyzer.is_cell_passable(1, 0)
+    stats = analyzer.get_statistics()
+    hazards = CellGraphBuilder(grid, analyzer).get_impassable_hazard_zones()
+    assert stats["unknown_slope_cells"] == 1
+    assert hazards[0]["max_slope_deg"] == 16.0
+    json.dumps({"stats": stats, "hazards": hazards}, allow_nan=False)
+
+
 def test_astar_does_not_cut_diagonally_between_blocked_cells():
     grid = _small_grid(np.zeros((2, 2)))
     analyzer = SlopeAnalyzer(grid, max_slope_deg=25)
@@ -95,6 +131,39 @@ def test_api_pathfinding_service_returns_grid_route_and_realistic_metrics():
     assert response.estimated_duration_min > 0
     assert response.total_elevation_gain_m == 0
     assert len(response.waypoints) >= 2
+
+
+def test_jezero_pathfinding_uses_measured_slope_raster():
+    grid = ElevationGrid(
+        elevation=np.zeros((3, 3)),
+        min_lat=JEZERO_MIN_LAT,
+        max_lat=JEZERO_MAX_LAT,
+        min_lon=JEZERO_MIN_LON,
+        max_lon=JEZERO_MAX_LON,
+    )
+    request = PathfindingRequest(
+        site_id="jezero",
+        start=LatLonPoint(latitude=grid.min_lat, longitude=grid.min_lon),
+        target=LatLonPoint(latitude=grid.max_lat, longitude=grid.max_lon),
+    )
+    measured_slopes = np.full(grid.shape, 7.0)
+
+    with (
+        patch.object(
+            pathfinding_service, "generate_jezero_crater_elevation_grid", return_value=grid
+        ),
+        patch.object(
+            pathfinding_service,
+            "resample_jezero_slope_to_grid",
+            return_value=measured_slopes,
+        ) as load_slopes,
+    ):
+        response = pathfinding_service.pathfinding_service.simulate_eva_route(request)
+
+    load_slopes.assert_called_once_with(grid)
+    assert response.max_slope_deg == 7.0
+    assert all(waypoint.slope_deg == 7.0 for waypoint in response.waypoints[1:])
+
 
 def test_api_pathfinding_accepts_points_in_expanded_expedition_bounds():
     expeditions = (
@@ -126,6 +195,14 @@ def test_api_pathfinding_accepts_points_in_expanded_expedition_bounds():
         )
 
         with patch.object(pathfinding_service, generator_name, return_value=grid):
-            response = pathfinding_service.pathfinding_service.simulate_eva_route(request)
+            if site_id == "jezero":
+                with patch.object(
+                    pathfinding_service,
+                    "resample_jezero_slope_to_grid",
+                    return_value=np.zeros(grid.shape),
+                ):
+                    response = pathfinding_service.pathfinding_service.simulate_eva_route(request)
+            else:
+                response = pathfinding_service.pathfinding_service.simulate_eva_route(request)
 
         assert len(response.waypoints) >= 2
