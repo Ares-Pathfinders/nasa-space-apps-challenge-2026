@@ -11,6 +11,7 @@ import sys
 import json
 import math
 import mimetypes
+from functools import lru_cache
 from urllib.parse import urlparse, parse_qs
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 
@@ -42,10 +43,16 @@ from backend.terrain.cell_graph import CellGraphBuilder
 FRONTEND_DIST_DIR = os.path.join(REPO_ROOT, "frontend", "dist")
 TERRAIN_CACHE_FILE = os.path.join(os.path.dirname(__file__), "terrain_analysis_output.json")
 GALE_TERRAIN_SOURCE = {
-    "name": "Modelo sintético de terreno de Gale (no DEM medido)",
-    "url": "https://mars.nasa.gov/",
-    "method": "Topografía procedural demostrativa; no representa mediciones orbitales.",
+    "name": "Modelo 3D (STL) del cráter Gale georreferenciado con MOLA/HRSC",
+    "url": "https://astrogeology.usgs.gov/search/map/mars_mgs_mola_mex_hrsc_blended_dem_global_200m",
+    "method": (
+        "Relieve del STL (513x513, ~400-530 m) ajustado al DEM MOLA/HRSC blend de 200 m; "
+        "pendiente de celda = percentil 75 de la pendiente real dentro de la celda."
+    ),
 }
+GALE_MAX_RESOLUTION = 256
+# Ruta por defecto en Gale: de Bradbury Landing a las laderas del Monte Sharp.
+GALE_DEFAULT_ROUTE = ((-4.5895, 137.4417), (-4.90, 137.45))
 JEZERO_TERRAIN_SOURCE = {
     "name": "Modelo sintético de terreno de Jezero (no DEM medido)",
     "url": "https://mars.nasa.gov/",
@@ -72,11 +79,18 @@ def _nearest_passable_cell(grid, builder, cell, max_radius=2):
     return None
 
 
-# Preload or initialize Gale Crater terrain graph once on server startup
-print("[ARES-Nav Server] Initializing Gale Crater cell graph...")
-elevation_grid = generate_gale_crater_elevation_grid(resolution_rows=80, resolution_cols=80)
-slope_analyzer = SlopeAnalyzer(elevation_grid, max_slope_deg=15.0)
-cell_graph_builder = CellGraphBuilder(elevation_grid, slope_analyzer, slope_penalty_weight=3.5)
+@lru_cache(maxsize=6)
+def _gale_terrain(resolution: int, max_slope: float):
+    """Retícula, pendientes y grafo de Gale (desde el STL), cacheados por parámetros."""
+    grid = generate_gale_crater_elevation_grid(resolution_rows=resolution, resolution_cols=resolution)
+    analyzer = SlopeAnalyzer(grid, max_slope_deg=max_slope)
+    builder = CellGraphBuilder(grid, analyzer, slope_penalty_weight=3.5)
+    return grid, analyzer, builder
+
+
+# Preload Gale Crater terrain graph once on server startup (default UI parameters)
+print("[ARES-Nav Server] Initializing Gale Crater cell graph from the 3D model...")
+elevation_grid, slope_analyzer, cell_graph_builder = _gale_terrain(128, 15.0)
 print(f"[ARES-Nav Server] Cell graph ready with {cell_graph_builder.graph.number_of_nodes()} navigable nodes.")
 
 
@@ -219,7 +233,7 @@ class AresNavHandler(SimpleHTTPRequestHandler):
             })
         elif path == "/api/terrain":
             zone = query.get("zone", ["gale"])[0].lower()
-            res = min(100, max(20, int(query.get("resolution", [60])[0])))
+            res = min(GALE_MAX_RESOLUTION if zone == "gale" else 100, max(20, int(query.get("resolution", [128])[0])))
             max_slope = float(query.get("max_slope", [15.0])[0])
 
             if zone == "jezero":
@@ -246,7 +260,7 @@ class AresNavHandler(SimpleHTTPRequestHandler):
                 goal_c = (int(res * 0.75), int(res * 0.75))
             else:
                 try:
-                    grid = generate_gale_crater_elevation_grid(resolution_rows=res, resolution_cols=res)
+                    grid, analyzer, builder = _gale_terrain(res, max_slope)
                 except TerrainDataError as error:
                     self._send_json({"error": str(error)}, status=503)
                     return
@@ -260,18 +274,16 @@ class AresNavHandler(SimpleHTTPRequestHandler):
                     {"name": "Vera Rubin Ridge (Hematite Escarpment)", "lat": -4.685, "lon": 137.400, "type": "SCARP"},
                     {"name": "Greenheugh Pediment (Sandstone Cap)", "lat": -4.715, "lon": 137.375, "type": "CLIFF"}
                 ]
-                start_c = (int(res * 0.2), int(res * 0.8))
-                goal_c = (int(res * 0.8), int(res * 0.3))
+                start_c = grid.geo_to_cell(*GALE_DEFAULT_ROUTE[0])
+                goal_c = grid.geo_to_cell(*GALE_DEFAULT_ROUTE[1])
 
-            slope_deg_matrix = (
-                resample_jezero_slope_to_grid(grid) if zone == "jezero" else None
-            )
-            analyzer = SlopeAnalyzer(
-                grid,
-                max_slope_deg=max_slope,
-                slope_deg_matrix=slope_deg_matrix,
-            )
-            builder = CellGraphBuilder(grid, analyzer, slope_penalty_weight=3.5)
+            if zone == "jezero":
+                analyzer = SlopeAnalyzer(
+                    grid,
+                    max_slope_deg=max_slope,
+                    slope_deg_matrix=resample_jezero_slope_to_grid(grid),
+                )
+                builder = CellGraphBuilder(grid, analyzer, slope_penalty_weight=3.5)
             stats = analyzer.get_statistics()
             hazard_clusters = builder.get_impassable_hazard_zones(min_cluster_size=3)
 
@@ -348,7 +360,7 @@ class AresNavHandler(SimpleHTTPRequestHandler):
         zone = zone.lower()
 
         try:
-            resolution = int(req.get("resolution", 80))
+            resolution = int(req.get("resolution", 128))
             max_slope = float(req.get("max_slope", 15.0))
             start_coords = req.get("start", {"latitude": -4.596, "longitude": 137.488})
             target_coords = req.get("target", {"latitude": -4.716, "longitude": 137.397})
@@ -358,8 +370,11 @@ class AresNavHandler(SimpleHTTPRequestHandler):
             self._send_json({"error": f"Invalid route parameters: {error}"}, status=400)
             return
 
-        if not 20 <= resolution <= 100:
-            self._send_json({"error": "resolution must be between 20 and 100."}, status=400)
+        if zone == "jezero":
+            resolution = min(resolution, 100)  # la retícula de Jezero llega a 100x100
+        max_resolution = GALE_MAX_RESOLUTION if zone == "gale" else 100
+        if not 20 <= resolution <= max_resolution:
+            self._send_json({"error": f"resolution must be between 20 and {max_resolution}."}, status=400)
             return
         if not math.isfinite(max_slope) or not 8.0 <= max_slope <= 25.0:
             self._send_json({"error": "max_slope must be between 8 and 25 degrees."}, status=400)
@@ -368,35 +383,27 @@ class AresNavHandler(SimpleHTTPRequestHandler):
             self._send_json({"error": "Route coordinates must be finite numbers."}, status=400)
             return
 
-        if zone == "gale" and resolution == 80 and max_slope == 15.0:
-            grid, analyzer, builder = elevation_grid, slope_analyzer, cell_graph_builder
-        else:
-            try:
-                if zone == "jezero":
-                    grid = generate_jezero_crater_elevation_grid(resolution_rows=resolution, resolution_cols=resolution)
-                    terrain_source = {
-                        **JEZERO_TERRAIN_SOURCE,
-                        "slope_data": (
-                            "Measured 20.2 m HiRISE slope raster; used only for route calculations."
-                        ),
-                    }
-                else:
-                    grid = generate_gale_crater_elevation_grid(resolution_rows=resolution, resolution_cols=resolution)
-                    terrain_source = GALE_TERRAIN_SOURCE
-            except TerrainDataError as error:
-                self._send_json({"error": str(error)}, status=503)
-                return
-            slope_deg_matrix = (
-                resample_jezero_slope_to_grid(grid) if zone == "jezero" else None
-            )
-            analyzer = SlopeAnalyzer(
-                grid,
-                max_slope_deg=max_slope,
-                slope_deg_matrix=slope_deg_matrix,
-            )
-            builder = CellGraphBuilder(grid, analyzer, slope_penalty_weight=3.5)
-        if zone == "gale" and resolution == 80 and max_slope == 15.0:
-            terrain_source = GALE_TERRAIN_SOURCE
+        try:
+            if zone == "jezero":
+                grid = generate_jezero_crater_elevation_grid(resolution_rows=resolution, resolution_cols=resolution)
+                terrain_source = {
+                    **JEZERO_TERRAIN_SOURCE,
+                    "slope_data": (
+                        "Measured 20.2 m HiRISE slope raster; used only for route calculations."
+                    ),
+                }
+                analyzer = SlopeAnalyzer(
+                    grid,
+                    max_slope_deg=max_slope,
+                    slope_deg_matrix=resample_jezero_slope_to_grid(grid),
+                )
+                builder = CellGraphBuilder(grid, analyzer, slope_penalty_weight=3.5)
+            else:
+                grid, analyzer, builder = _gale_terrain(resolution, max_slope)
+                terrain_source = GALE_TERRAIN_SOURCE
+        except TerrainDataError as error:
+            self._send_json({"error": str(error)}, status=503)
+            return
 
         for name, coords in (("start", start), ("target", target)):
             latitude, longitude = coords

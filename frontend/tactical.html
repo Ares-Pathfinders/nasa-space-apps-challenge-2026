@@ -23,6 +23,9 @@
     body { overflow: hidden; background: var(--bg); color: #e2e8f0; font: 11px 'JetBrains Mono', monospace; }
     #map { position: absolute; inset: 0; background: #70463d; }
     .ctx-tint { filter: sepia(.72) saturate(1.55) hue-rotate(326deg) brightness(.92); }
+    /* HiRISE de Gale: sólo aporta detalle (luminancia); el color lo pone el CTX teñido de debajo,
+       así no hay saltos entre quads en color, quads grises y el CTX. */
+    .hirise-luminance { mix-blend-mode: luminosity; }
     .panel {
       position: absolute;
       z-index: 1000;
@@ -311,6 +314,26 @@
       background: rgba(168, 85, 247, 0.35);
       color: #fff;
     }
+    /* Relieve 3D (src/tactical/terrain3d.ts): ocupa el lugar del mapa, bajo los paneles */
+    #terrain3d { position: absolute; inset: 0; z-index: 500; background: #1a1210; }
+    #terrain3d[hidden] { display: none; }
+    #terrain3d canvas { display: block; width: 100%; height: 100%; cursor: grab; }
+    #terrain3d canvas:active { cursor: grabbing; }
+    .terrain3d-hud {
+      position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%);
+      z-index: 1000; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 14px;
+      max-width: calc(100% - 32px); padding: 7px 12px;
+      color: #cbd5e1; font-size: 9px;
+    }
+    .terrain3d-hud label { margin: 0; display: flex; align-items: center; gap: 6px; text-transform: none; letter-spacing: 0; }
+    .terrain3d-hud input[type=range] { width: 110px; }
+    .terrain3d-hint { color: #64748b; }
+    .terrain3d-status {
+      position: absolute; left: 50%; top: 84px; transform: translateX(-50%); z-index: 1000;
+      padding: 8px 14px; color: var(--cyan); font-size: 10px; letter-spacing: 0.08em; white-space: nowrap;
+    }
+    .terrain3d-status[hidden] { display: none; }
+    #terrain3dToggle[aria-pressed="true"] { background: var(--cyan); color: #050608; }
     @media (max-width: 860px) {
       header { left: 8px; right: 8px; }
       .side {
@@ -346,6 +369,14 @@
       <button id="beginSetupRoute" class="nav-btn" type="button" disabled>Elegir origen y destino</button>
     </div>
   </section>
+  <!-- Relieve 3D del cráter Gale con las imágenes del mapa (src/tactical/terrain3d.ts) -->
+  <div id="terrain3d" hidden>
+    <div id="terrain3dStatus" class="panel terrain3d-status" role="status" aria-live="polite" hidden></div>
+    <div class="panel terrain3d-hud">
+      <label for="terrain3dExaggeration">Exageración vertical <input id="terrain3dExaggeration" type="range" min="1" max="6" step="0.1" value="2"> <b id="terrain3dExaggerationValue" style="color:var(--cyan)">2.0×</b></label>
+      <span class="terrain3d-hint">Arrastrar: desplazar · Clic derecho / Ctrl+arrastrar: girar e inclinar · Rueda: zoom · Esc: volver al 2D</span>
+    </div>
+  </div>
 
   <header class="panel">
     <div class="brand">
@@ -354,6 +385,9 @@
         <h1>ARES-NAV // CUADRÍCULA & GASES ATMOSFÉRICOS</h1>
         <div class="sub">Telemetría MOLA & Espectrometría ESA Planetary Science Archive (PSA)</div>
       </div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <button id="terrain3dToggle" class="nav-btn" type="button" aria-pressed="false">🏔️ RELIEVE 3D</button>
     </div>
   </header>
 
@@ -385,10 +419,10 @@
 
     <label for="resolution">Resolución de cuadrícula</label>
     <select id="resolution">
-      <option value="20">20 x 20 (Rápida)</option>
-      <option value="40">40 x 40 (Media)</option>
-      <option value="60" selected>60 x 60 (Alta resolución)</option>
-      <option value="80">80 x 80 (Submétrica)</option>
+      <option value="64">64 x 64 (Rápida · celdas ~3,5 km)</option>
+      <option value="128" selected>128 x 128 (Media · ~1,8 km)</option>
+      <option value="192">192 x 192 (Alta · ~1,2 km)</option>
+      <option value="256">256 x 256 (Máxima · ~0,9 km)</option>
     </select>
 
     <h2 style="margin-top:16px">PLANIFICADOR DE RUTA</h2>
@@ -598,7 +632,7 @@
 
     const galeImageryLayer = L.layerGroup([
       createMarsTmsTileLayer('https://mars.nasa.gov/mmgis-maps/MSL/Layers/MSL_CTX_ortho_mosaic_6m/{z}/{x}/{y}.png', 0.72, 'ctx-tint'),
-      createMarsTmsTileLayer('https://mars.nasa.gov/mmgis-maps/MSL/Layers/MSL_Gale_HiRISE-LRGB_78quads/{z}/{x}/{y}.png'),
+      createMarsTmsTileLayer('https://mars.nasa.gov/mmgis-maps/MSL/Layers/MSL_Gale_HiRISE-LRGB_78quads/{z}/{x}/{y}.png', 0.8, 'hirise-luminance'),
       createMarsTmsTileLayer('https://mars.nasa.gov/mmgis-maps/MSL/Layers/MSL_WebGIS_PlaceText/{z}/{x}/{y}.png', 0.96)
     ]);
     const jezeroImageryLayer = L.layerGroup([
@@ -1351,7 +1385,7 @@
           ], {
             renderer: terrainRenderer,
             color,
-            weight: 0.7,
+            weight: 0.4,
             fillColor: color,
             fillOpacity: !cell.passable ? 0.75 : cell.slope > 10 ? 0.35 : 0.12
           });
@@ -1566,5 +1600,6 @@
     // Cargar mapa y gases al iniciar
     load();
   </script>
+  <script type="module" src="/src/tactical/terrain3d.ts"></script>
 </body>
 </html>

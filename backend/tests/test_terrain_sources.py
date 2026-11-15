@@ -8,77 +8,49 @@ import tifffile
 from backend.data import gale_crater_topography as gale
 from backend.data import jezero_crater_topography as jezero
 from backend.data.jezero_slope import resample_jezero_slope_to_grid
+from backend.terrain.cell_graph import CellGraphBuilder
 from backend.terrain.grid import ElevationGrid
+from backend.terrain.slope import SlopeAnalyzer
 
 
-def test_gale_grid_uses_float32_elevation_from_nasa_export():
-    expected = np.array(
-        [[-4410.0, -4405.0], [-4388.0, -4379.0]],
-        dtype=np.float32,
+def test_gale_grid_covers_the_whole_3d_model_with_real_elevations():
+    grid = gale.generate_gale_crater_elevation_grid(resolution_rows=64, resolution_cols=64)
+
+    assert (grid.min_lat, grid.max_lat) == (gale.GALE_MIN_LAT, gale.GALE_MAX_LAT)
+    assert (grid.min_lon, grid.max_lon) == (gale.GALE_MIN_LON, gale.GALE_MAX_LON)
+    # Suelo de Gale (~-4,6 km) y borde/tierras altas (~+1,4 km) según MOLA/HRSC.
+    assert -4800 < grid.elevation.min() < -4400
+    assert 1000 < grid.elevation.max() < 1600
+    # El norte va arriba: Monte Sharp (sur) más alto que Bradbury Landing (norte).
+    bradbury = grid.get_elevation(*grid.geo_to_cell(-4.5895, 137.4417))
+    mount_sharp = grid.get_elevation(*grid.geo_to_cell(-5.08, 137.85))
+    assert -4700 < bradbury < -4300
+    assert mount_sharp > bradbury + 2500
+
+
+def test_default_jezero_grid_covers_expanded_expedition_area():
+    grid = jezero.generate_jezero_crater_elevation_grid()
+    lat_margin_km = math.radians(jezero.JEZERO_BASE_MIN_LAT - grid.min_lat) * jezero.MARS_RADIUS_KM
+    lon_margin_km = (
+        math.radians(jezero.JEZERO_BASE_MIN_LON - grid.min_lon)
+        * jezero.MARS_RADIUS_KM
+        * math.cos(math.radians(jezero.JEZERO_CENTER_LAT))
     )
-    image = BytesIO()
-    tifffile.imwrite(image, expected)
-    response = Mock(content=image.getvalue())
 
-    gale._fetch_gale_elevation.cache_clear()
-    with patch.object(gale.requests, "get", return_value=response) as get:
-        grid = gale.generate_gale_crater_elevation_grid(
-            resolution_rows=2,
-            resolution_cols=2,
-        )
-
-    np.testing.assert_array_equal(grid.elevation, expected)
-    assert get.call_args.args[0] == gale.GALE_DEM_EXPORT_URL
-    assert get.call_args.kwargs["params"]["pixelType"] == "F32"
-
-
-def test_default_grids_cover_expanded_expedition_areas():
-    for module, grid, base_bounds in (
-        (
-            gale,
-            gale.generate_gale_crater_elevation_grid(),
-            (
-                gale.GALE_BASE_MIN_LAT,
-                gale.GALE_BASE_MAX_LAT,
-                gale.GALE_BASE_MIN_LON,
-                gale.GALE_BASE_MAX_LON,
-                gale.GALE_CENTER_LAT,
-            ),
-        ),
-        (
-            jezero,
-            jezero.generate_jezero_crater_elevation_grid(),
-            (
-                jezero.JEZERO_BASE_MIN_LAT,
-                jezero.JEZERO_BASE_MAX_LAT,
-                jezero.JEZERO_BASE_MIN_LON,
-                jezero.JEZERO_BASE_MAX_LON,
-                jezero.JEZERO_CENTER_LAT,
-            ),
-        ),
-    ):
-        base_min_lat, base_max_lat, base_min_lon, base_max_lon, center_lat = base_bounds
-        lat_margin_km = math.radians(base_min_lat - grid.min_lat) * module.MARS_RADIUS_KM
-        lon_margin_km = (
-            math.radians(base_min_lon - grid.min_lon)
-            * module.MARS_RADIUS_KM
-            * math.cos(math.radians(center_lat))
-        )
-
-        assert math.isclose(lat_margin_km, 25.0, abs_tol=1e-9)
-        assert math.isclose(lon_margin_km, 25.0, abs_tol=1e-9)
-        assert math.isclose(
-            math.radians(grid.max_lat - base_max_lat) * module.MARS_RADIUS_KM,
-            25.0,
-            abs_tol=1e-9,
-        )
-        assert math.isclose(
-            math.radians(grid.max_lon - base_max_lon)
-            * module.MARS_RADIUS_KM
-            * math.cos(math.radians(center_lat)),
-            25.0,
-            abs_tol=1e-9,
-        )
+    assert math.isclose(lat_margin_km, 25.0, abs_tol=1e-9)
+    assert math.isclose(lon_margin_km, 25.0, abs_tol=1e-9)
+    assert math.isclose(
+        math.radians(grid.max_lat - jezero.JEZERO_BASE_MAX_LAT) * jezero.MARS_RADIUS_KM,
+        25.0,
+        abs_tol=1e-9,
+    )
+    assert math.isclose(
+        math.radians(grid.max_lon - jezero.JEZERO_BASE_MAX_LON)
+        * jezero.MARS_RADIUS_KM
+        * math.cos(math.radians(jezero.JEZERO_CENTER_LAT)),
+        25.0,
+        abs_tol=1e-9,
+    )
 
 
 def test_jezero_slope_tiff_resamples_measured_degrees_to_route_cells():
@@ -94,6 +66,24 @@ def test_jezero_slope_tiff_resamples_measured_degrees_to_route_cells():
     assert np.isnan(slopes).any()
     center_cell = grid.geo_to_cell(18.38, 77.55)
     assert slopes[center_cell] >= 2.3
+
+
+def test_gale_slopes_come_from_the_native_3d_model():
+    grid = gale.generate_gale_crater_elevation_grid(resolution_rows=128, resolution_cols=128)
+    analyzer = SlopeAnalyzer(grid, max_slope_deg=15.0)
+
+    assert grid.slope_deg is not None
+    np.testing.assert_array_equal(analyzer.slope_deg_matrix, grid.slope_deg)
+    assert analyzer.is_cell_passable(*grid.geo_to_cell(-4.5895, 137.4417))  # llanura de Bradbury
+    stats = analyzer.get_statistics()
+    assert 2.0 < stats["impassable_percentage"] < 25.0
+    assert stats["max_slope_deg"] > 25.0  # paredes del cráter y del Monte Sharp
+
+    builder = CellGraphBuilder(grid, analyzer, slope_penalty_weight=3.5)
+    route = builder.find_path_astar(grid.geo_to_cell(-4.5895, 137.4417), grid.geo_to_cell(-4.90, 137.45))
+    assert route is not None
+    assert route["max_path_slope_deg"] <= 15.0
+    assert route["elevation_gain_m"] > 500
 
 
 def test_jezero_pds_range_decodes_little_endian_float_and_skips_nodata():
